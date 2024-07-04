@@ -1,0 +1,13 @@
+name: bedwars_plugin
+version: '1.0-SNAPSHOT'
+main: org.aerial_dad.bedwars_plugin.Bedwars_plugin
+api-version: '1.20'
+commands:
+  bw:
+    permission: permission.op
+  bedwars:
+    permission: permission.op
+
+
+
+

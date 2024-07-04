@@ -1,0 +1,100 @@
+6/22/24
+    Topic:
+        Bedwars is a fun mini game that I want to code!
+    In game designs:
+        Resource Management:
+
+            Iron and Gold: These are the main resources gathered from mining on your island. Iron is used for basic tools, weapons, and armor, while gold is used for more advanced items and upgrades.
+
+            Emeralds and Diamonds: These are rarer resources found scattered around the map or obtained by killing players. They are used for powerful tools, high-tier armor sets, and special abilities.
+
+
+        Core Gameplay Mechanics:
+
+            Team Management: Create and manage teams, assign players to teams, handle respawns based on team beds.
+
+            Bed Destruction: Detect and handle bed destruction, eliminate teams when their bed is broken.
+
+            Resource Spawning: Spawn resources like iron, gold, emeralds, and diamonds on islands or at designated locations.
+
+            Shop System: Create a shop system with purchasable items like weapons, armor, potions, blocks, and upgrades. Handle currency management (iron/gold) for purchases.
+
+            Inventory Management: Manage player inventories, track bought items, and handle limitations based on resources.
+
+
+        World Building and Management:
+
+            Map Generation: Create or integrate with map generation tools to create diverse and balanced Bedwars arenas.
+
+            Block Protection: Protect team beds and designated areas from unauthorized destruction.
+
+            World Reset: Implement a system to reset the arena after a game ends, restoring the map and player builds.
+
+
+        Combat and Player Interaction:
+
+            Player Damage: Handle player-to-player combat damage based on weapon types and armor.
+
+            Deathmatch and Spectator Mode: Manage death mechanics, allow defeated players to spectate after death.
+
+            Power-Ups: Code the effects and mechanics of power-ups scattered around the map. (Speed boosts, invisibility, etc.)
+
+
+        Additional Features (Enhance the Experience):
+
+            Scoreboard and Statistics: Display team scores, player kills/deaths, and other relevant statistics on a scoreboard.
+
+            Leaderboards: Track player performance across games and display leaderboards.
+
+            Spectator Features: Allow spectators to teleport between players, see through walls in spectator mode, etc.
+
+            Team Chat and Communication Tools: Facilitate team communication through chat channels or voice chat integration (if applicable).
+
+    MVP version:
+
+                Core Gameplay Mechanics:
+
+                    Team Management: Create and manage teams, assign 2 players to 2 teams, handle respawns based on team beds.
+
+                    Game Management: Create, delete and manage the game.
+
+                    Bed Destruction: Detect and handle bed destruction, eliminate respawn ability when their bed is broken.
+
+
+                World Building and Management:
+
+                    Map Generation: Create or integrate with map generation tools to create diverse and balanced Bedwars arenas.
+
+                    Block Protection: Protect team beds and designated areas from unauthorized destruction.
+
+                    World Reset: Implement a system to reset the arena after a game ends, restoring the map and player builds.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,30 @@
+name: alex_mc_plugin
+version: '1.0-SNAPSHOT'
+main: org.aerial_dad.alexplugin.AlexFirstPlugin
+api-version: '1.20'
+commands:
+  sethubspawn:
+    description: set where everyone who joins this server will be teleported here
+    usage: /<command>
+    permission: permission.admin
+    permission-message: You are not a admin
+  hub:
+    description: go to location of set hub spawn
+    usage: /<command>
+  setlspawn:
+    description: set where everyone who joins this server will be teleported here
+    usage: /<command>
+    permission: permission.admin
+    permission-message: You are not a admin
+  l:
+    description: go to the main lobby
+    usage: /<command>
+  leave:
+    description: got to the main lobby
+    usage: /<command>
+  play_duels_sumo:
+    description: join a  game of sumo
+    usage: /<command>
+
+
+
