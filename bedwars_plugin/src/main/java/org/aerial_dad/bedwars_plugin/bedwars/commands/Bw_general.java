@@ -1,6 +1,7 @@
 package org.aerial_dad.bedwars_plugin.bedwars.commands;
 
 import org.aerial_dad.bedwars_plugin.Bedwars_plugin;
+import org.aerial_dad.bedwars_plugin.bedwars.game.BwPlayer;
 import org.aerial_dad.bedwars_plugin.bedwars.lobby.SetLobbyWorld;
 import org.bukkit.*;
 import org.bukkit.command.Command;
@@ -24,11 +25,19 @@ public class Bw_general implements CommandExecutor {
 
 
     public static Map<String, World> BW_CREATED_MAPS = new HashMap<>();
-    public static Queue<Player> PLAYER_WAITING_QUEUE = new ConcurrentLinkedQueue<>();
+
+    public static Queue<BwPlayer> PLAYER_WAITING_QUEUE = new ConcurrentLinkedQueue<>();
 
     private Map<String, Player> mapCreators = new HashMap<>();
     private Map<String, Location> mapPos1 = new HashMap<>();
     private Map<String, Location> mapPos2 = new HashMap<>();
+
+    public static void loadPrebuiltDuelGameWorlds(List<World> worlds) {
+        prebuiltDuelGameWorlds = worlds;
+    }
+
+    public static List<World> prebuiltDuelGameWorlds;
+
 
 
     private static final List<String> BW_VALID_ARGS = Arrays.asList("create", "list", "edit", "save", "pos1", "pos2", "mapbottom", "setqueuespawn", "setlobbyworld","delete", "teleport");

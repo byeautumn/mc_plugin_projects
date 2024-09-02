@@ -20,8 +20,6 @@ public class Hub_command implements CommandExecutor {
 
         if (sender instanceof Player && command.getName().equalsIgnoreCase("Hub")) {
             Player player = (Player) sender;
-            Location location = player.getLocation();
-
             Location spawnLocation = plugin.getConfig().getLocation("spawnLocation");
             if (spawnLocation != null) {
                 player.setGameMode(GameMode.ADVENTURE);

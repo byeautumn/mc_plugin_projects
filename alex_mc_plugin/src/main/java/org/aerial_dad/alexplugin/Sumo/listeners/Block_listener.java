@@ -14,8 +14,10 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 public class Block_listener implements Listener {
+    private static double SUMO_GATE_LOCATION_X = 20.0;
+    private static double SUMO_GATE_LOCATION_Y = 1.0;
+    private static double SUMO_GATE_LOCATION_Z = 1.0;
 
-    private static Location SUMO_GATE_LOCATION = new Location(null, 20.0, 1.0, 0.0);
     public void onBlockBreak(BlockBreakEvent event){
 
         Player player = event.getPlayer();
@@ -53,9 +55,9 @@ public class Block_listener implements Listener {
             if(clickedBlock.getType() == Material.OAK_SIGN) {
 //                System.out.println("The oak sign location: " + clickedBlock.getLocation());
                 Location location = clickedBlock.getLocation();
-                if(location.getX() == SUMO_GATE_LOCATION.getX() &&
-                    location.getY() == SUMO_GATE_LOCATION.getY() &&
-                    location.getZ() == SUMO_GATE_LOCATION.getZ()) {
+                if(location.getX() == SUMO_GATE_LOCATION_X &&
+                    location.getY() == SUMO_GATE_LOCATION_Y &&
+                    location.getZ() == SUMO_GATE_LOCATION_Z) {
                     Player player = event.getPlayer();
                     System.out.println("Player is trying to enter sumo world: " + player.getDisplayName());
 
@@ -64,6 +66,7 @@ public class Block_listener implements Listener {
                     if(game != null &&
                             !game.isFull() &&
                             game.getGameState() != DuelGame.DuelGameState.TERMINATION_SCHEDULED) {
+                        System.out.println("The next game picked is " + game.getWorld().getName());
                         game.admit(player);
                     }
                     else {

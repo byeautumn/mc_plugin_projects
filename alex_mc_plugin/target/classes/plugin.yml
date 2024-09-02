@@ -1,7 +1,7 @@
 name: alex_mc_plugin
 version: '1.0-SNAPSHOT'
 main: org.aerial_dad.alexplugin.AlexFirstPlugin
-api-version: '1.20'
+api-version: '1.21'
 commands:
   sethubspawn:
     description: set where everyone who joins this server will be teleported here
@@ -24,6 +24,9 @@ commands:
     usage: /<command>
   play_duels_sumo:
     description: join a  game of sumo
+    usage: /<command>
+  npc:
+    description: spawn npx with custom name
     usage: /<command>
 
 

@@ -2,9 +2,12 @@ package org.aerial_dad.bedwars_plugin.bedwars.game;
 
 import org.aerial_dad.bedwars_plugin.bedwars.game.Teams.BwTeam;
 import org.aerial_dad.bedwars_plugin.bedwars.game.Teams.TeamManager;
+import org.bukkit.entity.Player;
 
 import javax.annotation.Nonnull;
+import javax.xml.stream.Location;
 import java.security.InvalidParameterException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -42,6 +45,14 @@ public class BwGame {
 
     public GameStatus getStatus() {
         return status;
+    }
+
+    private void teleportPlayers(){
+        for (BwTeam team : teams ){
+            for (BwPlayer player : team.getPlayers()){
+                player.getPlayer().teleport(this.world.getWorld().getSpawnLocation());
+            }
+        }
     }
 
     public static void main(String[] args) {

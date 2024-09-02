@@ -17,12 +17,12 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 
 
-public class Block_listener implements Listener {
+public class Block_listener2 implements Listener {
 
     private final static String key = "playerplaced";
     private final Bedwars_plugin plugin;
 
-    public Block_listener(Bedwars_plugin plugin) {
+    public Block_listener2(Bedwars_plugin plugin) {
         this.plugin = plugin;
     }
 
@@ -80,18 +80,18 @@ public class Block_listener implements Listener {
 
 
     }
-private boolean isInRange(Location location) {
-    if (location.getX() >= PerimeterConstant.RANGE_LIMIT_X ||
-            location.getY() >= PerimeterConstant.RANGE_LIMIT_Y ||
-            location.getZ() >= PerimeterConstant.RANGE_LIMIT_Z ||
-            location.getX() >= PerimeterConstant.RANGE_LIMIT_X ||
-            location.getY() <= -PerimeterConstant.RANGE_LIMIT_Y ||
-            location.getZ() <= -PerimeterConstant.RANGE_LIMIT_Z ||
-            location.getY() <= -PerimeterConstant.RANGE_LIMIT_Y) {
-        return false;
+    private boolean isInRange(Location location) {
+        if (location.getX() >= PerimeterConstant.RANGE_LIMIT_X ||
+                location.getY() >= PerimeterConstant.RANGE_LIMIT_Y ||
+                location.getZ() >= PerimeterConstant.RANGE_LIMIT_Z ||
+                location.getX() >= PerimeterConstant.RANGE_LIMIT_X ||
+                location.getY() <= -PerimeterConstant.RANGE_LIMIT_Y ||
+                location.getZ() <= -PerimeterConstant.RANGE_LIMIT_Z ||
+                location.getY() <= -PerimeterConstant.RANGE_LIMIT_Y) {
+            return false;
+        }
+        return true;
     }
-    return true;
-}
 
 
 }

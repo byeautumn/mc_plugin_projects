@@ -1,6 +1,7 @@
 package org.aerial_dad.alexplugin.Sumo.common;
 
 import org.aerial_dad.alexplugin.Sumo.common.constants.GameConstants;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -39,7 +40,7 @@ public class DuelGame {
 
     private final World world;
 
-    private final Timer timer = new Timer();
+//    private final Timer timer = new Timer();
 
     TimerTask terminationTask = new TimerTask() {
         @Override
@@ -49,6 +50,9 @@ public class DuelGame {
     };
 
     public DuelGame(World world) {
+        if(null == world) {
+            throw new IllegalArgumentException("The passed world is null. The DuelGame construct failed.");
+        }
         this.world = world;
         this.gameState = DuelGameState.CREATED;
         setActionItems();
@@ -101,6 +105,7 @@ public class DuelGame {
 
     public int admit(Player player) {
         if(this.gameState == DuelGameState.TERMINATION_SCHEDULED) return -1;
+        System.out.println(printPlayers());
         for(int idx = 0; idx < this.players.length; ++idx) {
             if(this.players[idx] == null) {
                 this.players[idx] = player;
@@ -128,12 +133,22 @@ public class DuelGame {
     public void spawn(Player player) {
         int index = getIndexOfPlayer(player);
         System.out.println("Spawning player index: " + index);
+
         player.teleport(this.spawnLocations[index]);
     }
 
     public boolean isFull() {
         for(Player player : this.players) {
             if(player == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isEmpty() {
+        for(Player player : this.players) {
+            if(player != null) {
                 return false;
             }
         }
@@ -156,9 +171,11 @@ public class DuelGame {
         this.gameState = DuelGameState.ONGOING;
 
         for(Player player : this.players) {
-            player.setInvulnerable(false);
             spawn(player);
             hideActionStackItems(player);
+            player.setInvulnerable(false);
+            player.setInvulnerable(false);
+            System.out.println(player + "is no longer invulnerable.");
         }
     }
 
@@ -215,7 +232,10 @@ public class DuelGame {
         }
 
         pause();
-        this.timer.schedule(this.terminationTask, GameConstants.TERMINATION_MILLIS);
+//        final Timer timer = new Timer();
+//        timer.schedule(this.terminationTask, GameConstants.TERMINATION_MILLIS);
+//        TODO
+//        Bukkit.getScheduler().runTask();
         this.gameState = DuelGameState.TERMINATION_SCHEDULED;
     }
 
@@ -266,7 +286,22 @@ public class DuelGame {
             return;
         }
         Global.playerToDuelGameMap.remove(player.getUniqueId());
+        if(isEmpty()) {
+            this.gameState = DuelGameState.CREATED;
+        }
 
+    }
+
+    private String printPlayers() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("[ ");
+        for(Player player : this.players) {
+            sb.append(player == null ? null : player.getDisplayName());
+            sb.append(" | ");
+        }
+        sb.append(" ] ");
+
+        return sb.toString();
     }
 
 }
