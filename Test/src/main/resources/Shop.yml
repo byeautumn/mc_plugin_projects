@@ -1,0 +1,39 @@
+# Generator settings
+shop:
+  #PageName
+  page1:
+    #e.g.:
+    page-name: shop
+    page-size: 54
+    #page-order. e.g. 1 will mean first page, 2 will mean second page etc.
+    page-index: 1
+    #item that will switch between pages
+    page-switch-item: ARROW
+    #Items in the Page
+    items:
+      #item please use Material format
+      #feel free to add more materials just follow this format
+      #default:
+      stone-sword:
+        material: STONE_SWORD
+        cost: 10
+        currency: IRON_INGOT
+        item-per-buy: 1
+        #slot 1 is 0. slot 2 is 1 etc.
+        slot: 0
+      wool:
+        material: WHITE_WOOL
+        cost: 4
+        currency: IRON_INGOT
+        item-per-buy: 16
+        slot: 1
+      wood:
+        material: OAK_PLANKS
+        cost: 4
+        currency: GOLD_INGOT
+        item-per-buy: 16
+        slot: 2
+
+  #Shop mob type. e.g. villager, zombie etc.
+    entity-type: Villager
+

@@ -1,0 +1,12 @@
+org/aerial_dad/test/generator/Generator$TEAMCOLORS.class
+org/aerial_dad/test/Bw_general.class
+org/aerial_dad/test/mechanics/FireBallMechanic.class
+org/aerial_dad/test/shop/Create_Npc.class
+org/aerial_dad/test/generator/Generator.class
+org/aerial_dad/test/Test.class
+org/aerial_dad/test/shop/Npc_listener.class
+org/aerial_dad/test/Bw_general$BW_Mode.class
+org/aerial_dad/test/Block_listener2.class
+org/aerial_dad/test/shop/Remove_Npc.class
+org/aerial_dad/test/shop/ItemConfig.class
+org/aerial_dad/test/shop/ShopConfig.class

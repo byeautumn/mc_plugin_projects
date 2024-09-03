@@ -1,0 +1,27 @@
+# Generator settings
+shop:
+
+    items:
+      #item please use Material format
+      stone-sword:
+        material:
+        cost:
+        currency:
+        item-per-buy:
+        slot:
+      wool:
+        material:
+        cost:
+        currency:
+        item-per-buy:
+        slot:
+      wood:
+        material:
+        cost:
+        currency:
+        item-per-buy:
+        slot:
+
+  #Shop mob type. e.g. villager, zombie etc.
+    entity-type:
+

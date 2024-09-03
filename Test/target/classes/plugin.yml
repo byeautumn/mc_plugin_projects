@@ -1,0 +1,13 @@
+name: Test
+version: '1.0-SNAPSHOT'
+main: org.aerial_dad.test.Test
+api-version: '1.21'
+commands:
+  bw:
+    usage: /<command>
+  bedwars:
+    usage: /<command>
+  spawnshop:
+    description: "Spawn a SHOP!!!!!!!!"
+    usage: /<command>
+
