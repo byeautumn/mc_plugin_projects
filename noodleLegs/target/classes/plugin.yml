@@ -1,0 +1,12 @@
+name: noodleLegs
+version: '1.0-SNAPSHOT'
+main: org.aerial_dad.noodlelegs.NoodleLegs
+commands:
+  noodlelegs:
+    usage: /<command>
+  nl:
+    usage: /<command>
+  spawnnpc:
+    usage: /<command>
+  exit:
+    usage: /<command>
