@@ -4,6 +4,7 @@ import org.aerial_dad.noodlelegs.Universe;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,6 +14,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemStack;
 
 public class NoodleListener implements Listener {
 
@@ -43,7 +45,7 @@ public class NoodleListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
+    private void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         PlayerTracker playerTracker = Universe.getPlayerTracker(player);
 
@@ -73,7 +75,7 @@ public class NoodleListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerTeleport(PlayerTeleportEvent event) {
+    private void onPlayerTeleport(PlayerTeleportEvent event) {
         Player player = event.getPlayer();
         World fromWorld = event.getFrom().getWorld(); // Location before teleport
         World toWorld = event.getTo().getWorld();
@@ -81,7 +83,7 @@ public class NoodleListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerPortal(PlayerPortalEvent event) {
+    private void onPlayerPortal(PlayerPortalEvent event) {
         Player player = event.getPlayer();
         World fromWorld = event.getFrom().getWorld(); // Location before teleport
         World toWorld = event.getTo().getWorld();
@@ -95,6 +97,40 @@ public class NoodleListener implements Listener {
 
         World lobby = Universe.getLobby();
         Universe.teleport(player, lobby.getSpawnLocation());
+    }
+
+    @EventHandler
+    private void onDamage(EntityDamageEvent event) {
+        Entity entity = event.getEntity();
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+            if(playerTracker.getCurrentStatus() == PlayerStatus.InGame) {
+                double damage = event.getDamage();
+                double pHealth = player.getHealth();
+                if (pHealth - damage <= 0) {
+                    event.setCancelled(true);
+                    System.out.println("Player '" + player.getDisplayName() + "' is actually die.");
+                    resetPlayerBelongings(playerTracker);
+                    Game currGame = playerTracker.getCurrentGame();
+                    if(currGame != null && playerTracker.getCurrentStatus() == PlayerStatus.InGame) {
+                        World trackerWorld = playerTracker.getCurrentGame().getWorld();
+                        World world = player.getWorld();
+                        if(trackerWorld == null) {
+                            System.err.println("Player '" + player.getDisplayName() + "' has no world in its tracker at current moment.");
+                        }
+                        else if (!trackerWorld.getName().equals(world.getName())){
+                            System.err.println("Player '" + player.getDisplayName() + "' has world '"
+                                    + trackerWorld.getName()
+                                    + "' in its tracker, but it is actually in world '" + world.getName() + "'.");
+                        }
+
+                        // Treat the player as died and eliminate it from the game.
+                        currGame.checkPlayerElimination(playerTracker);
+                    }
+                }
+            }
+        }
     }
 
     private void checkPlayerPortal(Player player, World fromWorld, World toWorld) {
@@ -122,6 +158,34 @@ public class NoodleListener implements Listener {
             GameQueue gameQueue = playerTracker.getCurrentGameQueue();
             gameQueue.removePlayer(player);
         }
+    }
+
+    private void resetPlayerBelongings(PlayerTracker playerTracker) {
+        Player player = playerTracker.getPlayer();
+        World world = player.getWorld();
+        for (ItemStack i : player.getInventory().getContents()) {
+            if (i != null) {
+                world.dropItemNaturally(player.getLocation(), i);
+                player.getInventory().remove(i);
+            }
+        }
+//        world.dropItemNaturally(player.getLocation(),
+//                player.getInventory().getHelmet());
+//        world.dropItemNaturally(player.getLocation(),
+//                player.getInventory().getBoots());
+//        world.dropItemNaturally(player.getLocation(),
+//                player.getInventory().getLeggings());
+//        world.dropItemNaturally(player.getLocation(),
+//                player.getInventory().getChestplate());
+
+        player.getInventory().setHelmet(null);
+        player.getInventory().setBoots(null);
+        player.getInventory().setLeggings(null);
+        player.getInventory().setChestplate(null);
+        player.getInventory().clear();
+        player.setHealth(20);
+        player.setFireTicks(0);
+        player.setFoodLevel(20);
     }
 }
 
