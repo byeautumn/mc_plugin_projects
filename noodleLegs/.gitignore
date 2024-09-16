@@ -4,6 +4,7 @@ free_to_try/
 .DS_Store
 *.iml
 *.jar
+*.lst
 
 # Compiled class file
 *.class
