@@ -187,7 +187,7 @@ public class NoodleListener implements Listener {
         player.setHealth(20);
         player.setFireTicks(0);
         player.setFoodLevel(20);
-
+        System.out.println("Player '" + player.getDisplayName() + "' has just dropped all its belongings.");
     }
 }
 

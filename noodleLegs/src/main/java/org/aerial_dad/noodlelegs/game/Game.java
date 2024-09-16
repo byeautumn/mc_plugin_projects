@@ -99,8 +99,10 @@ public class Game {
         Team targetTeam = playerTracker.getCurrentTeam();
         targetTeam.eliminate(playerTracker.getPlayer());
         if(getReferee().isDefeated(targetTeam)) {
+            System.out.println("Team '" + targetTeam.getName() + "' is defeated.");
             updateTeamDefeatedStatus(targetTeam);
             if(getReferee().shouldGameBeTerminated(this)) {
+                System.out.println("Game is over now.");
                 if(null == gameOrganizer) {
                     System.err.println("Cannot find game organizer when a game being terminated.");
                 }
