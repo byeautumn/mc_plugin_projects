@@ -2,6 +2,7 @@ package org.aerial_dad.noodlelegs.game;
 
 import org.aerial_dad.noodlelegs.Universe;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -113,7 +114,7 @@ public class NoodleListener implements Listener {
                     System.out.println("Player '" + player.getDisplayName() + "' is actually die.");
                     resetPlayerBelongings(playerTracker);
                     Game currGame = playerTracker.getCurrentGame();
-                    if(currGame != null && playerTracker.getCurrentStatus() == PlayerStatus.InGame) {
+                    if(currGame != null) {
                         World trackerWorld = playerTracker.getCurrentGame().getWorld();
                         World world = player.getWorld();
                         if(trackerWorld == null) {
@@ -186,6 +187,7 @@ public class NoodleListener implements Listener {
         player.setHealth(20);
         player.setFireTicks(0);
         player.setFoodLevel(20);
+
     }
 }
 

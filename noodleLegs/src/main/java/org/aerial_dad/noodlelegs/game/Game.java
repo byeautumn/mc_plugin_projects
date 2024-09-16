@@ -63,8 +63,8 @@ public class Game {
     }
 
     public void start(){
-        if (this.status != GameStatus.PREGAME) {
-            System.err.println("This game status is '" + getStatus().name() + "' so it cannot be started.");
+        if (this.status == GameStatus.INGAME) {
+            System.err.println("This game status is '" + getStatus().name() + "' so it cannot be started again.");
             return;
         }
         for (Team team : this.teams){
@@ -91,7 +91,7 @@ public class Game {
     }
 
     public void checkPlayerQuit(PlayerTracker playerTracker) {
-        checkPlayerElimination(playerTracker);
+        checkGameTermination(playerTracker);
     }
 
     private void checkGameTermination(PlayerTracker playerTracker) {
