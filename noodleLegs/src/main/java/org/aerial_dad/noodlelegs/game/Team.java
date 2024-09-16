@@ -1,6 +1,7 @@
 package org.aerial_dad.noodlelegs.game;
 
 import org.aerial_dad.noodlelegs.Universe;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -76,9 +77,10 @@ public class Team {
         updatePlayerTracker(player, PlayerStatus.Unknown);
     }
 
-    public void displayTitle(String title) {
+    public void displayTitle(String title, String subTitle) {
         for (Player player : this.players) {
             player.sendMessage(title);
+            player.sendTitle(title, subTitle);
         }
     }
 

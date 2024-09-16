@@ -13,12 +13,11 @@ public class GameReferee {
     public void judge(Game game){
         for(Team team : game.getTeams()) {
             if(game.getEliminatedTeams().contains(team.getId())) {
-                System.out.println();
-                team.displayTitle(ChatColor.RED + "Defeated!");
+                team.displayTitle(ChatColor.RED + "Defeated!", ChatColor.RED + "Come back stronger ...");
                 System.out.println("Team '" + team.getName() + "' is defeated.");
             } else {
-                team.displayTitle(ChatColor.GREEN + "Victory!");
-                System.out.println("Team '" + team.getName() + "' wins.");
+                team.displayTitle(ChatColor.GREEN + "Victory!", ChatColor.GREEN + "Great job!");
+                System.out.println("Team '" + team.getName() + "' wins the game.");
             }
         }
         game.terminate();
