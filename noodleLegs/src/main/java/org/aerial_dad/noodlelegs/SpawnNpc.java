@@ -23,11 +23,10 @@ public class SpawnNpc implements CommandExecutor {
         this.plugin = plugin;
     }
 
-    private final static String key = "lobbynpc";
+    private final static String key = "shop";
 
     @Override
     public boolean onCommand( CommandSender sender,  Command cmd,  String s, String[] args) {
-        System.out.println("HELLOOOOOOOOO______________");
         if ((sender instanceof Player)) {
             Player player = (Player) sender;
 
@@ -62,6 +61,7 @@ public class SpawnNpc implements CommandExecutor {
         Entity npc = player.getWorld().spawnEntity(spawnLocation, entityType);
         npc.setCustomName(npcName);
         npc.setMetadata(key, metadataValue);
+        System.out.println(" Npc has meta data of '" + key + "'.");
         player.sendMessage("Npc spawned at" + npc.getLocation());
         LivingEntity entity = (LivingEntity) npc;
         entity.setHealth(20);

@@ -10,3 +10,9 @@ commands:
     usage: /<command>
   exit:
     usage: /<command>
+  shop:
+    usage: /<command>
+  bw:
+    usage: /<command>
+  bedwars:
+    usage: /<command>

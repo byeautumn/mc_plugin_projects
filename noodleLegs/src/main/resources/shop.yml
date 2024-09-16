@@ -1,0 +1,23 @@
+shop:
+  pages:
+    page-name: shop
+    page-size: 54
+    items:
+      stone-sword:
+        material: STONE_SWORD
+        cost: 10
+        currency: IRON_INGOT
+        item-per-buy: 1
+        slot: 0
+      wool:
+        material: WHITE_WOOL
+        cost: 4
+        currency: IRON_INGOT
+        item-per-buy: 16
+        slot: 1
+      wood:
+        material: OAK_PLANKS
+        cost: 4
+        currency: GOLD_INGOT
+        item-per-buy: 16
+        slot: 2
