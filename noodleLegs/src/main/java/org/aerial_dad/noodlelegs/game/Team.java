@@ -1,9 +1,11 @@
 package org.aerial_dad.noodlelegs.game;
 
 import org.aerial_dad.noodlelegs.Universe;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
 
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +68,11 @@ public class Team {
 
     public void eliminate(Player player) {
         getEliminatedSet().add(player.getUniqueId());
+
+        player.setGameMode(GameMode.ADVENTURE);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+
         updatePlayerTracker(player, PlayerStatus.Unknown);
     }
 
@@ -79,10 +86,24 @@ public class Team {
         System.out.println("Disbanding team '" + getName() + "' ...");
         World lobby = Universe.getLobby();
         for (Player player : getPlayers()){
-            System.out.println("Player '" + player.getDisplayName() + "' is going to lobby.");
-            Universe.teleport(player, lobby.getSpawnLocation());
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setAllowFlight(true);
+            player.setFlying(true);
         }
         updateTeamPlayerTrackers(PlayerStatus.Unknown);
+
+//        // Teleport to lobby
+//        try {
+//            Thread.sleep(5000);
+//        } catch (InterruptedException ie) {
+//            System.err.println(ie.getStackTrace());
+//        } finally {
+//            for(Player player : getPlayers()) {
+//                System.out.println("Player '" + player.getDisplayName() + "' is going to lobby.");
+//                Universe.teleport(player, Universe.getLobby().getSpawnLocation());
+//            }
+//        }
+
     }
 
     public void updateTeamPlayerTrackers(PlayerStatus playerStatus) {
