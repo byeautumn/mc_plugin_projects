@@ -1,6 +1,7 @@
 free_to_try/
+target/
 
-*.xml
+# *.xml
 .DS_Store
 *.iml
 *.jar
