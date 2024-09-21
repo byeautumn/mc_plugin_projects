@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.Inventory;
@@ -63,6 +64,12 @@ public class Npc_listener implements Listener {
 
 
             }
+    @EventHandler
+    private void onShopDamage(EntityDamageEvent event){
+        if (event.getEntity().hasMetadata("shop")){
+            event.setCancelled(true);
+        }
+    }
 
 
 

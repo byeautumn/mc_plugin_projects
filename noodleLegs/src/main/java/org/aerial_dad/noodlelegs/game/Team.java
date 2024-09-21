@@ -1,10 +1,12 @@
 package org.aerial_dad.noodlelegs.game;
 
+import org.aerial_dad.noodlelegs.SpawnNpc;
 import org.aerial_dad.noodlelegs.Universe;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 
@@ -26,6 +28,8 @@ public class Team {
     private final Set<UUID> eliminatedSet = new HashSet<>();
 
     private final Location teamSpawnLocation;
+
+    private ShopNpc shopNpc;
 
     public Team(String name, UUID id, Game game, List<Player> players, Location teamSpawnLocation){
         this.name = name;
@@ -56,10 +60,18 @@ public class Team {
         return eliminatedSet;
     }
 
+    public void setShopNpc(ShopNpc shopNpc) {
+        this.shopNpc = shopNpc;
+    }
+
     public void spawn(){
         for (Player player : this.players){
             Universe.teleport(player, getTeamSpawnLocation());
         }
+        if(this.shopNpc != null) {
+            this.shopNpc.spawn(getTeamSpawnLocation());
+        }
+
     }
 //
 //    public void remove(Player player){
@@ -86,15 +98,19 @@ public class Team {
 
     public void disband(){
         System.out.println("Disbanding team '" + getName() + "' ...");
-        World lobby = Universe.getLobby();
+
         for (Player player : getPlayers()){
             player.setGameMode(GameMode.ADVENTURE);
             player.setAllowFlight(true);
             player.setFlying(true);
         }
         updateTeamPlayerTrackers(PlayerStatus.Unknown);
+        if(this.shopNpc != null) {
+            this.shopNpc.release();
+        }
 
 //        // Teleport to lobby
+//        World lobby = Universe.getLobby();
 //        try {
 //            Thread.sleep(5000);
 //        } catch (InterruptedException ie) {

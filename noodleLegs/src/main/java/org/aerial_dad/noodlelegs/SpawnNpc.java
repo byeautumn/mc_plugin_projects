@@ -12,18 +12,20 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.permissions.Permission;
 
 import java.lang.reflect.Field;
 
 public class SpawnNpc implements CommandExecutor {
 
-    private final NoodleLegs plugin;
-
-    public SpawnNpc(NoodleLegs plugin) {
-        this.plugin = plugin;
+    public SpawnNpc() {
     }
 
     private final static String key = "shop";
+
+    protected NoodleLegs getPlugin() {
+        return NoodleLegs.getInstance;
+    }
 
     @Override
     public boolean onCommand( CommandSender sender,  Command cmd,  String s, String[] args) {
@@ -46,7 +48,7 @@ public class SpawnNpc implements CommandExecutor {
                     return true;
 
                 }
-                spawnNamedNPC(player, type, npcName);
+                spawnNamedNPC(player, type, npcName, null);
 
 
             }
@@ -55,16 +57,40 @@ public class SpawnNpc implements CommandExecutor {
         return true;
     }
 
-    public void spawnNamedNPC(Player player, EntityType entityType, String npcName) {
-        FixedMetadataValue metadataValue = new FixedMetadataValue(plugin, true);
-        Location spawnLocation = player.getLocation().add(5, 0, 0);
-        Entity npc = player.getWorld().spawnEntity(spawnLocation, entityType);
-        npc.setCustomName(npcName);
-        npc.setMetadata(key, metadataValue);
-        System.out.println(" Npc has meta data of '" + key + "'.");
-        player.sendMessage("Npc spawned at" + npc.getLocation());
-        LivingEntity entity = (LivingEntity) npc;
-        entity.setHealth(20);
+    public void spawnNamedNPC(Player player, EntityType entityType, String npcName, Location shopSpawnLocation) {
+        if (shopSpawnLocation == null){
+            System.out.println( "'" + player + "' player is spawning shop");
+            if (!player.isOp()){
+                System.out.println("'" +player + "' does not have perms to spawn a shop");
+                return;
+            }else {
+                FixedMetadataValue metadataValue = new FixedMetadataValue(getPlugin(), true);
+                Location spawnLocation = player.getLocation();
+                Entity npc = player.getWorld().spawnEntity(spawnLocation, entityType);
+                npc.setCustomName(npcName);
+                npc.setMetadata(key, metadataValue);
+                System.out.println(" Npc has meta data of '" + key + "'.");
+                player.sendMessage("Npc spawned at" + npc.getLocation());
+                LivingEntity entity = (LivingEntity) npc;
+                entity.setHealth(20);
+            }
+        }
+        if (player == null) {
+            if (shopSpawnLocation == null) {
+                System.out.println("Must provide a location or a player");
+                return;
+            } else {
+                FixedMetadataValue metadataValue = new FixedMetadataValue(getPlugin(), true);
+                Entity npc = shopSpawnLocation.getWorld().spawnEntity(shopSpawnLocation, entityType);
+                npc.setCustomName(npcName);
+                npc.setMetadata(key, metadataValue);
+                System.out.println(" Npc has meta data of '" + key + "'.");
+                LivingEntity entity = (LivingEntity) npc;
+                entity.setHealth(20);
+            }
+
+        }
+
 
 
 

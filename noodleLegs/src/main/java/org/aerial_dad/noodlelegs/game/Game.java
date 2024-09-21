@@ -1,6 +1,10 @@
 package org.aerial_dad.noodlelegs.game;
 
+import org.aerial_dad.noodlelegs.NoodleLegs;
+import org.aerial_dad.noodlelegs.SpawnNpc;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 
 import java.util.*;
 
@@ -68,13 +72,15 @@ public class Game {
             return;
         }
         for (Team team : this.teams){
+            ShopNpc shopNpc = new ShopNpc("Item_shop");
+            team.setShopNpc(shopNpc);
             team.spawn();
         }
         this.status = GameStatus.INGAME;
 
     }
 
-    public void terminate(){
+    public void terminate() {
         setStatus(GameStatus.POSTGAME);
         System.out.println("Game " + this.name + " has just been terminated.");
         for (Team team : getTeams()) {

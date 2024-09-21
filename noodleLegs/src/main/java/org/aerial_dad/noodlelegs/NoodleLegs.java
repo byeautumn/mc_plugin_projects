@@ -19,9 +19,9 @@ public final class NoodleLegs extends JavaPlugin {
         Noodle_Legs_commands noodleLegsCommands = new Noodle_Legs_commands();
         getCommand("nl").setExecutor(noodleLegsCommands);
         getCommand("noodlelegs").setExecutor(noodleLegsCommands);
-        getCommand("spawnnpc").setExecutor(new SpawnNpc(this));
+        getCommand("spawnnpc").setExecutor(new SpawnNpc());
         getCommand("exit").setExecutor(new GameCommand());
-        getCommand("shop").setExecutor(new SpawnNpc(this));
+        getCommand("shop").setExecutor(new SpawnNpc());
         getCommand("bw").setExecutor(new Bw_general(this));
         getCommand("bedwars").setExecutor(new Bw_general(this));
         getServer().getPluginManager().registerEvents(new Npc_listener(this), this);

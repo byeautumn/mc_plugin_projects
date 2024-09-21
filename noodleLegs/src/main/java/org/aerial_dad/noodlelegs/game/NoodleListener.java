@@ -30,11 +30,7 @@ public class NoodleListener implements Listener {
         }
     }
 
-    private void onShopDamage(EntityDamageEvent event){
-        if (event.getEntity().hasMetadata("shop")){
-            event.setCancelled(true);
-        }
-    }
+
 
     @EventHandler
     private void onDeath(PlayerDeathEvent event) {
