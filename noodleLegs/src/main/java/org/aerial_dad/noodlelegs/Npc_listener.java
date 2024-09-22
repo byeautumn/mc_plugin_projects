@@ -16,7 +16,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-
+import org.bukkit.inventory.meta.ItemMeta;
+import de.tr7zw.nbtapi.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,9 @@ public class Npc_listener implements Listener {
 
     private final NoodleLegs plugin;
 
+    private static final String NBT_ITEMSTACK_TYPE_KEY = "ItemType";
+    private static final String SHOP_ITEMSTACK_TYPE_NAME = "ShopItem";
+
     public Npc_listener(NoodleLegs plugin) {
         this.plugin = plugin;
     }
@@ -47,25 +51,27 @@ public class Npc_listener implements Listener {
         if (entity.hasMetadata("shop")) {
             System.out.println(entity.getName() + " has meta data!");
             System.out.println("pageToConfigMap size is: '" + pageToConfigMap.size() + "'. ");
-                    for (String string : pageToConfigMap.keySet()) {
-                        System.out.println("Creating inventory");
-                        PageConfig pageConfig = pageToConfigMap.get(string);
-                        Inventory inventory = Bukkit.createInventory(player, pageConfig.getPageSize(), pageConfig.getPageName());
-                        System.out.println("itemToConfigMap size is: '" + itemToConfigMap.size() + "'. ");
-                        for (Material material : itemToConfigMap.keySet()) {
-                            ItemConfig itemConfig = itemToConfigMap.get(material);
-                            player.sendMessage("Spawning ");
-                            ItemStack itemStack = new ItemStack(material, itemConfig.getItemPerBuy());
-                            player.sendMessage(material + " ");
-                            inventory.setItem(itemConfig.getItemSlot(), itemStack);
+            for (String string : pageToConfigMap.keySet()) {
+                System.out.println("Creating inventory");
+                PageConfig pageConfig = pageToConfigMap.get(string);
+                Inventory inventory = Bukkit.createInventory(player, pageConfig.getPageSize(), pageConfig.getPageName());
+                System.out.println("itemToConfigMap size is: '" + itemToConfigMap.size() + "'. ");
+                for (Material material : itemToConfigMap.keySet()) {
+                    ItemConfig itemConfig = itemToConfigMap.get(material);
+                    player.sendMessage("Spawning ");
+                    ItemStack itemStack = new ItemStack(material, itemConfig.getItemPerBuy());
+                    NBT.modify(itemStack, nbt -> {
+                        nbt.setString(NBT_ITEMSTACK_TYPE_KEY, SHOP_ITEMSTACK_TYPE_NAME);
+                    });
+                    player.sendMessage(material + " ");
+                    inventory.setItem(itemConfig.getItemSlot(), itemStack);
 
-                        }
-                        player.openInventory(inventory);
-                    }
+                }
+                player.openInventory(inventory);
             }
+        }
 
-
-            }
+    }
     @EventHandler
     private void onShopDamage(EntityDamageEvent event){
         if (event.getEntity().hasMetadata("shop")){
@@ -95,9 +101,17 @@ public class Npc_listener implements Listener {
                     ItemStack[] allItems = inventory.getContents();
                     List<ItemStack> moneyStacks = new ArrayList<>();
                     for (ItemStack curr : allItems) {
-                        if (null != curr && cost.getType().equals(curr.getType())) {
-                            moneyStacks.add(curr);
+                        if (null != curr) {
+                            if (SHOP_ITEMSTACK_TYPE_NAME.equals(NBT.get(curr, nbt ->
+                                (String) nbt.getString(NBT_ITEMSTACK_TYPE_KEY)
+                            ))) {
+                                continue;
+                            }
+                            if (cost.getType().equals(curr.getType())) {
+                                moneyStacks.add(curr);
+                            }
                         }
+
                     }
                     int totalAmount = 0;
                     for (ItemStack curr : moneyStacks) {
@@ -126,18 +140,6 @@ public class Npc_listener implements Listener {
                         player.playSound(player.getLocation(), Sound.CAT_HISS, 1.0f, 1.0f);
                         player.sendMessage(ChatColor.RED + "You do not have the right amount of materials to buy " + itemStack.getType() + ".");
                     }
-
-//                    System.out.println(cost + " Cost!!!!!!!!!!!!!!!!!!!!");
-//                    if (player.getInventory().contains(cost)) {
-//                        player.getInventory().remove(cost);
-//                        player.getInventory().addItem(itemStack);
-//                        player.playSound(player.getLocation(), Sound.GLASS, 1.0f, 1.0f);
-//                        player.sendMessage(ChatColor.GREEN + "You just bought " + itemStack + " successfully for " + cost + ".");
-//                    } else {
-//                        player.playSound(player.getLocation(), Sound.CAT_HISS, 1.0f, 1.0f);
-//                        player.sendMessage(ChatColor.RED + "You do not have the right amount of materials to buy " + itemStack.getType() + ".");
-//                    }
-
                 }
 
             }
