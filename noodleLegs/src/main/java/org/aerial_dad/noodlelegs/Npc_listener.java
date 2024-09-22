@@ -17,7 +17,9 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -84,20 +86,57 @@ public class Npc_listener implements Listener {
             event.setCancelled(true);
 
             if (itemStack != null) {
-//                System.out.println("CODE RUN HERE!!!!!!!!!!");
                 if (itemToCostMap.containsKey(itemStack.getType())) {
 //                    System.out.println(itemStack);
                     ItemStack cost = itemToCostMap.get(itemStack.getType());
-                    System.out.println(cost + " Cost!!!!!!!!!!!!!!!!!!!!");
-                    if (player.getInventory().contains(cost)) {
-                        player.getInventory().remove(cost);
-                        player.getInventory().addItem(itemStack);
+                    System.out.println("Found item '" + itemStack.getType() + "' costs " + cost.getAmount() + " '" + cost.getType() + "'.");
+
+                    Inventory inventory = player.getInventory();
+                    ItemStack[] allItems = inventory.getContents();
+                    List<ItemStack> moneyStacks = new ArrayList<>();
+                    for (ItemStack curr : allItems) {
+                        if (null != curr && cost.getType().equals(curr.getType())) {
+                            moneyStacks.add(curr);
+                        }
+                    }
+                    int totalAmount = 0;
+                    for (ItemStack curr : moneyStacks) {
+                        totalAmount += curr.getAmount();
+                    }
+
+                    if(cost.getAmount() <= totalAmount) {
+                        System.out.println("Player has the buying power for item '" + itemStack.getType() + "'.");
+                        for (ItemStack curr : moneyStacks) {
+                            inventory.remove(curr);
+                        }
+
+                        if (cost.getAmount() < totalAmount) {
+                            int remainingAmount = totalAmount - cost.getAmount();
+                            System.out.println("Player has " + remainingAmount + " '" + cost.getType() + "' remaining as money.");
+                            ItemStack remainder = new ItemStack(cost.getType(), remainingAmount);
+                            inventory.addItem(remainder);
+                        }
+                        inventory.addItem(itemStack);
+
                         player.playSound(player.getLocation(), Sound.GLASS, 1.0f, 1.0f);
                         player.sendMessage(ChatColor.GREEN + "You just bought " + itemStack + " successfully for " + cost + ".");
-                    } else {
+                    }
+                    else {
+                        System.out.println("Player doesn't have the buying power for item '" + itemStack.getType() + "'.");
                         player.playSound(player.getLocation(), Sound.CAT_HISS, 1.0f, 1.0f);
                         player.sendMessage(ChatColor.RED + "You do not have the right amount of materials to buy " + itemStack.getType() + ".");
                     }
+
+//                    System.out.println(cost + " Cost!!!!!!!!!!!!!!!!!!!!");
+//                    if (player.getInventory().contains(cost)) {
+//                        player.getInventory().remove(cost);
+//                        player.getInventory().addItem(itemStack);
+//                        player.playSound(player.getLocation(), Sound.GLASS, 1.0f, 1.0f);
+//                        player.sendMessage(ChatColor.GREEN + "You just bought " + itemStack + " successfully for " + cost + ".");
+//                    } else {
+//                        player.playSound(player.getLocation(), Sound.CAT_HISS, 1.0f, 1.0f);
+//                        player.sendMessage(ChatColor.RED + "You do not have the right amount of materials to buy " + itemStack.getType() + ".");
+//                    }
 
                 }
 
@@ -107,14 +146,14 @@ public class Npc_listener implements Listener {
 
     @EventHandler
     private void onPlayerClickPageEvent(InventoryClickEvent event){
-        Player player = (Player) event.getWhoClicked();
-        ItemStack clickItem = event.getCurrentItem();
-        if (clickItem.getType() == Material.ARROW){
-            Inventory inventory = Bukkit.createInventory(player, 54, "Shop2");
-            ItemStack arrowBack = new ItemStack(Material.ARROW, 1);
-            inventory.setItem( 51, arrowBack);
-            player.openInventory(inventory);
-        }
+//        Player player = (Player) event.getWhoClicked();
+//        ItemStack clickItem = event.getCurrentItem();
+//        if (clickItem.getType() == Material.ARROW){
+//            Inventory inventory = Bukkit.createInventory(player, 54, "Shop2");
+//            ItemStack arrowBack = new ItemStack(Material.ARROW, 1);
+//            inventory.setItem( 51, arrowBack);
+//            player.openInventory(inventory);
+//        }
 
 
     }
