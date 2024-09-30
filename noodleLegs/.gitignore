@@ -1,5 +1,6 @@
 free_to_try/
 target/
+pom.xml
 
 # *.xml
 .DS_Store
