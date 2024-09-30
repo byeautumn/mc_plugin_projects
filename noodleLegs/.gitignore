@@ -1,5 +1,6 @@
 free_to_try/
 target/
+.idea/
 pom.xml
 
 # *.xml
