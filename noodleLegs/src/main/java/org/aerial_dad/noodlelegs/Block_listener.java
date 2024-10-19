@@ -2,10 +2,7 @@ package org.aerial_dad.noodlelegs;
 
 import org.aerial_dad.noodlelegs.game.GameManager;
 import org.aerial_dad.noodlelegs.game.GameType;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,6 +12,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.metadata.FixedMetadataValue;
+
+import static de.tr7zw.nbtapi.NBTType.NBTTagCompound;
 
 
 public class Block_listener implements Listener {
@@ -29,7 +28,10 @@ public class Block_listener implements Listener {
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event){
 
-        Block block = event.getBlockPlaced();
+        Block block = event.getBlockPlaced();  //NBTTagCompound blockNBT =
+        World currentWorld = block.getWorld();
+        Universe.markPlayerPlacedBlock(currentWorld, block);
+
         FixedMetadataValue metadataValue = new FixedMetadataValue(plugin, true);
         if (Bw_general.bwMode != Bw_general.BW_Mode.EDIT){
             block.setMetadata(key, metadataValue);

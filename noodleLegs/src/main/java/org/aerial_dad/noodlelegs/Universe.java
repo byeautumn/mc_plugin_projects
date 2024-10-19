@@ -2,6 +2,7 @@ package org.aerial_dad.noodlelegs;
 
 import org.aerial_dad.noodlelegs.game.PlayerTracker;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 import java.io.*;
@@ -12,6 +13,8 @@ public class Universe {
     private static final String LOBBY_WORLD_NAME = "world";
 
     private static Map<UUID, PlayerTracker> PLAYER_ID_TO_TRACKER_MAP = new HashMap<>();
+
+    private static Map<World, List<Block>> worldToPlayerPlacedBlocks = new HashMap<>();
 
     public static void teleport(Player player, Location toLocation){
 
@@ -40,6 +43,21 @@ public class Universe {
 
     public static World getLobby() {
         return Bukkit.getWorld(LOBBY_WORLD_NAME);
+    }
+    public static void softResetWorld(World world) {
+        List<Block> blocksToBeRemoved = worldToPlayerPlacedBlocks.get(world);
+        if (null != blocksToBeRemoved) {
+            for (Block block : blocksToBeRemoved) {
+                block.setType(Material.AIR);
+            }
+        }
+    }
+
+    public static void markPlayerPlacedBlock(World world, Block block) {
+        if (!worldToPlayerPlacedBlocks.containsKey(world)) {
+            worldToPlayerPlacedBlocks.put(world, new ArrayList<>());
+        }
+        worldToPlayerPlacedBlocks.get(world).add(block);
     }
 
     private static void copyFileStructure(File source, File target){

@@ -2,6 +2,7 @@ package org.aerial_dad.noodlelegs.game;
 
 import org.aerial_dad.noodlelegs.NoodleLegs;
 import org.aerial_dad.noodlelegs.SpawnNpc;
+import org.aerial_dad.noodlelegs.Universe;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -117,6 +118,9 @@ public class Game {
                 }
 
                 getReferee().judge(this);
+
+                // Reset world
+                Universe.softResetWorld(getWorld());
             }
         }
     }
