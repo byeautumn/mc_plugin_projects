@@ -29,7 +29,7 @@ public class GameReferee {
     }
 
     public boolean isDefeated(Team team) {
-        return team.getEliminatedSet().size() == team.getPlayers().size();
+        return team.getEliminatedSet().size() == team.getRealPlayerCount();
     }
 
     public boolean shouldGameBeTerminated(Game game) {

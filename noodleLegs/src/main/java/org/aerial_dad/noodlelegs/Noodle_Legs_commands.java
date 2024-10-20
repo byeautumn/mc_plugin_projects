@@ -1,5 +1,9 @@
 package org.aerial_dad.noodlelegs;
 
+import org.aerial_dad.noodlelegs.game.Game;
+import org.aerial_dad.noodlelegs.game.GameLauncher;
+import org.aerial_dad.noodlelegs.game.PlayerStatus;
+import org.aerial_dad.noodlelegs.game.PlayerTracker;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -37,9 +41,19 @@ public class Noodle_Legs_commands implements CommandExecutor {
                     doTeleport(player, tpLocation);
 
                 }else if(functionArg.equalsIgnoreCase("createWorld")){
-                    doCreate(args, player);
+                    doCreateWorld(args, player);
 
-                }else{
+                } else if (functionArg.equalsIgnoreCase("startGame")) {
+                    System.out.println("Starting the game as TESTING mode.");
+                    PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                    if (playerTracker.getCurrentStatus() != PlayerStatus.InQueue) {
+                        System.out.println("Game cannot be started when the player status is " + playerTracker.getCurrentStatus().name());
+                    } else {
+                        GameLauncher launcher = playerTracker.getCurrentGameLauncher();
+                        launcher.launchGameWithTestingMode();
+                    }
+                }
+                else{
                     player.sendMessage(ChatColor.RED + "You have ran a invalid argument: " + functionArg);
                 }
 
@@ -57,7 +71,7 @@ public class Noodle_Legs_commands implements CommandExecutor {
 
     }
 
-    private void doCreate( String[] args, Player player) {
+    private void doCreateWorld(String[] args, Player player) {
         if (args.length < 2) {
             player.sendMessage(ChatColor.RED + "Please provide a name for your map. ");
         } else {

@@ -139,6 +139,7 @@ public class NoodleListener implements Listener {
     private void checkPlayerPortal(Player player, World fromWorld, World toWorld) {
         System.out.println("Player " + player.getDisplayName() + " is onPlayerTeleport ...");
         PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+        System.out.println("Player " + player.getDisplayName() + "'s status is " + playerTracker.getCurrentStatus());
         if (playerTracker.getCurrentStatus() == PlayerStatus.InGame) {
             Game currGame = playerTracker.getCurrentGame();
             if (null == currGame) {

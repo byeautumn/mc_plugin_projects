@@ -102,9 +102,11 @@ public class Game {
     }
 
     private void checkGameTermination(PlayerTracker playerTracker) {
+        System.out.println("Checking game termination conditions ...");
         GameOrganizer gameOrganizer = playerTracker.getCurrentGameOrganizer();
         Team targetTeam = playerTracker.getCurrentTeam();
         targetTeam.eliminate(playerTracker.getPlayer());
+
         if(getReferee().isDefeated(targetTeam)) {
             System.out.println("Team '" + targetTeam.getName() + "' is defeated.");
             updateTeamDefeatedStatus(targetTeam);

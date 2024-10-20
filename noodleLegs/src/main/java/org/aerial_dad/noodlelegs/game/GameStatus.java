@@ -6,6 +6,8 @@ public enum GameStatus {
 
     INGAME,
 
-    POSTGAME
+    POSTGAME,
+
+    TESTING
 
 }

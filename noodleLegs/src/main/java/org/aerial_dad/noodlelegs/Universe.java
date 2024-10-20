@@ -45,12 +45,16 @@ public class Universe {
         return Bukkit.getWorld(LOBBY_WORLD_NAME);
     }
     public static void softResetWorld(World world) {
+        System.out.println("Softly resetting world " + world.getName() + " since game is over.");
         List<Block> blocksToBeRemoved = worldToPlayerPlacedBlocks.get(world);
+        System.out.println("Removing player placed blocks: " + (null == blocksToBeRemoved ? 0 : blocksToBeRemoved.size()));
         if (null != blocksToBeRemoved) {
             for (Block block : blocksToBeRemoved) {
                 block.setType(Material.AIR);
             }
         }
+        worldToPlayerPlacedBlocks.remove(world);
+        System.out.println("Softly resetting finished.");
     }
 
     public static void markPlayerPlacedBlock(World world, Block block) {

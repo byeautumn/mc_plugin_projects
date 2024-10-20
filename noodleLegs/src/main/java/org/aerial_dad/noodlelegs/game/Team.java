@@ -52,6 +52,16 @@ public class Team {
         return players;
     }
 
+    public int getRealPlayerCount() {
+        int count = 0;
+        for(Player player : getPlayers()) {
+            if(null != player) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
     public Location getTeamSpawnLocation() {
         return teamSpawnLocation;
     }
@@ -66,6 +76,12 @@ public class Team {
 
     public void spawn(){
         for (Player player : this.players){
+            if (null == player) {
+                if (this.game.getStatus() != GameStatus.TESTING) {
+                    System.err.println("null player was found in a non-testing game.");
+                }
+                continue;
+            }
             Universe.teleport(player, getTeamSpawnLocation());
         }
         if(this.shopNpc != null) {
@@ -80,6 +96,7 @@ public class Team {
 //    }
 
     public void eliminate(Player player) {
+        System.out.println("Eliminating player " + player.getDisplayName());
         getEliminatedSet().add(player.getUniqueId());
 
         player.setGameMode(GameMode.ADVENTURE);
@@ -91,6 +108,12 @@ public class Team {
 
     public void displayTitle(String title, String subTitle) {
         for (Player player : this.players) {
+            if (null == player) {
+                if (this.game.getStatus() != GameStatus.TESTING) {
+                    System.err.println("null player was found in a non-testing game.");
+                }
+                continue;
+            }
             player.sendMessage(title);
             player.sendTitle(title, subTitle);
         }
@@ -100,6 +123,13 @@ public class Team {
         System.out.println("Disbanding team '" + getName() + "' ...");
 
         for (Player player : getPlayers()){
+            if (null == player) {
+                if (this.game.getStatus() != GameStatus.TESTING) {
+                    System.out.println("Game status is " + this.game.getStatus().name());
+                    System.err.println("null player was found in a non-testing game.");
+                }
+                continue;
+            }
             player.setGameMode(GameMode.ADVENTURE);
             player.setAllowFlight(true);
             player.setFlying(true);
@@ -141,6 +171,14 @@ public class Team {
             System.out.println("Update player tracker to an illegal status: " + playerStatus.name());
             return;
         }
+
+        if (null == player) {
+            if (this.game.getStatus() != GameStatus.TESTING) {
+                System.err.println("null player was found in a non-testing game.");
+            }
+            return;
+        }
+
         PlayerTracker playerTracker = Universe.getPlayerTracker(player);
         if(playerStatus == PlayerStatus.InGame) {
             playerTracker.update(playerStatus, this.game, this);

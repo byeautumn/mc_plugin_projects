@@ -84,6 +84,9 @@ public class GameLauncher {
     }
 
     public void launchGame(){
+        if (this.game.getStatus() == GameStatus.TESTING) {
+            System.out.println("Launching game " + this.game.getName() + " as TESTING mode.");
+        }
         // Build teams and add teams into the game
         for (int idx = 0; idx < this.config.getTeamCount(); ++idx){
             List<Player> players = new ArrayList<>(this.config.getPlayerCountPerTeam());
@@ -103,6 +106,11 @@ public class GameLauncher {
 
         this.game.start();
 
+    }
+
+    public void launchGameWithTestingMode() {
+        this.game.setStatus(GameStatus.TESTING);
+        launchGame();
     }
 
 //    public void updateGameTerminationStatus() {
