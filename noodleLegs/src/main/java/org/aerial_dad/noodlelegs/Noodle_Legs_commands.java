@@ -1,9 +1,6 @@
 package org.aerial_dad.noodlelegs;
 
-import org.aerial_dad.noodlelegs.game.Game;
-import org.aerial_dad.noodlelegs.game.GameLauncher;
-import org.aerial_dad.noodlelegs.game.PlayerStatus;
-import org.aerial_dad.noodlelegs.game.PlayerTracker;
+import org.aerial_dad.noodlelegs.game.*;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -44,7 +41,7 @@ public class Noodle_Legs_commands implements CommandExecutor {
                     doCreateWorld(args, player);
 
                 } else if (functionArg.equalsIgnoreCase("startGame")) {
-                    System.out.println("Starting the game as TESTING mode.");
+                    System.out.println("Starting the game as TESTING mode ...");
                     PlayerTracker playerTracker = Universe.getPlayerTracker(player);
                     if (playerTracker.getCurrentStatus() != PlayerStatus.InQueue) {
                         System.out.println("Game cannot be started when the player status is " + playerTracker.getCurrentStatus().name());
@@ -52,6 +49,24 @@ public class Noodle_Legs_commands implements CommandExecutor {
                         GameLauncher launcher = playerTracker.getCurrentGameLauncher();
                         launcher.launchGameWithTestingMode();
                     }
+                } else if (functionArg.equalsIgnoreCase("status")) {
+                    System.out.println("Printing all status ...");
+                    PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                    Game currGame = playerTracker.getCurrentGame();
+                    Team currTeam = playerTracker.getCurrentTeam();
+                    player.sendMessage("---------------------------------------------------");
+                    player.sendMessage("Player name: " + player.getDisplayName());
+                    player.sendMessage("Player status: " + playerTracker.getCurrentStatus());
+                    player.sendMessage("World: " + player.getWorld().getName());
+                    player.sendMessage("Game: " + (null == currGame ? null : currGame.getName()));
+                    if (null != currGame) {
+                        player.sendMessage("Game status: " + currGame.getStatus());
+                    }
+                    player.sendMessage("Team: " + (null == currTeam ? null : currTeam.getName()));
+                    if (null != currTeam) {
+                        player.sendMessage("Team members: " + currTeam.getPlayers());
+                    }
+                    player.sendMessage("---------------------------------------------------");
                 }
                 else{
                     player.sendMessage(ChatColor.RED + "You have ran a invalid argument: " + functionArg);
