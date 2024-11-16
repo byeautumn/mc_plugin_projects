@@ -67,4 +67,16 @@ public class GameQueue {
             playerTracker.update(playerStatus);
         }
     }
+
+    public String printSelf() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("[");
+        if (null != getQueue()) {
+            for (Player player : getQueue()) {
+                sb.append(player.getDisplayName()).append(" | ");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
+    }
 }

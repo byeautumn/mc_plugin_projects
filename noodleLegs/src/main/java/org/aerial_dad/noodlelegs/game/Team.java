@@ -75,6 +75,7 @@ public class Team {
     }
 
     public void spawn(){
+        System.out.println("Team " + getName() + " is spawning players: " + printPlayers());
         for (Player player : this.players){
             if (null == player) {
                 if (this.game.getStatus() != GameStatus.TESTING) {
@@ -82,6 +83,7 @@ public class Team {
                 }
                 continue;
             }
+            System.out.println("Teleporting player " + player.getDisplayName() + " when team spawning.");
             Universe.teleport(player, getTeamSpawnLocation());
         }
         if(this.shopNpc != null) {
@@ -138,19 +140,7 @@ public class Team {
         if(this.shopNpc != null) {
             this.shopNpc.release();
         }
-
-//        // Teleport to lobby
-//        World lobby = Universe.getLobby();
-//        try {
-//            Thread.sleep(5000);
-//        } catch (InterruptedException ie) {
-//            System.err.println(ie.getStackTrace());
-//        } finally {
-//            for(Player player : getPlayers()) {
-//                System.out.println("Player '" + player.getDisplayName() + "' is going to lobby.");
-//                Universe.teleport(player, Universe.getLobby().getSpawnLocation());
-//            }
-//        }
+        System.out.println("Team " + getName() + " is disbanded.");
 
     }
 
@@ -185,5 +175,17 @@ public class Team {
         } else if(playerStatus == PlayerStatus.Unknown) {
             playerTracker.update(playerStatus);
         }
+    }
+
+    public String printPlayers() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("[");
+        if (null != getPlayers()) {
+            for (Player player : getPlayers()) {
+                sb.append((null == player ? null : player.getDisplayName())).append(" | ");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }

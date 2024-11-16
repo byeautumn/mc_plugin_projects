@@ -25,7 +25,7 @@ public class Game {
 
     private final String name;
 
-    public Game(String name, World world, GameConfig config, GameReferee referee){
+    public Game(GameType gameType, String name, World world, GameConfig config, GameReferee referee){
         this.name = name;
         this.world = world;
         this.config = config;
@@ -75,6 +75,7 @@ public class Game {
         for (Team team : this.teams){
             ShopNpc shopNpc = new ShopNpc("Item_shop");
             team.setShopNpc(shopNpc);
+            System.out.println("DEBUG: players in team " + team.getName() + " are " + team.printPlayers());
             team.spawn();
         }
         this.status = GameStatus.INGAME;
@@ -83,10 +84,20 @@ public class Game {
 
     public void terminate() {
         setStatus(GameStatus.POSTGAME);
+        System.out.println("The game status is POSTGAME now.");
         System.out.println("Game " + this.name + " has just been terminated.");
         for (Team team : getTeams()) {
             team.disband();
         }
+
+//        GameOrganizer gameOrganizer = playerTracker.getCurrentGameOrganizer();
+//        if(null == gameOrganizer) {
+//            System.err.println("Cannot find game organizer when a game being terminated.");
+//        }
+//        else {
+//            System.out.println("Remove game launcher - " + playerTracker.getCurrentGameLauncher());
+//            gameOrganizer.removeGameLauncher(playerTracker.getCurrentGameLauncher());
+//        }
     }
 
     public void checkPlayerElimination(PlayerTracker playerTracker) {
@@ -103,7 +114,7 @@ public class Game {
 
     private void checkGameTermination(PlayerTracker playerTracker) {
         System.out.println("Checking game termination conditions ...");
-        GameOrganizer gameOrganizer = playerTracker.getCurrentGameOrganizer();
+
         Team targetTeam = playerTracker.getCurrentTeam();
         targetTeam.eliminate(playerTracker.getPlayer());
 
@@ -112,13 +123,6 @@ public class Game {
             updateTeamDefeatedStatus(targetTeam);
             if(getReferee().shouldGameBeTerminated(this)) {
                 System.out.println("Game is over now.");
-                if(null == gameOrganizer) {
-                    System.err.println("Cannot find game organizer when a game being terminated.");
-                }
-                else {
-                    gameOrganizer.removeGameLauncher(playerTracker.getCurrentGameLauncher());
-                }
-
                 getReferee().judge(this);
 
                 // Reset world

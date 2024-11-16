@@ -33,7 +33,7 @@ public class GameLauncher {
         this.config = config;
         this.world = createWorld("world_" + gameName);
 
-        this.game = createGame(gameName, this.world);
+        this.game = createGame(gameType, gameName, this.world);
         Location queueLocation = new Location(this.world, Queue_Spawn_Vector.getX(), Queue_Spawn_Vector.getY(), Queue_Spawn_Vector.getZ());
         this.queue = createGameQueue(queueLocation);
     }
@@ -49,9 +49,9 @@ public class GameLauncher {
         return Universe.copyWorld(Bukkit.getWorld(World_Default_Template_Name), worldName);
     }
 
-    private Game createGame(String gameName, World world){
+    private Game createGame(GameType gameType, String gameName, World world){
         // TODO
-        return new Game(gameName, world, this.config, new GameReferee(this.config));
+        return new Game(gameType, gameName, world, this.config, new GameReferee(this.config));
     }
 
     private GameQueue createGameQueue(Location queueLocation){
@@ -90,6 +90,7 @@ public class GameLauncher {
         // Build teams and add teams into the game
         for (int idx = 0; idx < this.config.getTeamCount(); ++idx){
             List<Player> players = new ArrayList<>(this.config.getPlayerCountPerTeam());
+            System.out.println("DEBUG: players in queue before creating teams: " + this.queue.printSelf());
             for (int idx1 = 0; idx1 < this.config.getPlayerCountPerTeam(); ++idx1){
                 Player player = this.queue.pollPlayer();
                 players.add(player);
@@ -99,8 +100,9 @@ public class GameLauncher {
             Team team = new Team(teamName, UUID.randomUUID(), this.game, players,
                     new Location(this.world, spawnVector.getX(), spawnVector.getY(), spawnVector.getZ()));
             this.game.addTeam(team);
-            System.out.println("Team " + team.getName() + " has been created and its players include " + team.getPlayers());
+            System.out.println("Team " + team.getName() + " has been created and its players include " + team.printPlayers());
         }
+        System.out.println("DEBUG: print the queue after game starts: " + this.queue.printSelf());
         // Start the game
         System.out.println("The game " + this.game.getName() + " has been started! ");
 
@@ -116,27 +118,5 @@ public class GameLauncher {
 //    public void updateGameTerminationStatus() {
 //        Bukkit.unloadWorld(this.world.getName(), false);
 //        this.updateLauncherTerminationStatus(this);
-//    }
-
-//    public List<BwTeam> buildTeams(Queue<BwPlayer> playerQueue, int teamSize, int teamCount) {
-//        if (checkEnoughPlayers(playerQueue, teamSize, teamCount) == false ){
-//            return null;
-//        }
-//
-//        // Create and initialize a list to return - List<BwTeam> = new
-//
-//        List<BwTeam> bwTeams = new ArrayList<>();
-//
-//        // make a loop based on teamCount
-//        for(int idx = 0; idx < teamCount; ++idx) {
-//            BwTeam team = new BwTeam();
-//            for (int idx1 = 0; idx1 < teamSize; ++idx1){
-//                BwPlayer player = playerQueue.poll();
-//                team.addPlayer(player);
-//            }
-//            bwTeams.add(team);
-//        }
-//        // Return the list
-//        return bwTeams;
 //    }
 }

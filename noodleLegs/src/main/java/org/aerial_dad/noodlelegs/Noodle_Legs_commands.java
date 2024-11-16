@@ -54,10 +54,12 @@ public class Noodle_Legs_commands implements CommandExecutor {
                     PlayerTracker playerTracker = Universe.getPlayerTracker(player);
                     Game currGame = playerTracker.getCurrentGame();
                     Team currTeam = playerTracker.getCurrentTeam();
+                    GameQueue currQueue = playerTracker.getCurrentGameQueue();
                     player.sendMessage("---------------------------------------------------");
                     player.sendMessage("Player name: " + player.getDisplayName());
                     player.sendMessage("Player status: " + playerTracker.getCurrentStatus());
                     player.sendMessage("World: " + player.getWorld().getName());
+                    player.sendMessage("Game queue: " + (null == currQueue ? null : currQueue.printSelf()));
                     player.sendMessage("Game: " + (null == currGame ? null : currGame.getName()));
                     if (null != currGame) {
                         player.sendMessage("Game status: " + currGame.getStatus());
