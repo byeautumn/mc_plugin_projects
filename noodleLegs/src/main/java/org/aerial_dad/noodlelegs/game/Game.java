@@ -83,6 +83,7 @@ public class Game {
     }
 
     public void terminate() {
+        System.out.println("Running game terminator ...");
         setStatus(GameStatus.POSTGAME);
         System.out.println("The game status is POSTGAME now.");
         System.out.println("Game " + this.name + " has just been terminated.");
@@ -90,14 +91,9 @@ public class Game {
             team.disband();
         }
 
-//        GameOrganizer gameOrganizer = playerTracker.getCurrentGameOrganizer();
-//        if(null == gameOrganizer) {
-//            System.err.println("Cannot find game organizer when a game being terminated.");
-//        }
-//        else {
-//            System.out.println("Remove game launcher - " + playerTracker.getCurrentGameLauncher());
-//            gameOrganizer.removeGameLauncher(playerTracker.getCurrentGameLauncher());
-//        }
+        GameTracker gameTracker = Universe.getGameTracker(getName());
+        GameLauncher gameLauncher = gameTracker.getGameLauncher();
+        GameManager.getInstance().removeGameLauncher(gameLauncher);
     }
 
     public void checkPlayerElimination(PlayerTracker playerTracker) {

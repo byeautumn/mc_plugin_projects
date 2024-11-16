@@ -34,11 +34,15 @@ public class GameManager {
             this.typeToOrganizerMap.put(type, new GameOrganizer(type, this.typeToConfigMap.get(type)));
         }
 
-        GameOrganizer gameOrganizer = this.typeToOrganizerMap.get(type);
-        gameOrganizer.queuePlayer(player);
+        getGameOrganizer(type).queuePlayer(player);
 
     }
 
+    private GameOrganizer getGameOrganizer(GameType type) {
+        return this.typeToOrganizerMap.get(type);
+    }
 
-
+    public void removeGameLauncher(GameLauncher gameLauncher) {
+        getGameOrganizer(gameLauncher.getGameType()).removeGameLauncher(gameLauncher);
+    }
 }

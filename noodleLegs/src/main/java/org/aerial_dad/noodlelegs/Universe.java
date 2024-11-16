@@ -1,5 +1,6 @@
 package org.aerial_dad.noodlelegs;
 
+import org.aerial_dad.noodlelegs.game.GameTracker;
 import org.aerial_dad.noodlelegs.game.PlayerTracker;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -13,6 +14,8 @@ public class Universe {
     private static final String LOBBY_WORLD_NAME = "world";
 
     private static Map<UUID, PlayerTracker> PLAYER_ID_TO_TRACKER_MAP = new HashMap<>();
+
+    private static Map<String, GameTracker> GAME_NAME_TO_TRACKER_MAP = new HashMap<>();
 
     private static Map<World, List<Block>> worldToPlayerPlacedBlocks = new HashMap<>();
 
@@ -94,6 +97,12 @@ public class Universe {
         }
     }
 
+    public static Collection<GameTracker> getAllGameTrackers() {
+        return GAME_NAME_TO_TRACKER_MAP.values();
+    }
 
+    public static GameTracker getGameTracker(String gameName) {
+        return GAME_NAME_TO_TRACKER_MAP.get(gameName);
+    }
 
 }

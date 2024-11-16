@@ -30,7 +30,7 @@ public class GameOrganizer {
             }
         }
         System.out.println("There is no launcher available currently. Generating a new one ...");
-        GameLauncher launcher = new GameLauncher(this.type.name() + "_" + this.gameLaunchers.size(), this.type, this.config);
+        GameLauncher launcher = new GameLauncher(createGameName(this.type, this.gameLaunchers.size()), this.type, this.config);
         launcher.queuePlayer(player);
         this.gameLaunchers.add(launcher);
 
@@ -43,5 +43,8 @@ public class GameOrganizer {
         System.out.println("A game launcher was just removed. And the number of remaining game launchers is: " + this.gameLaunchers.size());
     }
 
+    private String createGameName(GameType type, int launcherIndex) {
+        return this.type.name() + "_" + this.gameLaunchers.size() + "_" + System.currentTimeMillis();
+    }
 
 }

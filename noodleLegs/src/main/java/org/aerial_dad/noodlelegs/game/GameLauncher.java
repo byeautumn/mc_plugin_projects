@@ -119,4 +119,15 @@ public class GameLauncher {
 //        Bukkit.unloadWorld(this.world.getName(), false);
 //        this.updateLauncherTerminationStatus(this);
 //    }
+
+    public GameType getGameType() {
+        return this.type;
+    }
+
+    public String printSelf() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("{GameType: ").append(this.type.name()).append(", ");
+        sb.append(this.config.printSelf()).append("}");
+        return sb.toString();
+    }
 }

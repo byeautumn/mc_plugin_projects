@@ -34,4 +34,8 @@ public class GameConfig {
     public int getPlayerCountPerTeam() {
         return playerCountPerTeam;
     }
+
+    public String printSelf() {
+        return "[" + getTeamCount() + " | " + getPlayerCountPerTeam() + "]";
+    }
 }

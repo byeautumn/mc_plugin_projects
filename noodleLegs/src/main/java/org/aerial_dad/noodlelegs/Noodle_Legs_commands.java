@@ -69,6 +69,21 @@ public class Noodle_Legs_commands implements CommandExecutor {
                         player.sendMessage("Team members: " + currTeam.getPlayers());
                     }
                     player.sendMessage("---------------------------------------------------");
+                } else if (functionArg.equalsIgnoreCase("allgamestatus")) {
+                    player.sendMessage("===================================================");
+                    for(GameTracker gameTracker : Universe.getAllGameTrackers()) {
+                        Game currGame = gameTracker.getGame();
+                        GameLauncher gameLauncher = gameTracker.getGameLauncher();
+                        player.sendMessage("---------------------------------------------------");
+                        player.sendMessage("Game name: " + (null == currGame ? null : currGame.getName()));
+                        player.sendMessage("Game Launcher: " + (null == gameLauncher ? null : gameLauncher.printSelf()));
+                        if (null != currGame) {
+                            player.sendMessage("Game status: " + currGame.getStatus());
+                            player.sendMessage("World: " + currGame.getWorld().getName());
+                        }
+                        player.sendMessage("---------------------------------------------------");
+                    }
+                    player.sendMessage("===================================================");
                 }
                 else{
                     player.sendMessage(ChatColor.RED + "You have ran a invalid argument: " + functionArg);
