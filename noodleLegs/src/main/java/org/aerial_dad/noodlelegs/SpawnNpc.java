@@ -48,50 +48,26 @@ public class SpawnNpc implements CommandExecutor {
                     return true;
 
                 }
-                spawnNamedNPC(player, type, npcName, null);
-
-
+                if (!player.isOp()){
+                    System.out.println("'" +player + "' does not have perms to spawn a shop");
+                }else {
+                    spawnNamedNPC(type, npcName, player.getLocation());
+                    player.sendMessage("Npc spawned at" + player.getLocation());
+                }
             }
 
         }
         return true;
     }
 
-    public void spawnNamedNPC(Player player, EntityType entityType, String npcName, Location shopSpawnLocation) {
-        if (shopSpawnLocation == null){
-            System.out.println( "'" + player + "' player is spawning shop");
-            if (!player.isOp()){
-                System.out.println("'" +player + "' does not have perms to spawn a shop");
-                return;
-            }else {
-                FixedMetadataValue metadataValue = new FixedMetadataValue(getPlugin(), true);
-                Location spawnLocation = player.getLocation();
-                Entity npc = player.getWorld().spawnEntity(spawnLocation, entityType);
-                npc.setCustomName(npcName);
-                npc.setMetadata(key, metadataValue);
-                System.out.println(" Npc has meta data of '" + key + "'.");
-                player.sendMessage("Npc spawned at" + npc.getLocation());
-                LivingEntity entity = (LivingEntity) npc;
-                entity.setHealth(20);
-            }
-        }
-        if (player == null) {
-            if (shopSpawnLocation == null) {
-                System.out.println("Must provide a location or a player");
-                return;
-            } else {
-                FixedMetadataValue metadataValue = new FixedMetadataValue(getPlugin(), true);
-                Entity npc = shopSpawnLocation.getWorld().spawnEntity(shopSpawnLocation, entityType);
-                npc.setCustomName(npcName);
-                npc.setMetadata(key, metadataValue);
-                System.out.println(" Npc has meta data of '" + key + "'.");
-                LivingEntity entity = (LivingEntity) npc;
-                entity.setHealth(20);
-            }
-
-        }
-
-
+    public void spawnNamedNPC(EntityType entityType, String npcName, Location shopSpawnLocation) {
+        FixedMetadataValue metadataValue = new FixedMetadataValue(getPlugin(), true);
+        Entity npc = shopSpawnLocation.getWorld().spawnEntity(shopSpawnLocation, entityType);
+        npc.setCustomName(npcName);
+        npc.setMetadata(key, metadataValue);
+        System.out.println(" Npc has meta data of '" + key + "'.");
+        LivingEntity entity = (LivingEntity) npc;
+        entity.setHealth(20);
 
 
     }

@@ -90,49 +90,42 @@ public class ShopConfig {
     }
 
     private List<String> getItemKeys() {
-        List<String> itemSectionPage = getPageKeys();
-        for (String page : itemSectionPage) {
-            ConfigurationSection itemsSection = config.getConfigurationSection("shop." + "pages." + "items");
-            if (itemsSection == null) {
-                System.err.println("no section called items");
-                return Collections.emptyList();
-            }
-            return new ArrayList<>(itemsSection.getKeys(false));
+        ConfigurationSection itemsSection = config.getConfigurationSection("shop." + "pages." + "items");
+        if (itemsSection == null) {
+            System.err.println("no section called items");
+            return Collections.emptyList();
         }
 
-        return itemSectionPage;
+        return new ArrayList<>(itemsSection.getKeys(false));
     }
 
     public void itemSectionMaterial(){
         List<String> itemSectionMaterial = getItemKeys();
+        String shopItemPath = "shop.pages.items.";
         for (String material : itemSectionMaterial){
-            List<String> itemSectionPage = getPageKeys();
-            for (String page : itemSectionPage) {
+            String itemKey = shopItemPath + material.trim() + ".material";
+            itemMaterial = Material.valueOf(config.getString(itemKey));
 
-                String itemKey = "shop." + "pages." + "items." + material.trim() + ".material";
-                itemMaterial = Material.valueOf(config.getString(itemKey));
+            String currencyKey = shopItemPath + material.trim() + ".currency";
+            currency = Material.valueOf(config.getString(currencyKey));
 
-                String currencyKey = "shop." + "pages." + "items." + material.trim() + ".currency";
-                currency = Material.valueOf(config.getString(currencyKey));
+            String costKey = shopItemPath + material.trim() + ".cost";
+            cost = config.getInt(costKey);
 
-                String costKey = "shop." + "pages." + "items." + material.trim() + ".cost";
-                cost = config.getInt(costKey);
+            String itemPerBuyKey = shopItemPath + material.trim() + ".item-per-buy";
+            itemPerBuy = config.getInt(itemPerBuyKey);
 
-                String itemPerBuyKey = "shop." + "pages." + "items." + material.trim() + ".item-per-buy";
-                itemPerBuy = config.getInt(itemPerBuyKey);
+            String itemSlotKey = shopItemPath + material.trim() + ".slot";
+            itemSlot = config.getInt(itemSlotKey);
 
-                String itemSlotKey = "shop." + "pages." + "items." + material.trim() + ".slot";
-                itemSlot = config.getInt(itemSlotKey);
-
-                ItemStack costItem = new ItemStack(ShopConfig.getInstance().getCurrency(), ShopConfig.getInstance().getCost());
-                if (itemMaterial == null){
-                    System.err.println("itemMaterial is null!!!");
-                }
-                Npc_listener.itemToCostMap.put(itemMaterial, costItem);
-
-                ItemConfig itemConfig = new ItemConfig(itemMaterial, cost, itemPerBuy, itemSlot, currency);
-                Npc_listener.itemToConfigMap.put(itemMaterial, itemConfig);
+            ItemStack costItem = new ItemStack(ShopConfig.getInstance().getCurrency(), ShopConfig.getInstance().getCost());
+            if (itemMaterial == null){
+                System.err.println("itemMaterial is null!!!");
             }
+            Npc_listener.itemToCostMap.put(itemMaterial, costItem);
+
+            ItemConfig itemConfig = new ItemConfig(itemMaterial, cost, itemPerBuy, itemSlot, currency);
+            Npc_listener.itemToConfigMap.put(itemMaterial, itemConfig);
         }
     }
 
