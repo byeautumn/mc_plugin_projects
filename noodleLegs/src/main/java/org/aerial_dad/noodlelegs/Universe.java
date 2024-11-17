@@ -1,5 +1,7 @@
 package org.aerial_dad.noodlelegs;
 
+import org.aerial_dad.noodlelegs.game.Game;
+import org.aerial_dad.noodlelegs.game.GameLauncher;
 import org.aerial_dad.noodlelegs.game.GameTracker;
 import org.aerial_dad.noodlelegs.game.PlayerTracker;
 import org.bukkit.*;
@@ -42,6 +44,10 @@ public class Universe {
             PLAYER_ID_TO_TRACKER_MAP.put(player.getUniqueId(), new PlayerTracker(player));
         }
         return PLAYER_ID_TO_TRACKER_MAP.get(player.getUniqueId());
+    }
+
+    public static void trackGame(GameLauncher gameLauncher, Game game) {
+        GAME_NAME_TO_TRACKER_MAP.put(game.getName(), new GameTracker(gameLauncher, game));
     }
 
     public static World getLobby() {

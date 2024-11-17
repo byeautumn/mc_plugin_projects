@@ -105,7 +105,8 @@ public class GameLauncher {
         System.out.println("DEBUG: print the queue after game starts: " + this.queue.printSelf());
         // Start the game
         System.out.println("The game " + this.game.getName() + " has been started! ");
-
+        System.out.println("Adding game " + this.game.getName() + " to tracking system ...");
+        Universe.trackGame(this, this.game);
         this.game.start();
 
     }

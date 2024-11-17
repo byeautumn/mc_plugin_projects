@@ -3,6 +3,7 @@ package org.aerial_dad.noodlelegs.game;
 import org.aerial_dad.noodlelegs.Block_listener;
 import org.aerial_dad.noodlelegs.Universe;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -17,7 +18,9 @@ public class GameCommand implements CommandExecutor {
             player.performCommand("mv tp world");
 //            PlayerTracker playerTracker = Universe.getPlayerTracker(player);
 //            playerTracker.reset();
-
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setAllowFlight(false);
+            player.setFlying(false);
         }
         return true;
     }
