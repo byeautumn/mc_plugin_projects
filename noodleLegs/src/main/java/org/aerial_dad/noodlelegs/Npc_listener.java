@@ -1,14 +1,12 @@
 package org.aerial_dad.noodlelegs;
 
 
-
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import org.aerial_dad.noodlelegs.game.Game;
+import org.aerial_dad.noodlelegs.game.GameShop;
+import org.aerial_dad.noodlelegs.game.PlayerTracker;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -16,11 +14,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import de.tr7zw.nbtapi.*;
-import java.util.ArrayList;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -30,17 +25,11 @@ public class Npc_listener implements Listener {
 
     public static Map<Material, ItemConfig>itemToConfigMap = new HashMap<>();
 
-    public static Map<String, PageConfig> pageToConfigMap = new HashMap<>();
-
     private final NoodleLegs plugin;
-
-    private static final String NBT_ITEMSTACK_TYPE_KEY = "ItemType";
-    private static final String SHOP_ITEMSTACK_TYPE_NAME = "ShopItem";
 
     public Npc_listener(NoodleLegs plugin) {
         this.plugin = plugin;
     }
-
 
     @EventHandler
     private void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
@@ -50,25 +39,21 @@ public class Npc_listener implements Listener {
         System.out.println("player has right clicked '" + entity + "'. ");
         if (entity.hasMetadata("shop")) {
             System.out.println(entity.getName() + " has meta data!");
-            System.out.println("pageToConfigMap size is: '" + pageToConfigMap.size() + "'. ");
-            for (String string : pageToConfigMap.keySet()) {
-                System.out.println("Creating inventory");
-                PageConfig pageConfig = pageToConfigMap.get(string);
-                Inventory inventory = Bukkit.createInventory(player, pageConfig.getPageSize(), pageConfig.getPageName());
-                System.out.println("itemToConfigMap size is: '" + itemToConfigMap.size() + "'. ");
-                for (Material material : itemToConfigMap.keySet()) {
-                    ItemConfig itemConfig = itemToConfigMap.get(material);
-                    player.sendMessage("Spawning ");
-                    ItemStack itemStack = new ItemStack(material, itemConfig.getItemPerBuy());
-                    NBT.modify(itemStack, nbt -> {
-                        nbt.setString(NBT_ITEMSTACK_TYPE_KEY, SHOP_ITEMSTACK_TYPE_NAME);
-                    });
-                    player.sendMessage(material + " ");
-                    inventory.setItem(itemConfig.getItemSlot(), itemStack);
 
-                }
-                player.openInventory(inventory);
+            PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+            Game game = playerTracker.getCurrentGame();
+            if (null == game) {
+                System.err.println("Player '" + player.getDisplayName() + "' is not in a game now. Skipping ...");
+                return;
             }
+            GameShop gameShop = game.getGameShop();
+            Inventory shopInventory = gameShop.getShopInventory(player);
+            if(null == shopInventory) {
+                System.err.println("Failed to locate shop inventory for player '" + player.getDisplayName() + "'.");
+                return;
+            }
+
+            player.openInventory(shopInventory);
         }
 
     }
@@ -79,68 +64,33 @@ public class Npc_listener implements Listener {
         }
     }
 
-
-
-
-
     @EventHandler
     private void onPlayerClickEvent(InventoryClickEvent event) {
         String view = event.getView().getTitle();
         Player player = (Player) event.getWhoClicked();
         ItemStack itemStack = event.getCurrentItem();
-        if (view.equalsIgnoreCase("Shop")) {
+        Inventory clickedInventory = event.getClickedInventory();
+        if(null == itemStack || null == clickedInventory) {
+            System.out.println("Player '" + player.getDisplayName() + "' didn't click on an inventory item.");
+            return;
+        }
+        if (GameShop.GAME_SHOP_INVENTORY_NAME.equalsIgnoreCase(view) &&
+                GameShop.GAME_SHOP_INVENTORY_NAME.equalsIgnoreCase(clickedInventory.getName())) {
             event.setCancelled(true);
 
             if (itemStack != null) {
-                if (itemToCostMap.containsKey(itemStack.getType())) {
-//                    System.out.println(itemStack);
-                    ItemStack cost = itemToCostMap.get(itemStack.getType());
-                    System.out.println("Found item '" + itemStack.getType() + "' costs " + cost.getAmount() + " '" + cost.getType() + "'.");
-
-                    Inventory inventory = player.getInventory();
-                    ItemStack[] allItems = inventory.getContents();
-                    List<ItemStack> moneyStacks = new ArrayList<>();
-                    for (ItemStack curr : allItems) {
-                        if (null != curr) {
-                            if (SHOP_ITEMSTACK_TYPE_NAME.equals(NBT.get(curr, nbt ->
-                                (String) nbt.getString(NBT_ITEMSTACK_TYPE_KEY)
-                            ))) {
-                                continue;
-                            }
-                            if (cost.getType().equals(curr.getType())) {
-                                moneyStacks.add(curr);
-                            }
-                        }
-
-                    }
-                    int totalAmount = 0;
-                    for (ItemStack curr : moneyStacks) {
-                        totalAmount += curr.getAmount();
-                    }
-
-                    if(cost.getAmount() <= totalAmount) {
-                        System.out.println("Player has the buying power for item '" + itemStack.getType() + "'.");
-                        for (ItemStack curr : moneyStacks) {
-                            inventory.remove(curr);
-                        }
-
-                        if (cost.getAmount() < totalAmount) {
-                            int remainingAmount = totalAmount - cost.getAmount();
-                            System.out.println("Player has " + remainingAmount + " '" + cost.getType() + "' remaining as money.");
-                            ItemStack remainder = new ItemStack(cost.getType(), remainingAmount);
-                            inventory.addItem(remainder);
-                        }
-                        inventory.addItem(itemStack);
-
-                        player.playSound(player.getLocation(), Sound.GLASS, 1.0f, 1.0f);
-                        player.sendMessage(ChatColor.GREEN + "You just bought " + itemStack + " successfully for " + cost + ".");
-                    }
-                    else {
-                        System.out.println("Player doesn't have the buying power for item '" + itemStack.getType() + "'.");
-                        player.playSound(player.getLocation(), Sound.CAT_HISS, 1.0f, 1.0f);
-                        player.sendMessage(ChatColor.RED + "You do not have the right amount of materials to buy " + itemStack.getType() + ".");
-                    }
+                PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                Game game = playerTracker.getCurrentGame();
+                if (null == game) {
+                    System.err.println("Player '" + player.getDisplayName() + "' is not in a game now. Skipping ...");
+                    return;
                 }
+                GameShop gameShop = game.getGameShop();
+                if (!gameShop.isShopItem(itemStack)) {
+                    System.out.println("Player '" + player.getDisplayName() + "' clicked on a non-shop item.");
+                    return;
+                }
+                gameShop.sell(player, itemStack);
 
             }
         }

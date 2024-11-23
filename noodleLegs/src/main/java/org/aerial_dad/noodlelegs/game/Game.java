@@ -25,11 +25,14 @@ public class Game {
 
     private final String name;
 
-    public Game(GameType gameType, String name, World world, GameConfig config, GameReferee referee){
+    private final GameShop gameShop;
+
+    public Game(GameType gameType, String name, World world, GameConfig config, GameReferee referee, GameShop gameShop){
         this.name = name;
         this.world = world;
         this.config = config;
         this.referee = referee;
+        this.gameShop = gameShop;
     }
 
     public World getWorld() {
@@ -65,6 +68,10 @@ public class Game {
 
     public Set<UUID> getEliminatedTeams() {
         return eliminatedTeams;
+    }
+
+    public GameShop getGameShop() {
+        return gameShop;
     }
 
     public void start(){

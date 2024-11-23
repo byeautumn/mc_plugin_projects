@@ -1,5 +1,6 @@
 package org.aerial_dad.noodlelegs.game;
 
+import org.aerial_dad.noodlelegs.ShopConfig;
 import org.aerial_dad.noodlelegs.Universe;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -51,7 +52,7 @@ public class GameLauncher {
 
     private Game createGame(GameType gameType, String gameName, World world){
         // TODO
-        return new Game(gameType, gameName, world, this.config, new GameReferee(this.config));
+        return new Game(gameType, gameName, world, this.config, new GameReferee(this.config), new GameShop(ShopConfig.getInstance()));
     }
 
     private GameQueue createGameQueue(Location queueLocation){

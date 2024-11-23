@@ -6,6 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+
 public final class NoodleLegs extends JavaPlugin {
 
     public static NoodleLegs getInstance;
@@ -14,7 +16,7 @@ public final class NoodleLegs extends JavaPlugin {
     public void onEnable() {
 
         getInstance = this;
-        ShopConfig.getInstance().load();
+        ShopConfig.getInstance().load(new File(NoodleLegs.getInstance.getDataFolder(), "shop.yml"));
 
         Noodle_Legs_commands noodleLegsCommands = new Noodle_Legs_commands();
         getCommand("nl").setExecutor(noodleLegsCommands);
