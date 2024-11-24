@@ -37,6 +37,7 @@ public class ResourceGenerator {
 
         if (receivers.isEmpty()) {
             world.dropItem(generatorLocation, itemstack);
+            System.out.println("Generated: " + itemstack.getType() + ", " + itemstack.getAmount());
         } else {
             for (Player player : receivers){
                 player.getInventory().addItem(itemstack);

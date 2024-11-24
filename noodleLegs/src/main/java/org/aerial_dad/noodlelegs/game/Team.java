@@ -100,6 +100,7 @@ public class Team {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(NoodleLegs.getInstance, new Runnable() {
             @Override
             public void run() {
+                System.out.println("generating items for teams");
                 generator.generate(generatiorLocation);
             }
         }, 0L, 40L);
