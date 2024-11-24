@@ -84,6 +84,7 @@ public class Game {
             team.setShopNpc(shopNpc);
             System.out.println("DEBUG: players in team " + team.getName() + " are " + team.printPlayers());
             team.spawn();
+            team.startResourceGeneration();
         }
         this.status = GameStatus.INGAME;
 

@@ -5,6 +5,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,30 +20,29 @@ public class ResourceGenerator {
 
     private int interval;
 
-    private Location generatiorLocation;
-
     private final static double RECEIVER_RADIUS = 5.0d;
 
-    public void Generator(Player itemReceiver){
 
-        
-
-    }
-
-    private void generate() {
-        World world = generatiorLocation.getWorld();
+    public void generate(Location generatorLocation) {
+        World world = generatorLocation.getWorld();
         List<Player> receivers = new ArrayList<>();
         for (Player player : world.getPlayers()) {
             Location playerLocation = player.getLocation();
-            double distance = this.generatiorLocation.distance(playerLocation);
+            double distance = generatorLocation.distance(playerLocation);
             if (distance <= RECEIVER_RADIUS) {
                 receivers.add(player);
             }
         }
+        ItemStack itemstack = new ItemStack(Material.IRON_INGOT, 5);
 
         if (receivers.isEmpty()) {
-
+            world.dropItem(generatorLocation, itemstack);
         } else {
+            for (Player player : receivers){
+                player.getInventory().addItem(itemstack);
+
+
+            }
             
         }
     }

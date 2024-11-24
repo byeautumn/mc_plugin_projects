@@ -1,14 +1,13 @@
 package org.aerial_dad.noodlelegs.game;
 
+import org.aerial_dad.noodlelegs.NoodleLegs;
 import org.aerial_dad.noodlelegs.SpawnNpc;
 import org.aerial_dad.noodlelegs.Universe;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.util.Vector;
 
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +15,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public class Team {
+
+    private static final Vector SPAWN_GENERATOR_OFFSET = new Vector(0, 0, 5);
 
     private final String name;
 
@@ -30,6 +31,7 @@ public class Team {
     private final Location teamSpawnLocation;
 
     private ShopNpc shopNpc;
+
 
     public Team(String name, UUID id, Game game, List<Player> players, Location teamSpawnLocation){
         this.name = name;
@@ -90,6 +92,17 @@ public class Team {
             this.shopNpc.spawn(getTeamSpawnLocation());
         }
 
+    }
+
+    public void startResourceGeneration() {
+        final ResourceGenerator generator = new ResourceGenerator();
+        Location generatiorLocation = getTeamSpawnLocation().add(SPAWN_GENERATOR_OFFSET);
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(NoodleLegs.getInstance, new Runnable() {
+            @Override
+            public void run() {
+                generator.generate(generatiorLocation);
+            }
+        }, 0L, 40L);
     }
 //
 //    public void remove(Player player){
