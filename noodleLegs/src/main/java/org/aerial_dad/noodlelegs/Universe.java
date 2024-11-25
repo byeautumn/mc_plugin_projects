@@ -104,7 +104,7 @@ public class Universe {
     }
 
     public static boolean deleteWorld(World world) {
-        if (null == world || !doesWorldExist(world.getName())) {
+        if (null == world) { // || !doesWorldExist(world.getName())) {
             System.err.println("The given world is either null or not existing.");
             return false;
         }
