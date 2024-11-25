@@ -15,6 +15,7 @@ import java.util.Queue;
 import java.util.UUID;
 
 public class GameLauncher {
+    public final static String GAME_WORLD_KEYWORD = "Game_World_";
     private final GameType type;
 
     private final GameConfig config;
@@ -32,7 +33,7 @@ public class GameLauncher {
     public GameLauncher(String gameName, GameType gameType, GameConfig config){
         this.type = gameType;
         this.config = config;
-        this.world = createWorld("world_" + gameName);
+        this.world = createWorld(GAME_WORLD_KEYWORD + gameName);
 
         this.game = createGame(gameType, gameName, this.world);
         Location queueLocation = new Location(this.world, Queue_Spawn_Vector.getX(), Queue_Spawn_Vector.getY(), Queue_Spawn_Vector.getZ());
@@ -67,6 +68,8 @@ public class GameLauncher {
             System.out.println("Launcher did not accept " + player.getDisplayName());
             return;
         }
+        player.getInventory().clear();
+        player.setHealth(20.0);
         this.queue.addPlayer(player);
         System.out.println("Queuing player " + player.getDisplayName() + " into game " + this.game.getName());
         if(!acceptNewPlayer()) {
@@ -98,8 +101,10 @@ public class GameLauncher {
             }
             String teamName = this.game.getName() + "_team_" + idx;
             Vector spawnVector = GameConfig.TYPE_TO_SPAWN_VECTOR_MAP.get(this.type).get(idx);
+            Vector generationVector = GameConfig.TYPE_TO_GENERATOR_VECTOR_MAP.get(this.type).get(idx);
             Team team = new Team(teamName, UUID.randomUUID(), this.game, players,
-                    new Location(this.world, spawnVector.getX(), spawnVector.getY(), spawnVector.getZ()));
+                    new Location(this.world, spawnVector.getX(), spawnVector.getY(), spawnVector.getZ()),
+                    new Location(this.world, generationVector.getX(), generationVector.getY(), generationVector.getZ()));
             this.game.addTeam(team);
             System.out.println("Team " + team.getName() + " has been created and its players include " + team.printPlayers());
         }

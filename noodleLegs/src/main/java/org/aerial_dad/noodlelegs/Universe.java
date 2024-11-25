@@ -103,6 +103,56 @@ public class Universe {
         }
     }
 
+    public static boolean deleteWorld(World world) {
+        if (null == world || !doesWorldExist(world.getName())) {
+            System.err.println("The given world is either null or not existing.");
+            return false;
+        }
+        try {
+            Bukkit.unloadWorld(world.getName(), false);
+            deleteFolder(world.getWorldFolder());
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.err.println("Failed to delete world '" + world.getName() + "'.");
+            return false;
+        }
+        System.out.println("World '" + world.getName() + "' is deleted.");
+        return true;
+    }
+
+    private static void deleteFolder(File folder) throws IOException {
+        File[] files = folder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    deleteFolder(file);
+                } else
+                {
+                    file.delete();
+                }
+            }
+        }
+        folder.delete();
+
+    }
+//    private static void deleteUnloadedWorlds() {
+//        for (World world : Bukkit.getWorlds()) {
+//            // Unload the world (save changes)
+//            Bukkit.unloadWorld(world, true);
+//
+//
+//            // Get the world folder
+//            File worldFolder = world.getWorldFolder();
+//
+//            // Delete the world folder
+//            try {
+//                deleteFolder(worldFolder);
+//            } catch (IOException e) {
+//                getLogger().log(Level.SEVERE, "Error deleting world folder: " + e.getMessage());
+//            }
+//        }
+//    }
+
     public static Collection<GameTracker> getAllGameTrackers() {
         return GAME_NAME_TO_TRACKER_MAP.values();
     }

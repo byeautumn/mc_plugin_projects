@@ -3,6 +3,7 @@ package org.aerial_dad.noodlelegs.game;
 import de.tr7zw.nbtapi.NBT;
 import org.aerial_dad.noodlelegs.ItemConfig;
 import org.aerial_dad.noodlelegs.ShopConfig;
+import org.aerial_dad.noodlelegs.Universe;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -103,7 +104,11 @@ public class GameShop {
                     ItemStack remainder = new ItemStack(cost.getType(), remainingAmount);
                     inventory.addItem(remainder);
                 }
-                inventory.addItem(item);
+                ItemStack copy = item.clone();
+                NBT.modify(copy, nbt -> {
+                    nbt.removeKey(NBT_ITEMSTACK_TYPE_KEY);
+                });
+                inventory.addItem(copy);
 
                 player.playSound(player.getLocation(), Sound.GLASS, 1.0f, 1.0f);
                 player.sendMessage(ChatColor.GREEN + "You just bought " + item + " successfully for " + cost + ".");

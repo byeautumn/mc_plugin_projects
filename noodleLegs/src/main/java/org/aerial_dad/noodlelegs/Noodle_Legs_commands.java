@@ -85,6 +85,47 @@ public class Noodle_Legs_commands implements CommandExecutor {
                     }
                     player.sendMessage("===================================================");
                 }
+                else if (functionArg.equalsIgnoreCase("listworlds")) {
+                    player.sendMessage("===================================================");
+                    for (World world : Bukkit.getWorlds()) {
+                        player.sendMessage(world.getName() + " -- " + world.getWorldType().getName());
+                    }
+                    player.sendMessage("===================================================");
+                }
+                else if (functionArg.equalsIgnoreCase("rmworld")) {
+                    if (args.length < 2) {
+                        player.sendMessage("Please provide world name to be removed.");
+                        return false;
+                    }
+                    String worldName = args[1];
+                    if (!Universe.doesWorldExist(worldName)) {
+                        player.sendMessage("World '" + worldName + "' doesn't exist.");
+                        return false;
+                    }
+                    if (Universe.deleteWorld(Bukkit.getWorld(worldName))) {
+                        player.sendMessage("World '" + worldName + "' is deleted.");
+                    }
+                    else {
+                        player.sendMessage("Failed to remove world '" + worldName + "'.");
+                    }
+
+
+                }
+                else if (functionArg.equalsIgnoreCase("rmallgameworlds")) {
+                    for (World world : Bukkit.getWorlds()) {
+                        if (Universe.doesWorldExist(world.getName()) &&
+                                world.getName().startsWith(GameLauncher.GAME_WORLD_KEYWORD) &&
+                                world.getPlayers().isEmpty()) {
+                            if (Universe.deleteWorld(Bukkit.getWorld(world.getName()))) {
+                                player.sendMessage("World '" + world.getName() + "' is deleted.");
+                            }
+                            else {
+                                player.sendMessage("Failed to remove world '" + world.getName() + "'.");
+                            }
+                        }
+                    }
+                    return true;
+                }
                 else{
                     player.sendMessage(ChatColor.RED + "You have ran a invalid argument: " + functionArg);
                 }

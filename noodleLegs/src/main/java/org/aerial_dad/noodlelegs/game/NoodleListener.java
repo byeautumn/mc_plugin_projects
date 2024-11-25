@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -97,7 +98,7 @@ public class NoodleListener implements Listener {
     private void onPlayerJoin(PlayerJoinEvent event){
         Player player = event.getPlayer();
         System.out.println("Player '" + player.getDisplayName() + "' is going to lobby.");
-
+        player.setFoodLevel(20);
         World lobby = Universe.getLobby();
         Universe.teleport(player, lobby.getSpawnLocation());
     }
@@ -187,10 +188,15 @@ public class NoodleListener implements Listener {
         player.getInventory().setLeggings(null);
         player.getInventory().setChestplate(null);
         player.getInventory().clear();
-        player.setHealth(20);
+        player.setHealth(20.0);
         player.setFireTicks(0);
         player.setFoodLevel(20);
         System.out.println("Player '" + player.getDisplayName() + "' has just dropped all its belongings.");
+    }
+
+    @EventHandler
+    private void onFoodLevelChange(FoodLevelChangeEvent event){
+        event.setCancelled(true);
     }
 }
 

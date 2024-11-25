@@ -16,8 +16,6 @@ import java.util.UUID;
 
 public class Team {
 
-    private static final Vector SPAWN_GENERATOR_OFFSET = new Vector(0, 0, 5);
-
     private final String name;
 
     private final UUID id;
@@ -30,15 +28,19 @@ public class Team {
 
     private final Location teamSpawnLocation;
 
+    private final Location resourceGenerationLocation;
+
     private ShopNpc shopNpc;
 
+    private int generatorRunId = 0;
 
-    public Team(String name, UUID id, Game game, List<Player> players, Location teamSpawnLocation){
+    public Team(String name, UUID id, Game game, List<Player> players, Location teamSpawnLocation, Location resourceGenerationLocation){
         this.name = name;
         this.id = id;
         this.game = game;
         this.players = players;
         this.teamSpawnLocation = teamSpawnLocation;
+        this.resourceGenerationLocation = resourceGenerationLocation;
         updateTeamPlayerTrackers(PlayerStatus.InGame);
     }
 
@@ -85,6 +87,9 @@ public class Team {
                 }
                 continue;
             }
+            player.getInventory().clear();
+            player.setHealth(20.0);
+            player.setGameMode(GameMode.SURVIVAL);
             System.out.println("Teleporting player " + player.getDisplayName() + " when team spawning.");
             Universe.teleport(player, getTeamSpawnLocation());
         }
@@ -95,16 +100,21 @@ public class Team {
     }
 
     public void startResourceGeneration() {
-        final ResourceGenerator generator = new ResourceGenerator();
-        Location generatiorLocation = getTeamSpawnLocation().add(SPAWN_GENERATOR_OFFSET);
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(NoodleLegs.getInstance, new Runnable() {
+        final ResourceGenerator generator = new ResourceGenerator(this.resourceGenerationLocation);
+        this.generatorRunId = Bukkit.getScheduler().scheduleSyncRepeatingTask(NoodleLegs.getInstance, new Runnable() {
             @Override
             public void run() {
                 System.out.println("generating items for teams");
-                generator.generate(generatiorLocation);
+                generator.generate();
             }
         }, 0L, 40L);
     }
+
+    private void terminateResourceGeneration() {
+        System.out.println("Resource generatoin is being terminated.");
+        Bukkit.getScheduler().cancelTask(this.generatorRunId);
+    }
+
 //
 //    public void remove(Player player){
 //        getPlayers().remove(player);
@@ -149,11 +159,14 @@ public class Team {
             player.setGameMode(GameMode.ADVENTURE);
             player.setAllowFlight(true);
             player.setFlying(true);
+            player.getInventory().clear();
+            player.setHealth(20.0);
         }
         updateTeamPlayerTrackers(PlayerStatus.Unknown);
         if(this.shopNpc != null) {
             this.shopNpc.release();
         }
+        terminateResourceGeneration();
         System.out.println("Team " + getName() + " is disbanded.");
 
     }

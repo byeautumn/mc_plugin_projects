@@ -22,6 +22,15 @@ public class GameConfig {
         }
     };
 
+    public static final Map<GameType, List<Vector>> TYPE_TO_GENERATOR_VECTOR_MAP = new HashMap<GameType, List<Vector>>(){
+        {
+            put(GameType.BW_1V1, Arrays.asList(new Vector(-29.5, 81, 97.5),
+                                                new Vector(30.5, 81, 97.5)));
+            put(GameType.BW_2V2, Arrays.asList(new Vector(-29.5, 81, 97.5),
+                                                new Vector(30.5, 81, 97.5)));
+        }
+    };
+
     public GameConfig(int teamCount, int playerCountPerTeam){
         this.teamCount = teamCount;
         this.playerCountPerTeam = playerCountPerTeam;
