@@ -102,9 +102,12 @@ public class GameLauncher {
             String teamName = this.game.getName() + "_team_" + idx;
             Vector spawnVector = GameConfig.TYPE_TO_SPAWN_VECTOR_MAP.get(this.type).get(idx);
             Vector generationVector = GameConfig.TYPE_TO_GENERATOR_VECTOR_MAP.get(this.type).get(idx);
+            Vector bedVector = GameConfig.TYPE_TO_BED_VECTOR_MAP.get(this.type).get(idx);
+            Location bedLocation = new Location(this.world, bedVector.getX(), bedVector.getY(), bedVector.getZ());
             Team team = new Team(teamName, UUID.randomUUID(), this.game, players,
                     new Location(this.world, spawnVector.getX(), spawnVector.getY(), spawnVector.getZ()),
-                    new Location(this.world, generationVector.getX(), generationVector.getY(), generationVector.getZ()));
+                    new Location(this.world, generationVector.getX(), generationVector.getY(), generationVector.getZ()),
+                    bedLocation);
             this.game.addTeam(team);
             System.out.println("Team " + team.getName() + " has been created and its players include " + team.printPlayers());
         }

@@ -161,4 +161,30 @@ public class Universe {
         return GAME_NAME_TO_TRACKER_MAP.get(gameName);
     }
 
+    public static boolean areBlocksSame(Block block1, Block block2) {
+        if (null == block1 || null == block2) {
+            return false;
+        }
+        Location location1 = block1.getLocation();
+        Location location2 = block2.getLocation();
+
+        return block1.getType() == block2.getType() && areLocationsIdentical(location1, location2);
+    }
+
+    public static boolean areLocationsIdentical(Location location1, Location location2) {
+        if (null == location1 || null == location2) {
+            return false;
+        }
+        World world1 = location1.getWorld();
+        World world2 = location2.getWorld();
+        if (null == world1 || null == world2) {
+            return false;
+        }
+        if (world1.getName().equals(world2.getName())) {
+            double distance = location2.distance(location1);
+            return distance <= 0.00001;
+        }
+
+        return false;
+    }
 }

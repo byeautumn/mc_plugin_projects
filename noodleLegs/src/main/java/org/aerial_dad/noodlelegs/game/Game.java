@@ -1,11 +1,9 @@
 package org.aerial_dad.noodlelegs.game;
 
-import org.aerial_dad.noodlelegs.NoodleLegs;
-import org.aerial_dad.noodlelegs.SpawnNpc;
 import org.aerial_dad.noodlelegs.Universe;
+import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
+import org.bukkit.block.Block;
 
 import java.util.*;
 
@@ -26,6 +24,8 @@ public class Game {
     private final String name;
 
     private final GameShop gameShop;
+
+    private List<Block> bedBlocks = new ArrayList<>();
 
     public Game(GameType gameType, String name, World world, GameConfig config, GameReferee referee, GameShop gameShop){
         this.name = name;
@@ -52,6 +52,7 @@ public class Game {
             this.teams = new ArrayList<>(this.config.getTeamCount());
         }
         this.teams.add(team);
+        this.bedBlocks.add(team.getBed());
     }
 
     public String getName() {
@@ -72,6 +73,10 @@ public class Game {
 
     public GameShop getGameShop() {
         return gameShop;
+    }
+
+    public List<Block> getBedBlocks() {
+        return bedBlocks;
     }
 
     public void start(){
@@ -139,4 +144,7 @@ public class Game {
         getEliminatedTeams().add(team.getId());
     }
 
+    public void reportBedBroken(Block bed) {
+
+    }
 }

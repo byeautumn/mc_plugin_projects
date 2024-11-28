@@ -31,6 +31,15 @@ public class GameConfig {
         }
     };
 
+    public static final Map<GameType, List<Vector>> TYPE_TO_BED_VECTOR_MAP = new HashMap<GameType, List<Vector>>(){
+        {
+            put(GameType.BW_1V1, Arrays.asList(new Vector(-29.5, 80, 81.5),
+                                                new Vector(30.5, 80, 81.5)));
+            put(GameType.BW_2V2, Arrays.asList(new Vector(-29.5, 80, 81.5),
+                                                new Vector(30.5, 80, 81.5)));
+        }
+    };
+
     public GameConfig(int teamCount, int playerCountPerTeam){
         this.teamCount = teamCount;
         this.playerCountPerTeam = playerCountPerTeam;

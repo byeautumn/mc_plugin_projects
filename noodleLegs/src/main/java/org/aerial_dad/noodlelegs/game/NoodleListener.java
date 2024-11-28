@@ -174,14 +174,6 @@ public class NoodleListener implements Listener {
                 player.getInventory().remove(i);
             }
         }
-//        world.dropItemNaturally(player.getLocation(),
-//                player.getInventory().getHelmet());
-//        world.dropItemNaturally(player.getLocation(),
-//                player.getInventory().getBoots());
-//        world.dropItemNaturally(player.getLocation(),
-//                player.getInventory().getLeggings());
-//        world.dropItemNaturally(player.getLocation(),
-//                player.getInventory().getChestplate());
 
         player.getInventory().setHelmet(null);
         player.getInventory().setBoots(null);

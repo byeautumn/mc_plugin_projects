@@ -1,7 +1,6 @@
 package org.aerial_dad.noodlelegs;
 
-import org.aerial_dad.noodlelegs.game.GameManager;
-import org.aerial_dad.noodlelegs.game.GameType;
+import org.aerial_dad.noodlelegs.game.*;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -12,6 +11,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.metadata.FixedMetadataValue;
+
+import java.util.List;
 
 import static de.tr7zw.nbtapi.NBTType.NBTTagCompound;
 
@@ -61,25 +62,51 @@ public class Block_listener implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         Block block = event.getBlock();
-        player.sendMessage("You broke a block!!!!");
         if (block.hasMetadata(key)){
             player.sendMessage( player + " has meta Data!!!" + key);
         }
         if (Bw_general.bwMode != Bw_general.BW_Mode.EDIT) {
-                if (!block.hasMetadata(key)) {
-                    event.setCancelled(true);
-                    player.sendMessage(ChatColor.RED + "You can not break this block");
-                    System.out.println("This block is NOT player-placed so operation canceled. " + block.getType());
-                    System.out.println(player.getDisplayName() + "is trying to break blocks");
-                    System.out.println(player.getName());
+            if (!block.hasMetadata(key)) {
+                boolean isBedBlock = false;
+                PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                Game game = playerTracker.getCurrentGame();
+                if (null != game && game.getStatus() == GameStatus.INGAME) {
+                    List<Block> bedBlocks = game.getBedBlocks();
+                    for (Block bed : bedBlocks) {
+                        if (Universe.areBlocksSame(bed, block)) {
+                            isBedBlock = true;
+                        }
+                    }
                 }
-
-
-
+                if (isBedBlock) {
+                    Team team = playerTracker.getCurrentTeam();
+                    if (team != null) {
+                        if (Universe.areBlocksSame(team.getBed(), block)) {
+                            System.out.println("Player '" + player.getDisplayName() + "' is trying to hit their own bed.");
+                            player.sendMessage("You cannot break your own bed.");
+                        } else {
+                            for (Team otherTeam : game.getTeams()) {
+                                Block bed = otherTeam.getBed();
+                                if (Universe.areBlocksSame(bed, block)) {
+                                    otherTeam.reportBedBroken();
+                                    System.out.println("The bed of '" + otherTeam.getName() + "' is destroyed.");
+                                } else {
+                                    otherTeam.displayTitle("The bed of '" + otherTeam.getName() + "' is destroyed.", "");
+                                }
+                            }
+                            return;
+                        }
+                    } else {
+                        System.err.println("Team is null when game status is INGAME.");
+                    }
+                }
+                event.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "You can not break this block");
+                System.out.println("This block is NOT player-placed so operation canceled. " + block.getType());
+                System.out.println(player.getDisplayName() + "is trying to break blocks");
+                System.out.println(player.getName());
+            }
         }
-
-
-
     }
 
     @EventHandler

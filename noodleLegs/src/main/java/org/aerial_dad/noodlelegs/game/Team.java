@@ -4,6 +4,7 @@ import org.aerial_dad.noodlelegs.NoodleLegs;
 import org.aerial_dad.noodlelegs.SpawnNpc;
 import org.aerial_dad.noodlelegs.Universe;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -30,17 +31,25 @@ public class Team {
 
     private final Location resourceGenerationLocation;
 
+    private final Block bed;
+
     private ShopNpc shopNpc;
+
+    private boolean isBedBroken = false;
+
+
 
     private int generatorRunId = 0;
 
-    public Team(String name, UUID id, Game game, List<Player> players, Location teamSpawnLocation, Location resourceGenerationLocation){
+    public Team(String name, UUID id, Game game, List<Player> players, Location teamSpawnLocation,
+                Location resourceGenerationLocation, Location bedLocation){
         this.name = name;
         this.id = id;
         this.game = game;
         this.players = players;
         this.teamSpawnLocation = teamSpawnLocation;
         this.resourceGenerationLocation = resourceGenerationLocation;
+        this.bed = bedLocation.getBlock();
         updateTeamPlayerTrackers(PlayerStatus.InGame);
     }
 
@@ -72,6 +81,10 @@ public class Team {
 
     public Set<UUID> getEliminatedSet() {
         return eliminatedSet;
+    }
+
+    public Block getBed() {
+        return bed;
     }
 
     public void setShopNpc(ShopNpc shopNpc) {
@@ -202,6 +215,11 @@ public class Team {
         } else if(playerStatus == PlayerStatus.Unknown) {
             playerTracker.update(playerStatus);
         }
+    }
+
+    public void reportBedBroken() {
+        this.isBedBroken = true;
+        displayTitle("Your bed got destroyed!", "");
     }
 
     public String printPlayers() {
