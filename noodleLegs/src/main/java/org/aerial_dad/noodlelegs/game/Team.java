@@ -37,8 +37,6 @@ public class Team {
 
     private boolean isBedBroken = false;
 
-
-
     private int generatorRunId = 0;
 
     public Team(String name, UUID id, Game game, List<Player> players, Location teamSpawnLocation,
@@ -100,16 +98,38 @@ public class Team {
                 }
                 continue;
             }
-            player.getInventory().clear();
-            player.setHealth(20.0);
-            player.setGameMode(GameMode.SURVIVAL);
+            spawnPlayer(player);
             System.out.println("Teleporting player " + player.getDisplayName() + " when team spawning.");
-            Universe.teleport(player, getTeamSpawnLocation());
         }
         if(this.shopNpc != null) {
             this.shopNpc.spawn(getTeamSpawnLocation());
         }
 
+    }
+
+    public void spawnPlayer(Player player) {
+        System.out.println("Player " + player.getDisplayName() + " is going to be spawn.");
+        player.getInventory().clear();
+        player.setHealth(20.0);
+        player.setGameMode(GameMode.SURVIVAL);
+        Universe.teleport(player, getTeamSpawnLocation());
+    }
+
+    public void respawnPlayerWithCountDown(Player player, int countdownNumber) {
+        Bukkit.getScheduler().scheduleSyncDelayedTask(NoodleLegs.getInstance, new Runnable() {
+            int countdown = countdownNumber;
+            @Override
+            public void run() {
+                if (countdown > 0) {
+                    player.sendTitle(ChatColor.RED + " " + countdown, "Respawning ...");
+                    --countdown;
+                    Bukkit.getScheduler().runTaskLater(NoodleLegs.getInstance, this, 20L); // Schedule the next tick
+                } else {
+                    player.sendTitle(ChatColor.GREEN + "Respawned", "");
+                    spawnPlayer(player);
+                }
+            }
+        }, 0L);
     }
 
     public void startResourceGeneration() {
@@ -169,11 +189,7 @@ public class Team {
                 }
                 continue;
             }
-            player.setGameMode(GameMode.ADVENTURE);
-            player.setAllowFlight(true);
-            player.setFlying(true);
-            player.getInventory().clear();
-            player.setHealth(20.0);
+            abandonPlayer(player);
         }
         updateTeamPlayerTrackers(PlayerStatus.Unknown);
         if(this.shopNpc != null) {
@@ -181,7 +197,14 @@ public class Team {
         }
         terminateResourceGeneration();
         System.out.println("Team " + getName() + " is disbanded.");
+    }
 
+    public void abandonPlayer(Player player) {
+        player.setGameMode(GameMode.ADVENTURE);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        player.getInventory().clear();
+        player.setHealth(20.0);
     }
 
     public void updateTeamPlayerTrackers(PlayerStatus playerStatus) {
@@ -220,6 +243,10 @@ public class Team {
     public void reportBedBroken() {
         this.isBedBroken = true;
         displayTitle("Your bed got destroyed!", "");
+    }
+
+    public boolean isBedBroken() {
+        return this.isBedBroken;
     }
 
     public String printPlayers() {

@@ -31,7 +31,7 @@ public class ShopNpc extends SpawnNpc {
     public void spawn(Location shopSpawnBaseLocation) {
         FixedMetadataValue metadataValue = new FixedMetadataValue(getPlugin(), true);
         System.out.println("Creating shop NPC ...");
-        this.npc = (Zombie) shopSpawnBaseLocation.getWorld().spawnEntity(shopSpawnBaseLocation.add(SPAWN_OFFSET), EntityType.ZOMBIE);
+        this.npc = (Zombie) shopSpawnBaseLocation.getWorld().spawnEntity(shopSpawnBaseLocation.clone().add(SPAWN_OFFSET), EntityType.ZOMBIE);
         this.npc.setCustomName(getName());
         this.npc.setMetadata(META_DATA_KEY, metadataValue);
         this.npc.setBaby(false);

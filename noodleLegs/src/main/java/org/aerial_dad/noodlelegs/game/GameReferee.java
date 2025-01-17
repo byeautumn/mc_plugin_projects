@@ -24,8 +24,12 @@ public class GameReferee {
     }
 
     public boolean shouldRespawn(PlayerTracker playerTracker) {
-        // TODO
-        return false;
+        Team team = playerTracker.getCurrentTeam();
+        if (null == team) {
+            System.err.println("Team is null when checking if player should be respawn. There must be something wrong with the game status.");
+            return false;
+        }
+        return !team.isBedBroken();
     }
 
     public boolean isDefeated(Team team) {

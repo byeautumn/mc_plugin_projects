@@ -1,0 +1,7 @@
+name: chuachua
+version: '${project.version}'
+main: org.byeautumn.chuachua.Chuachua
+api-version: '1.21'
+commands:
+  cc:
+    usage: /<command>

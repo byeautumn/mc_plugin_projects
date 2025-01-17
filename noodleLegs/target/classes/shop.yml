@@ -10,13 +10,13 @@ shop:
         item-per-buy: 1
         slot: 0
       wool:
-        material: WHITE_WOOL
+        material: WOOL
         cost: 4
         currency: IRON_INGOT
         item-per-buy: 16
         slot: 1
       wood:
-        material: OAK_PLANKS
+        material: WOOD
         cost: 4
         currency: GOLD_INGOT
         item-per-buy: 16

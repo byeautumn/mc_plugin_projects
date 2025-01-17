@@ -1,9 +1,13 @@
 package org.aerial_dad.noodlelegs.game;
 
+import org.aerial_dad.noodlelegs.NoodleLegs;
 import org.aerial_dad.noodlelegs.Universe;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 
 import java.util.*;
 
@@ -111,8 +115,16 @@ public class Game {
 
     public void checkPlayerElimination(PlayerTracker playerTracker) {
         if(getReferee().shouldRespawn(playerTracker)) {
-            // TODO
-            return;
+            Team team = playerTracker.getCurrentTeam();
+            Player player = playerTracker.getPlayer();
+            if (null == team) {
+                System.err.println("Team is null when checking if player should be eliminated. There must be something wrong with the game status.");
+            } else {
+                team.abandonPlayer(player);
+                Universe.teleport(player, team.getTeamSpawnLocation().clone().add(0.0, 50.0, 0.0));
+                team.respawnPlayerWithCountDown(player, 3);
+                return;
+            }
         }
         checkGameTermination(playerTracker);
     }
