@@ -8,6 +8,8 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.player.PlayerTracker;
+import org.byeautumn.chuachua.undo.ActionRecord;
+import org.byeautumn.chuachua.undo.ActionRecorder;
 
 import java.util.*;
 
@@ -19,11 +21,11 @@ public class Universe {
 
     private static Map<World, List<Block>> worldToPlayerPlacedBlocks = new HashMap<>();
 
-    public static void teleport(Player player, Location toLocation){
+    private static Map<UUID, ActionRecorder> PLAYER_ID_TO_RECORDER_MAP = new HashMap<>();
 
+    public static void teleport(Player player, Location toLocation){
         player.teleport(toLocation);
         player.sendMessage(ChatColor.GREEN + "You were teleported successfully");
-
     }
 
     private static Location getLocation(String worldName, LocationVector vector) {
@@ -84,5 +86,13 @@ public class Universe {
         }
 
         return false;
+    }
+
+    public static ActionRecorder getActionRecorder(Player player) {
+        if (!PLAYER_ID_TO_RECORDER_MAP.containsKey(player.getUniqueId())) {
+            PLAYER_ID_TO_RECORDER_MAP.put(player.getUniqueId(), new ActionRecorder());
+        }
+
+        return PLAYER_ID_TO_RECORDER_MAP.get(player.getUniqueId());
     }
 }
