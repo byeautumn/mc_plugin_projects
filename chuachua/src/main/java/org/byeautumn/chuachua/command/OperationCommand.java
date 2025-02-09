@@ -14,6 +14,7 @@ import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
+import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.player.PlayerTracker;
 import org.byeautumn.chuachua.player.PlayerUtil;
 import org.byeautumn.chuachua.undo.ActionRecord;
@@ -27,7 +28,7 @@ import java.util.List;
 public class OperationCommand  implements CommandExecutor {
 
     private static final List<String> BW_VALID_ARGS = Arrays.asList("exit", "tp", "listWorlds", "createWall", "undo", "undoGen"
-            , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect");
+            , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export");
     private final Chuachua plugin;
 
     public OperationCommand(Chuachua plugin)  {
@@ -190,6 +191,35 @@ public class OperationCommand  implements CommandExecutor {
                     PlayerInventory inventory = player.getInventory();
                     ItemStack item = inventory.getItem(0);
                     player.getInventory().setItemInMainHand(item);
+                    player.sendMessage(ChatColor.BLUE + "===================================================");
+                }
+                else if (firstArg.equalsIgnoreCase("export")) {
+                    player.sendMessage(ChatColor.BLUE + "===================================================");
+                    PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                    if (PlayMode.EDIT != playerTracker.getPlayMode()) {
+                        player.sendMessage(ChatColor.RED + "The play mode needs to be Edit to do export.");
+                        return false;
+                    }
+                    if (args.length < 8) {
+                        player.sendMessage(ChatColor.RED + "Invalid Arguments for command " + firstArg);
+                        return false;
+                    }
+
+                    String chunkName = args[1];
+
+                    int x1 = Integer.parseInt(args[2]), y1 = Integer.parseInt(args[3]), z1 = Integer.parseInt(args[4]);
+                    int x2 = Integer.parseInt(args[5]), y2 = Integer.parseInt(args[6]), z2 = Integer.parseInt(args[7]);
+                    World world = player.getWorld();
+                    Block b1 = world.getBlockAt(x1, y1, z1);
+                    Block b2 = world.getBlockAt(x2, y2, z2);
+
+                    ChunkExporter exporter = new ChunkExporter();
+                    if (exporter.export(chunkName, b1, b2)) {
+                        player.sendMessage(ChatColor.GREEN + "Export " + chunkName + " succeeded.");
+                    }
+                    else {
+                        player.sendMessage(ChatColor.RED + "Export " + chunkName + " failed.");
+                    }
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                 }
 
