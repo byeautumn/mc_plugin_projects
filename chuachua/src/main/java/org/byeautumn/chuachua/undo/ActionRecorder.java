@@ -1,5 +1,6 @@
 package org.byeautumn.chuachua.undo;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 
@@ -9,12 +10,15 @@ import java.util.Stack;
 
 public class ActionRecorder {
     public static final Material POLY_SELECT_TYPE = Material.CANDLE;
+    public static final Material DIA_SELECT_TYPE = Material.CANDLE;
     private final Stack<ActionRecord> editUndoStack = new Stack<>();
     private final Stack<ActionRecord> generationUndoStack = new Stack<>();
     private final Stack<ActionRecord> editRedoStack = new Stack<>();
     private final Stack<ActionRecord> generationRedoStack = new Stack<>();
     private boolean isPolySelection = false;
     private final List<Block> polySelectedBlocks = new ArrayList<Block>();
+    private boolean isDiaSelection = false;
+    private final List<Block> diaSelectedBlocks = new ArrayList<>(2);
 
     public void record(ActionRecord record) {
         editRedoStack.empty();
@@ -113,8 +117,8 @@ public class ActionRecorder {
     }
 
     public void polySelect(Block block) {
-        if (!this.isPolySelection) {
-            System.err.println("Polyselect operation cannot be done since it is not in the selection model.");
+        if (!isPolySelection()) {
+            System.err.println("PolySelect operation cannot be done since it is not in the selection model.");
             return;
         }
 
@@ -137,5 +141,49 @@ public class ActionRecorder {
 
     public List<Block> getPolySelectedBlocks() {
         return polySelectedBlocks;
+    }
+
+    public boolean isDiaSelection() {
+        return this.isDiaSelection;
+    }
+
+    public void setDiaSelection(boolean diaSelection) {
+        isDiaSelection = diaSelection;
+    }
+
+    public void resetDiaSelection() {
+        setDiaSelection(false);
+        this.diaSelectedBlocks.clear();
+    }
+
+    public void diaSelect(Block block) {
+        if (!isDiaSelection()) {
+            System.err.println("DiaSelect operation cannot be done since it is not the selection model.");
+            return;
+        }
+        if (getDiaSelectedBlocks().size() > 1) {
+            System.err.println("Only 2 selections are allowed in DiaSelection. Please either delete previous selection or cancel the whole DiaSelection and start over.");
+            return;
+        }
+
+        this.diaSelectedBlocks.add(block);
+    }
+
+    public List<Block> getDiaSelectedBlocks() {
+        return this.diaSelectedBlocks;
+    }
+
+    public Block getLastDiaSelection() {
+        if (getDiaSelectedBlocks().isEmpty()) {
+            return null;
+        }
+        return getDiaSelectedBlocks().get(getDiaSelectedBlocks().size() - 1);
+    }
+
+    public void cancelLastDiaSelection() {
+        if (getDiaSelectedBlocks().isEmpty()) {
+            return;
+        }
+        getDiaSelectedBlocks().remove(getDiaSelectedBlocks().size() - 1);
     }
 }

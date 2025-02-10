@@ -15,6 +15,7 @@ import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
 import org.byeautumn.chuachua.io.ChunkExporter;
+import org.byeautumn.chuachua.io.ChunkImporter;
 import org.byeautumn.chuachua.player.PlayerTracker;
 import org.byeautumn.chuachua.player.PlayerUtil;
 import org.byeautumn.chuachua.undo.ActionRecord;
@@ -28,7 +29,7 @@ import java.util.List;
 public class OperationCommand  implements CommandExecutor {
 
     private static final List<String> BW_VALID_ARGS = Arrays.asList("exit", "tp", "listWorlds", "createWall", "undo", "undoGen"
-            , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export");
+            , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import");
     private final Chuachua plugin;
 
     public OperationCommand(Chuachua plugin)  {
@@ -179,6 +180,21 @@ public class OperationCommand  implements CommandExecutor {
                     PlayerUtil.sendObjectToMainHand(player, ActionRecorder.POLY_SELECT_TYPE);
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                 }
+                else if (firstArg.equalsIgnoreCase("diaSelect")) {
+                    player.sendMessage(ChatColor.BLUE + "===================================================");
+                    player.sendMessage(ChatColor.YELLOW + "DiaSelect tool Given!");
+                    player.sendMessage(ChatColor.GRAY + "(Place 2 candles where the rectangle diagonally defined by these 2 positions will be the range of the block selection.)");
+                    PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                    if (PlayMode.EDIT != playerTracker.getPlayMode()) {
+                        player.sendMessage(ChatColor.RED + "The play mode needs to be Edit to do diaSelect.");
+                        return false;
+                    }
+                    ActionRecorder recorder = Universe.getActionRecorder(player);
+                    recorder.resetDiaSelection();
+                    recorder.setDiaSelection(true);
+                    PlayerUtil.sendObjectToMainHand(player, ActionRecorder.DIA_SELECT_TYPE);
+                    player.sendMessage(ChatColor.BLUE + "===================================================");
+                }
                 else if (firstArg.equalsIgnoreCase("cancelSelect")) {
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                     PlayerTracker playerTracker = Universe.getPlayerTracker(player);
@@ -188,6 +204,7 @@ public class OperationCommand  implements CommandExecutor {
                     }
                     ActionRecorder recorder = Universe.getActionRecorder(player);
                     recorder.resetPolySelection();
+                    recorder.resetDiaSelection();
                     PlayerInventory inventory = player.getInventory();
                     ItemStack item = inventory.getItem(0);
                     player.getInventory().setItemInMainHand(item);
@@ -200,21 +217,44 @@ public class OperationCommand  implements CommandExecutor {
                         player.sendMessage(ChatColor.RED + "The play mode needs to be Edit to do export.");
                         return false;
                     }
-                    if (args.length < 8) {
+                    if (args.length < 3) {
                         player.sendMessage(ChatColor.RED + "Invalid Arguments for command " + firstArg);
                         return false;
                     }
-
                     String chunkName = args[1];
+                    Block b1 = null, b2 = null;
+                    if (args[2].equalsIgnoreCase("diaSelect")) {
+                        ActionRecorder recorder = Universe.getActionRecorder(player);
+                        if (recorder.getDiaSelectedBlocks().size() < 2) {
+                            player.sendMessage(ChatColor.RED + "The dia selection is not complete. Please select 2 blocks before calling export.");
+                            return false;
+                        }
+                        List<Block> diaSelectedBlocks = recorder.getDiaSelectedBlocks();
+                        b1 = diaSelectedBlocks.get(0);
+                        b2 = diaSelectedBlocks.get(1);
 
-                    int x1 = Integer.parseInt(args[2]), y1 = Integer.parseInt(args[3]), z1 = Integer.parseInt(args[4]);
-                    int x2 = Integer.parseInt(args[5]), y2 = Integer.parseInt(args[6]), z2 = Integer.parseInt(args[7]);
-                    World world = player.getWorld();
-                    Block b1 = world.getBlockAt(x1, y1, z1);
-                    Block b2 = world.getBlockAt(x2, y2, z2);
+                        recorder.resetDiaSelection();
+                    }
+                    else {
+                        if (args.length < 8) {
+                            player.sendMessage(ChatColor.RED + "Invalid Arguments for command " + firstArg);
+                            return false;
+                        }
+
+                        int x1 = Integer.parseInt(args[2]), y1 = Integer.parseInt(args[3]), z1 = Integer.parseInt(args[4]);
+                        int x2 = Integer.parseInt(args[5]), y2 = Integer.parseInt(args[6]), z2 = Integer.parseInt(args[7]);
+                        World world = player.getWorld();
+                        b1 = world.getBlockAt(x1, y1, z1);
+                        b2 = world.getBlockAt(x2, y2, z2);
+                    }
+
+                    if (null == b1 || null == b2) {
+                        player.sendMessage(ChatColor.RED + "There is at least one block has not been correctly selected. Export is terminated.");
+                        return false;
+                    }
 
                     ChunkExporter exporter = new ChunkExporter();
-                    if (exporter.export(chunkName, b1, b2)) {
+                    if (exporter.exportChunk(chunkName, b1, b2)) {
                         player.sendMessage(ChatColor.GREEN + "Export " + chunkName + " succeeded.");
                     }
                     else {
@@ -222,7 +262,40 @@ public class OperationCommand  implements CommandExecutor {
                     }
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                 }
-
+                else if (firstArg.equalsIgnoreCase("import")) {
+                    player.sendMessage(ChatColor.BLUE + "===================================================");
+                    PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                    if (PlayMode.EDIT != playerTracker.getPlayMode()) {
+                        player.sendMessage(ChatColor.RED + "The play mode needs to be Edit to do import.");
+                        return false;
+                    }
+                    if (args.length != 2 && args.length != 5) {
+                        player.sendMessage(ChatColor.RED + "Invalid Arguments for command " + firstArg);
+                        return false;
+                    }
+                    String chunkName = args[1];
+                    Block selectedBlock = null;
+                    if (args.length == 2) {
+                        selectedBlock = player.getLocation().getBlock();
+                    }
+                    else {
+                        int x1 = Integer.parseInt(args[2]), y1 = Integer.parseInt(args[3]), z1 = Integer.parseInt(args[4]);
+                        World world = player.getWorld();
+                        selectedBlock = world.getBlockAt(x1, y1, z1);
+                    }
+                    ChunkImporter importer = new ChunkImporter();
+                    if (!importer.exists(chunkName)) {
+                        player.sendMessage(ChatColor.RED + "'" + chunkName + "' doesn't exists.");
+                        return false;
+                    }
+                    if (importer.importChunk(chunkName, selectedBlock)) {
+                        player.sendMessage(ChatColor.GREEN + "Import " + chunkName + " succeeded.");
+                    }
+                    else {
+                        player.sendMessage(ChatColor.RED + "Import " + chunkName + " failed.");
+                    }
+                    player.sendMessage(ChatColor.BLUE + "===================================================");
+                }
             } else {
                 player.sendMessage(ChatColor.RED + "Could not find the argument you wrote " + ChatColor.YELLOW + firstArg);
             }

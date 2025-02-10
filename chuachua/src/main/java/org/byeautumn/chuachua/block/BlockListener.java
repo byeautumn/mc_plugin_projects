@@ -48,6 +48,13 @@ public class BlockListener implements Listener {
                 PlayerUtil.sendObjectToMainHand(player, ActionRecorder.POLY_SELECT_TYPE);
                 System.out.println("Current poly selection size: " + recorder.getPolySelectedBlocks().size());
             }
+            else if (recorder.isDiaSelection() && block.getType() == ActionRecorder.DIA_SELECT_TYPE) {
+                System.out.println("Place dia selection at " + LocationUtil.printBlock(block));
+                player.sendMessage(ChatColor.LIGHT_PURPLE + LocationUtil.printBlock(block) + recorder.getDiaSelectedBlocks().size());
+                recorder.diaSelect(block);
+                PlayerUtil.sendObjectToMainHand(player, ActionRecorder.DIA_SELECT_TYPE);
+                System.out.println("Current dia selection size: " + recorder.getDiaSelectedBlocks().size());
+            }
             else {
                 ActionRecord action = new BlockPropertiesRecord(block, new BlockProperties(Material.AIR), new BlockProperties(block.getType()));
                 recorder.record(action);
@@ -84,6 +91,15 @@ public class BlockListener implements Listener {
                 }
                 else {
                     player.sendMessage("You cannot break the poly selection other than the last one.");
+                    event.setCancelled(true);
+                }
+            }
+            else if (recorder.isDiaSelection() && block.getType() == ActionRecorder.DIA_SELECT_TYPE) {
+                if (Universe.areLocationsIdentical(block.getLocation(), recorder.getLastDiaSelection().getLocation())) {
+                    recorder.cancelLastDiaSelection();
+                }
+                else {
+                    player.sendMessage("You cannot break the dia selection other than the last one.");
                     event.setCancelled(true);
                 }
             }

@@ -3,22 +3,20 @@ package org.byeautumn.chuachua.io;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
-import java.util.List;
-
 public class ChunkExporter {
 
-    public boolean export(String chunkName, Block b1, Block b2) {
+    public boolean exportChunk(String chunkName, Block b1, Block b2) {
         if (!IOUntil.saveExportIntoAIOFile(chunkName, printNormalizedBlocksFromDiaSelection(b1, b2))) {
-            System.err.println("Chunk export failed.");
+            System.err.println("Chunk exportChunk failed.");
             return false;
         }
-        System.out.println("Chunk export succeeded.");
+        System.out.println("Chunk exportChunk succeeded.");
         return true;
     }
 
     private String printNormalizedBlocksFromDiaSelection(Block b1, Block b2) {
         if (!b1.getWorld().getName().equalsIgnoreCase(b2.getWorld().getName())) {
-            System.err.println("The input blocks are not from the same world. The export process will be terminated.");
+            System.err.println("The input blocks are not from the same world. The exportChunk process will be terminated.");
             return null;
         }
 
