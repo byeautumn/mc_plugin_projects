@@ -71,13 +71,18 @@ public class OperationCommand  implements CommandExecutor {
                         return false;
                     }
                     ActionRecorder recorder = Universe.getActionRecorder(player);
+
                     if (args[1].equalsIgnoreCase("polySelect")) {
                         int height = Integer.parseInt(args[2]);
                         List<Block> polySelectedBlocks = recorder.getPolySelectedBlocks();
                         PolyWall wall = new PolyWall(polySelectedBlocks, height);
                         wall.setWorld(world);
-                        recorder.record(ActionType.GENERATION,wall.generate());
-                        recorder.resetPolySelection();
+                        ActionRecord record = wall.generate(player);
+                        if (null == record) {
+                            player.sendMessage(ChatColor.RED + firstArg + " failed.");
+                            return false;
+                        }
+                        recorder.record(ActionType.GENERATION, record);
                     }
                     else {
                         if (args.length < 8) {
@@ -98,8 +103,12 @@ public class OperationCommand  implements CommandExecutor {
                                 SimpleWall wall = new SimpleWall(posArr[0], posArr[1], height);
                                 wall.setWorld(world);
 
-
-                                recorder.record(ActionType.GENERATION,wall.generate());
+                                ActionRecord record = wall.generate(player);
+                                if (null == record) {
+                                    player.sendMessage(ChatColor.RED + firstArg + " failed.");
+                                    return false;
+                                }
+                                recorder.record(ActionType.GENERATION, record);
 
                             } catch (Exception e) {
                                 player.sendMessage(e.getMessage());
@@ -112,7 +121,7 @@ public class OperationCommand  implements CommandExecutor {
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                     ActionRecorder recorder = Universe.getActionRecorder(player);
                     ActionRecord action = recorder.getPreviousAction();
-                    ActionRunner.undo(action);
+                    ActionRunner.undo(action, player);
                     player.sendMessage(ChatColor.GREEN + "Previous edit has been rolled back.");
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                 }
@@ -120,7 +129,7 @@ public class OperationCommand  implements CommandExecutor {
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                     ActionRecorder recorder = Universe.getActionRecorder(player);
                     ActionRecord action = recorder.getPreviousAction(ActionType.GENERATION);
-                    ActionRunner.undo(action);
+                    ActionRunner.undo(action, player);
                     player.sendMessage(ChatColor.GREEN + "Previous generation has been rolled back.");
                     player.sendMessage(ChatColor.BLUE + "===================================================");
 
@@ -128,14 +137,14 @@ public class OperationCommand  implements CommandExecutor {
                 else if (firstArg.equalsIgnoreCase("redo")) {
                     ActionRecorder recorder = Universe.getActionRecorder(player);
                     ActionRecord action = recorder.getNextAction();
-                    ActionRunner.redo(action);
+                    ActionRunner.redo(action, player);
                     player.sendMessage(ChatColor.GREEN + "Rolled back edit has been redone.");
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                 }
                 else if (firstArg.equalsIgnoreCase("redoGen")) {
                     ActionRecorder recorder = Universe.getActionRecorder(player);
                     ActionRecord action = recorder.getNextAction(ActionType.GENERATION);
-                    ActionRunner.redo(action);
+                    ActionRunner.redo(action, player);
                     player.sendMessage(ChatColor.GREEN + "Rolled back generation has been redone.");
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                 }
@@ -288,8 +297,12 @@ public class OperationCommand  implements CommandExecutor {
                         player.sendMessage(ChatColor.RED + "'" + chunkName + "' doesn't exists.");
                         return false;
                     }
-                    if (importer.importChunk(chunkName, selectedBlock)) {
+                    ActionRecorder recorder = Universe.getActionRecorder(player);
+                    ActionRecord record = importer.importChunk(chunkName, selectedBlock);
+
+                    if (null != record) {
                         player.sendMessage(ChatColor.GREEN + "Import " + chunkName + " succeeded.");
+                        recorder.record(ActionType.GENERATION, record);
                     }
                     else {
                         player.sendMessage(ChatColor.RED + "Import " + chunkName + " failed.");

@@ -5,6 +5,10 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
+import org.byeautumn.chuachua.undo.ActionRecord;
+import org.byeautumn.chuachua.undo.BlockProperties;
+import org.byeautumn.chuachua.undo.BlockPropertiesRecord;
+import org.byeautumn.chuachua.undo.GenerationRecord;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -18,14 +22,16 @@ public class ChunkImporter {
         this.player = player;
     }
 
-    public boolean importChunk(String chunkName, Block baseBlock) {
+    public ActionRecord importChunk(String chunkName, Block baseBlock) {
         if (!exists(chunkName)) {
-            return false;
+            return null;
         }
         final World world = baseBlock.getWorld();
         int baseX = baseBlock.getX(), baseY = baseBlock.getY(), baseZ = baseBlock.getZ();
         final String filePath = IOUntil.getAbsoluteFilePath(IOUntil.getIODir(), chunkName + "." + IOUntil.IO_EXTENSION);
+        GenerationRecord action;
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            action = new GenerationRecord();
             String line;
             while ((line = br.readLine()) != null) {
                 String[] strArr = line.split(IOUntil.CC_SPLITTER);
@@ -44,23 +50,19 @@ public class ChunkImporter {
                 } else {
                     String originalBlockData = original.getBlockData().getAsString();
                     String blockData = strArr[4];
-                    if (blockData.equals(originalBlockData)) {
-                        System.out.println("There is no change to the block ... skip.");
-                        continue;
+                    if (IOUntil.updateBlockData(player, original, blockData)) {
+                        BlockPropertiesRecord record = new BlockPropertiesRecord(original, new BlockProperties(originalBlockData),
+                                new BlockProperties(blockData));
+                        action.addBlockPropertiesRecord(record);
                     }
-                    StringBuffer command = new StringBuffer();
-                    command.append("setBlock ").append(baseX + x).append(" ").append(baseY + y).append(" ").append(baseZ + z).append(" ");
-                    command.append(blockData);
-                    System.out.println("Performing command: " + command.toString());
-                    this.player.performCommand(command.toString());
                 }
 
             }
         } catch (IOException e) {
             System.err.println("Error reading file: " + e.getMessage());
-            return false;
+            return null;
         }
-        return true;
+        return action;
     }
 
     public boolean exists(String chunkName) {

@@ -3,12 +3,11 @@ package org.byeautumn.chuachua.undo;
 import org.bukkit.Material;
 
 public class BlockProperties {
-    private final Material meterial;
-    public BlockProperties(Material material) {
-        this.meterial = material;
+    public final static String BLOCK_DATA_STRING_AIR = "minecraft:air";
+    private final String blockDataString;
+    public BlockProperties(String blockDataString) {
+        this.blockDataString = blockDataString;
     }
 
-    public Material getMeterial() {
-        return meterial;
-    }
+    public String getBlockDataString() { return blockDataString; }
 }

@@ -5,9 +5,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 import org.byeautumn.chuachua.common.BlockUtil;
 import org.byeautumn.chuachua.common.LocationUtil;
+import org.byeautumn.chuachua.io.IOUntil;
 import org.byeautumn.chuachua.undo.ActionRecord;
 import org.byeautumn.chuachua.undo.BlockProperties;
 import org.byeautumn.chuachua.undo.BlockPropertiesRecord;
@@ -62,7 +64,7 @@ public class PolyWall implements Generable{
     }
 
     @Override
-    public ActionRecord generate() {
+    public ActionRecord generate(Player player) {
         List<Block> blocks = getBlocks();
         System.out.println("Block number in the list: " + blocks.size());
         GenerationRecord action = new GenerationRecord();
@@ -73,9 +75,10 @@ public class PolyWall implements Generable{
             }
             System.out.println(LocationUtil.printBlock(block));
             System.out.println("Setting material ..." + block.getType());
-            BlockPropertiesRecord record = new BlockPropertiesRecord(block, new BlockProperties(block.getType()), new BlockProperties(this.material));
+            BlockPropertiesRecord record = new BlockPropertiesRecord(block, new BlockProperties(block.getBlockData().getAsString()),
+                    new BlockProperties(IOUntil.convertMaterialToBlockDataString(this.material)));
             action.addBlockPropertiesRecord(record);
-            block.setType(this.material);
+            IOUntil.updateBlockData(player, block, block.getBlockData().getAsString());
         }
 
         return action;

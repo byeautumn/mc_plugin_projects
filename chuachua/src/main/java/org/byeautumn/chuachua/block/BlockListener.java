@@ -56,7 +56,7 @@ public class BlockListener implements Listener {
                 System.out.println("Current dia selection size: " + recorder.getDiaSelectedBlocks().size());
             }
             else {
-                ActionRecord action = new BlockPropertiesRecord(block, new BlockProperties(Material.AIR), new BlockProperties(block.getType()));
+                ActionRecord action = new BlockPropertiesRecord(block, new BlockProperties(BlockProperties.BLOCK_DATA_STRING_AIR), new BlockProperties(block.getBlockData().getAsString()));
                 recorder.record(action);
             }
         }
@@ -104,7 +104,7 @@ public class BlockListener implements Listener {
                 }
             }
             else {
-                ActionRecord action = new BlockPropertiesRecord(block, new BlockProperties(block.getType()), new BlockProperties(Material.AIR));
+                ActionRecord action = new BlockPropertiesRecord(block, new BlockProperties(block.getBlockData().getAsString()), new BlockProperties(BlockProperties.BLOCK_DATA_STRING_AIR));
                 recorder.record(action);
             }
 
