@@ -1,8 +1,12 @@
 package org.byeautumn.chuachua.io;
 
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
+
+import static org.byeautumn.chuachua.undo.ActionRecorder.DIA_SELECT_TYPE;
+import static org.byeautumn.chuachua.undo.ActionRecorder.POLY_SELECT_TYPE;
 
 public class ChunkExporter {
 
@@ -34,6 +38,9 @@ public class ChunkExporter {
                     int newY = baseY + stepY;
                     int newZ = baseZ + stepZ;
                     Block block = world.getBlockAt(newX, newY, newZ);
+                    if (block.getType() == DIA_SELECT_TYPE || block.getType() == POLY_SELECT_TYPE) {
+                        block.setType(Material.AIR);
+                    }
                     BlockData blockData = block.getState().getBlockData();
                     System.out.println("BlockData: " + blockData.getAsString());
 
