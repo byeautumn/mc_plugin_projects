@@ -40,7 +40,7 @@ public class BlockListener implements Listener {
 
         if (playerTracker.getStatus() != PlayerStatus.InGame) {
             ActionRecorder recorder = Universe.getActionRecorder(player);
-            System.out.println("Poly selection: " + recorder.isPolySelection());
+//            System.out.println("Poly selection: " + recorder.isPolySelection());
             if (recorder.isPolySelection() && block.getType() == ActionRecorder.POLY_SELECT_TYPE) {
                 System.out.println("Place poly selection at " + LocationUtil.printBlock(block));
                 player.sendMessage(ChatColor.LIGHT_PURPLE + LocationUtil.printBlock(block) + recorder.getPolySelectedBlocks().size());

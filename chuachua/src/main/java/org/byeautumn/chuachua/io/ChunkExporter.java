@@ -2,6 +2,7 @@ package org.byeautumn.chuachua.io;
 
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 
 public class ChunkExporter {
 
@@ -33,7 +34,12 @@ public class ChunkExporter {
                     int newY = baseY + stepY;
                     int newZ = baseZ + stepZ;
                     Block block = world.getBlockAt(newX, newY, newZ);
-                    sb.append(stepX).append(",").append(stepY).append(",").append(stepZ).append(",").append(block.getType().name()).append("\n");
+                    BlockData blockData = block.getState().getBlockData();
+                    System.out.println("BlockData: " + blockData.getAsString());
+
+                    sb.append(stepX).append(IOUntil.CC_SPLITTER).append(stepY).append(IOUntil.CC_SPLITTER).append(stepZ);
+                    sb.append(IOUntil.CC_SPLITTER).append(block.getType().name());
+                    sb.append(IOUntil.CC_SPLITTER).append(blockData.getAsString()).append("\n");
                 }
             }
         }

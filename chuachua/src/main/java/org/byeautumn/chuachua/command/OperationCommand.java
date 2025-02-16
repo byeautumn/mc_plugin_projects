@@ -283,7 +283,7 @@ public class OperationCommand  implements CommandExecutor {
                         World world = player.getWorld();
                         selectedBlock = world.getBlockAt(x1, y1, z1);
                     }
-                    ChunkImporter importer = new ChunkImporter();
+                    ChunkImporter importer = new ChunkImporter(player);
                     if (!importer.exists(chunkName)) {
                         player.sendMessage(ChatColor.RED + "'" + chunkName + "' doesn't exists.");
                         return false;

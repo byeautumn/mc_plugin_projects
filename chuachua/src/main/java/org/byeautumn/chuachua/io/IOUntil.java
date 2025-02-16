@@ -14,6 +14,7 @@ import java.util.List;
 public class IOUntil {
     public static final String IO_DIR_NAME = "io";
     public static final String IO_EXTENSION = "cc";
+    public static final String CC_SPLITTER = ";";
 
     public static boolean checkDirExistAndCreateItIfNot(File dir) {
         if (!dir.exists()) {
