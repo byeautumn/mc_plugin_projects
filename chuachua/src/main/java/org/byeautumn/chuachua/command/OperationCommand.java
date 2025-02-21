@@ -1,11 +1,14 @@
 package org.byeautumn.chuachua.command;
 
 import org.bukkit.*;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.generator.BiomeProvider;
+import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.byeautumn.chuachua.Chuachua;
@@ -22,6 +25,8 @@ import org.byeautumn.chuachua.undo.ActionRecord;
 import org.byeautumn.chuachua.undo.ActionRecorder;
 import org.byeautumn.chuachua.undo.ActionRunner;
 import org.byeautumn.chuachua.undo.ActionType;
+import org.byeautumn.chuachua.world.FlatWorldGenerator;
+import org.byeautumn.chuachua.world.WorldManager;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +34,7 @@ import java.util.List;
 public class OperationCommand  implements CommandExecutor {
 
     private static final List<String> BW_VALID_ARGS = Arrays.asList("exit", "tp", "listWorlds", "createWall", "undo", "undoGen"
-            , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import");
+            , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import", "createWorld");
     private final Chuachua plugin;
 
     public OperationCommand(Chuachua plugin)  {
@@ -309,6 +314,22 @@ public class OperationCommand  implements CommandExecutor {
                     }
                     player.sendMessage(ChatColor.BLUE + "===================================================");
                 }
+                else if (firstArg.equalsIgnoreCase("createWorld")) {
+                    if (args.length < 2) {
+                        player.sendMessage(ChatColor.RED + "Invalid Arguments for command " + firstArg);
+                        return false;
+                    }
+
+                    String worldName = args[1];
+                    World newWorld = WorldManager.createWorld(worldName, new FlatWorldGenerator());
+                    newWorld.setGameRuleValue("doMobSpawning", "false");
+                    Universe.teleport(player, newWorld.getSpawnLocation());
+                    BiomeProvider bp = newWorld.getBiomeProvider();
+                    System.out.println("BiomeProvider: " + bp);
+                    System.out.println("Biomes: " + (newWorld.getBiomeProvider() == null ? null : bp.getBiomes(newWorld)));
+                    }
+
+
             } else {
                 player.sendMessage(ChatColor.RED + "Could not find the argument you wrote " + ChatColor.YELLOW + firstArg);
             }
@@ -318,3 +339,4 @@ public class OperationCommand  implements CommandExecutor {
         return true;
     }
 }
+
