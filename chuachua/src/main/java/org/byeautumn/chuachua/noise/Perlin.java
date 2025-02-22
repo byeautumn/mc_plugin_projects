@@ -4,23 +4,26 @@ import org.bukkit.Material;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.IOUntil;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.Locale;
 
 public class Perlin {
     public float perlin(float x, float y){
         //Determine grid cell coordinates.
-        System.out.println("Perlin(x=" + x + ", y=" + y + ")");
+//        System.out.println("Perlin(x=" + x + ", y=" + y + ")");
         int x0 = (int)x;
         int y0 = (int)y;
         int x1 = x0 + 1;
         int y1 = y0 + 1;
-        System.out.println("Perlin(x0=" + x0 + "x1=" + x1 + ", y0=" + y0 + "y1=" + y1 + ")");
+//        System.out.println("Perlin(x0=" + x0 + "x1=" + x1 + ", y0=" + y0 + "y1=" + y1 + ")");
 
         //Define interpolation weights.
         float sx = x - (float) x0;
         float sy = y - (float) y0;
-        System.out.println("Perlin(sx=" + sx + ", sy=" + sy + ")." );
+//        System.out.println("Perlin(sx=" + sx + ", sy=" + sy + ")." );
 
         float n00 = dotGridGradient(x0, y0, x, y);
         float n10 = dotGridGradient(x1, y0, x, y );
@@ -29,7 +32,7 @@ public class Perlin {
         float n01 = dotGridGradient(x0, y1, x, y);
         float n11 = dotGridGradient(x1, y1, x, y);
         float ix1 = interpolate(n01, n11, sx);
-        System.out.println("Perlin(x=" + x + ", y=" + y + ") = " + interpolate(ix0, ix1, sy));
+//        System.out.println("Perlin(x=" + x + ", y=" + y + ") = " + interpolate(ix0, ix1, sy));
 
         return interpolate(ix0, ix1, sy);
     }
@@ -42,8 +45,8 @@ public class Perlin {
 
         float result = (dx * gradient.x + dy * gradient.y);
 
-        System.out.println("dotGridGradient(ix=" + ix + ", iy=" + iy + ", x=" + x + ", y=" + y + ") = " + result);
-        System.out.println("  Gradient: (" + gradient.x + ", " + gradient.y + "), dx: " + dx + ", dy: " + dy);
+//        System.out.println("dotGridGradient(ix=" + ix + ", iy=" + iy + ", x=" + x + ", y=" + y + ") = " + result);
+//        System.out.println("  Gradient: (" + gradient.x + ", " + gradient.y + "), dx: " + dx + ", dy: " + dy);
 
         return result;
 
@@ -72,7 +75,7 @@ public class Perlin {
 
     private float interpolate(float a0, float a1, float w){
         float result = (a1 - a0) * (3 - w * 2) * w * w + a0;
-        System.out.println("interpolate(a0=" + a0 + ", a1=" + a1 + ", w=" + w + ") = " + result);
+//        System.out.println("interpolate(a0=" + a0 + ", a1=" + a1 + ", w=" + w + ") = " + result);
         return result;
     }
 
@@ -83,7 +86,7 @@ public class Perlin {
 
         for (int i = 0; i < octaves; i++) {
             total += perlin(x * frequency, z * frequency) * amplitude; // Use your perlin function here
-            System.out.println("Octave " + i + ", Total: " + total);
+//            System.out.println("Octave " + i + ", Total: " + total);
 
             frequency *= 2;
             amplitude *= persistence;
@@ -92,7 +95,7 @@ public class Perlin {
     }
 
     public int getHeight(float x, float z) {
-        System.out.println("getHeight(x=" + x + "z=" + z + ")");
+//        System.out.println("getHeight(x=" + x + "z=" + z + ")");
         int minHeight = 64;
         int maxHeight = 256;
         int octaves = 8;
@@ -112,23 +115,41 @@ public class Perlin {
     }
 
     public static void main(String[] args) {
-        int worldWidth = 256;
-        int worldDepth = 256;
+        int worldWidth = 10;
+        int worldDepth = 10;
         Perlin perlinClass = new Perlin();
-        StringBuffer sb = new StringBuffer();
-        float scale = 0.001f; // Adjust this scale as needed
-        for (int x1 = 0; x1 < worldWidth; x1++) {
-            for (int z1 = 0; z1 < worldDepth; z1++) {
+//        StringBuffer sb = new StringBuffer();
+        float scale = 0.01f; // Adjust this scale as needed
+//        for (int x1 = 0; x1 < worldWidth; x1++) {
+//            for (int z1 = 0; z1 < worldDepth; z1++) {
+//
+//                int y1 = perlinClass.getHeight((float)x1 * scale, (float)z1 * scale);
+//                sb.append(x1).append(IOUntil.CC_SPLITTER).append(y1).append(IOUntil.CC_SPLITTER).append(z1);
+//                sb.append(IOUntil.CC_SPLITTER).append("GRASS_BLOCK");
+//                sb.append(IOUntil.CC_SPLITTER).append("minecraft:grass_block").append("\n");
+//            }
+//        }
+//
+        File ioDir = new File("/Users/alexgao/dev/minecraft/minecraft_spigot_server_1.21.4/io");
+//        IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin", sb.toString());
 
-                int y1 = perlinClass.getHeight((float)x1 * scale, (float)z1 * scale);
-                sb.append(x1).append(IOUntil.CC_SPLITTER).append(y1).append(IOUntil.CC_SPLITTER).append(z1);
-                sb.append(IOUntil.CC_SPLITTER).append("GRASS_BLOCK");
-                sb.append(IOUntil.CC_SPLITTER).append("minecraft:grass_block").append("\n");
+        float[][] noiseValues = new float[worldWidth][worldDepth];
+        for (int xx = 0; xx < worldWidth; xx++) {
+            for (int zz = 0; zz < worldDepth; zz++) {
+
+                int yy = perlinClass.getHeight((float)xx * scale, (float)zz * scale);
+//                System.out.println("****** yy: " + yy + " ******");
+                noiseValues[xx][zz] = yy;
             }
         }
-
-        File ioDir = new File("/Users/alexgao/dev/minecraft/minecraft_spigot_server_1.21.4/io");
-        IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin", sb.toString());
+        try {
+            File imageFile = new File(ioDir, "perlin_noise.png");
+            NoiseImageViewer viewer = new NoiseImageViewer();
+            BufferedImage image = viewer.createGreyScaleImage(worldWidth, worldDepth, noiseValues);
+            ImageIO.write(image, "PNG", imageFile);
+        } catch (IOException ioe) {
+            System.out.println(ioe.getMessage());
+        }
 
     }
 }
