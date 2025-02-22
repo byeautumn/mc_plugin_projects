@@ -37,8 +37,7 @@ public class IOUntil {
         return new File(serverDir, IO_DIR_NAME);
     }
 
-    public static boolean saveExportIntoAIOFile(String chunkName, String exportContent) {
-        File ioDir = getIODir();
+    public static boolean saveExportIntoAIOFile(File ioDir, String chunkName, String exportContent) {
         if (!IOUntil.checkDirExistAndCreateItIfNot(ioDir)) {
             System.err.println("The IO folder doesn't exist and failed on trying to create it.");
             return false;
@@ -60,6 +59,11 @@ public class IOUntil {
         }
 
         return true;
+    }
+
+    public static boolean saveExportIntoAIOFile(String chunkName, String exportContent) {
+        File ioDir = getIODir();
+        return saveExportIntoAIOFile(ioDir, chunkName, exportContent);
     }
 
     public static String getAbsoluteFilePath(File folder, String fileName) {

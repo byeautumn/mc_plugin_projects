@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.IOUntil;
 
+import java.io.File;
 import java.util.Locale;
 
 public class Perlin {
@@ -103,17 +104,15 @@ public class Perlin {
             for (int z1 = 0; z1 < worldDepth; z1++) {
 
                 int y1 = perlinClass.getHeight(x1, z1);
-                System.out.println("x: " + x1 + ", z: " + z1 + ", y: " + y1);
-                // ... set block in your world at (x, y, z) ...
-//                Material material = Material.GRASS_BLOCK; // Get the block type (e.g., using an enum or ID)
 
-//                world.getBlockAt(x1, y1, z1).setType(material); // Set the block at the coordinates
                 sb.append(x1).append(IOUntil.CC_SPLITTER).append(y1).append(IOUntil.CC_SPLITTER).append(z1);
-                sb.append(IOUntil.CC_SPLITTER).append(Material.GRASS_BLOCK.name());
-                sb.append(IOUntil.CC_SPLITTER).append("minecraft:" + Material.GRASS_BLOCK.name().toLowerCase(Locale.ENGLISH)).append("\n");
+                sb.append(IOUntil.CC_SPLITTER).append("GRASS_BLOCK");
+                sb.append(IOUntil.CC_SPLITTER).append("minecraft:grass_block").append("\n");
             }
         }
 
-        IOUntil.saveExportIntoAIOFile("try_perlin", sb.toString());
+        File ioDir = new File("/Users/qiangao/dev/own/minecraft_spigot_server_1.21.4/io");
+        IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin", sb.toString());
+
     }
 }
