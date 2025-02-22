@@ -10,14 +10,17 @@ import java.util.Locale;
 public class Perlin {
     public float perlin(float x, float y){
         //Determine grid cell coordinates.
+        System.out.println("Perlin(x=" + x + ", y=" + y + ")");
         int x0 = (int)x;
         int y0 = (int)y;
         int x1 = x0 + 1;
         int y1 = y0 + 1;
+        System.out.println("Perlin(x0=" + x0 + "x1=" + x1 + ", y0=" + y0 + "y1=" + y1 + ")");
 
         //Define interpolation weights.
-        float sx = x -(float)x0;
-        float sy = y -(float)y0;
+        float sx = x - (float) x0;
+        float sy = y - (float) y0;
+        System.out.println("Perlin(sx=" + sx + ", sy=" + sy + ")." );
 
         float n00 = dotGridGradient(x0, y0, x, y);
         float n10 = dotGridGradient(x1, y0, x, y );
@@ -26,6 +29,7 @@ public class Perlin {
         float n01 = dotGridGradient(x0, y1, x, y);
         float n11 = dotGridGradient(x1, y1, x, y);
         float ix1 = interpolate(n01, n11, sx);
+        System.out.println("Perlin(x=" + x + ", y=" + y + ") = " + interpolate(ix0, ix1, sy));
 
         return interpolate(ix0, ix1, sy);
     }
@@ -36,7 +40,13 @@ public class Perlin {
          float dx = x - (float)ix;
          float dy = y - (float) iy;
 
-         return(dx * gradient.x + dy *gradient.y);
+        float result = (dx * gradient.x + dy * gradient.y);
+
+        System.out.println("dotGridGradient(ix=" + ix + ", iy=" + iy + ", x=" + x + ", y=" + y + ") = " + result);
+        System.out.println("  Gradient: (" + gradient.x + ", " + gradient.y + "), dx: " + dx + ", dy: " + dy);
+
+        return result;
+
     }
 
     public static Vector2 randomGradient(int ix, int iy) {
@@ -61,7 +71,9 @@ public class Perlin {
     }
 
     private float interpolate(float a0, float a1, float w){
-        return(a1 - a0) * (3 - w * 2) * w * w + a0;
+        float result = (a1 - a0) * (3 - w * 2) * w * w + a0;
+        System.out.println("interpolate(a0=" + a0 + ", a1=" + a1 + ", w=" + w + ") = " + result);
+        return result;
     }
 
     public float layeredPerlin(float x, float z, int octaves, float persistence) {
@@ -71,6 +83,7 @@ public class Perlin {
 
         for (int i = 0; i < octaves; i++) {
             total += perlin(x * frequency, z * frequency) * amplitude; // Use your perlin function here
+            System.out.println("Octave " + i + ", Total: " + total);
 
             frequency *= 2;
             amplitude *= persistence;
@@ -79,17 +92,20 @@ public class Perlin {
     }
 
     public int getHeight(float x, float z) {
+        System.out.println("getHeight(x=" + x + "z=" + z + ")");
         int minHeight = 64;
         int maxHeight = 256;
-        int octaves = 8; // Adjust as needed
-        float persistence = 0.5f; // Adjust as needed
+        int octaves = 8;
+        float persistence = 0.5f;
 
         float perlinValue = layeredPerlin(x, z, octaves, persistence);
 
-        // Scale and translate the Perlin value to your height range:
-        int height = (int) (perlinValue * (maxHeight - minHeight) + minHeight);
+        // Scale from -1 to 1 to 0 to 1
+        float normalizedPerlin = (perlinValue + 1.0f) / 2.0f;
 
-        // Clamp the height to the valid range:
+        // Scale from 0 to 1 to minHeight to maxHeight
+        int height = (int) (normalizedPerlin * (maxHeight - minHeight) + minHeight);
+
         height = Math.max(minHeight, Math.min(maxHeight, height));
 
         return height;
@@ -100,18 +116,18 @@ public class Perlin {
         int worldDepth = 256;
         Perlin perlinClass = new Perlin();
         StringBuffer sb = new StringBuffer();
+        float scale = 0.001f; // Adjust this scale as needed
         for (int x1 = 0; x1 < worldWidth; x1++) {
             for (int z1 = 0; z1 < worldDepth; z1++) {
 
-                int y1 = perlinClass.getHeight(x1, z1);
-
+                int y1 = perlinClass.getHeight((float)x1 * scale, (float)z1 * scale);
                 sb.append(x1).append(IOUntil.CC_SPLITTER).append(y1).append(IOUntil.CC_SPLITTER).append(z1);
                 sb.append(IOUntil.CC_SPLITTER).append("GRASS_BLOCK");
                 sb.append(IOUntil.CC_SPLITTER).append("minecraft:grass_block").append("\n");
             }
         }
 
-        File ioDir = new File("/Users/qiangao/dev/own/minecraft_spigot_server_1.21.4/io");
+        File ioDir = new File("/Users/alexgao/dev/minecraft/minecraft_spigot_server_1.21.4/io");
         IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin", sb.toString());
 
     }
