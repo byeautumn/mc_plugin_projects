@@ -1,4 +1,4 @@
-package org.byeautumn.chuachua.world;
+package org.byeautumn.chuachua.generate.world;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -9,6 +9,7 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 
 public class WorldManager {
+    public final static int WORLD_ELEVATION_LIMIT = 320; // 320 blocks
 
     public static World createWorld(String worldName, ChunkGenerator generator) {
         WorldCreator creator = new WorldCreator(worldName);

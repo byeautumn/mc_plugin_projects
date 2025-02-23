@@ -1,14 +1,12 @@
 package org.byeautumn.chuachua.command;
 
 import org.bukkit.*;
-import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.BiomeProvider;
-import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.byeautumn.chuachua.Chuachua;
@@ -25,8 +23,8 @@ import org.byeautumn.chuachua.undo.ActionRecord;
 import org.byeautumn.chuachua.undo.ActionRecorder;
 import org.byeautumn.chuachua.undo.ActionRunner;
 import org.byeautumn.chuachua.undo.ActionType;
-import org.byeautumn.chuachua.world.FlatWorldGenerator;
-import org.byeautumn.chuachua.world.WorldManager;
+import org.byeautumn.chuachua.generate.world.FlatWorldGenerator;
+import org.byeautumn.chuachua.generate.world.WorldManager;
 
 import java.util.Arrays;
 import java.util.List;

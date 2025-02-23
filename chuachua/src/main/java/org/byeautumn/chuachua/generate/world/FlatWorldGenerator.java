@@ -1,16 +1,11 @@
-package org.byeautumn.chuachua.world;
+package org.byeautumn.chuachua.generate.world;
 
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockType;
-import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.ChunkGenerator;
-import org.byeautumn.chuachua.noise.Perlin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.HashMap;
 import java.util.Random;
 
 public class FlatWorldGenerator extends ChunkGenerator {

@@ -4,9 +4,9 @@ import java.awt.image.BufferedImage;
 
 public class NoiseImageViewer {
 
-    public BufferedImage createGreyScaleImage(int width, int height, float[][] noiseValues) {
+    public BufferedImage createGreyScaleImage(int width, int height, double[][] noiseValues) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
-        float[][] normalized = normalizeNoiseValues(noiseValues);
+        double[][] normalized = normalizeNoiseValues(noiseValues);
         // Set the pixel values based on the Perlin noise
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -22,7 +22,7 @@ public class NoiseImageViewer {
         return image;
     }
 
-    private float[][] normalizeNoiseValues(float[][] noiseValues) {
+    private double[][] normalizeNoiseValues(double[][] noiseValues) {
         if (null == noiseValues || noiseValues.length < 1) {
             System.out.println("The input matrix is either null or empty. Skip normalization ...");
             return noiseValues;
@@ -34,9 +34,9 @@ public class NoiseImageViewer {
             return noiseValues;
         }
 
-        float[][] normalized = new float[rows][cols];
-        float min = Float.MAX_VALUE;
-        float max = Float.MIN_VALUE;
+        double[][] normalized = new double[rows][cols];
+        double min = Double.MAX_VALUE;
+        double max = Double.MIN_VALUE;
         for (int xx = 0; xx < rows; ++xx) {
             for (int yy = 0; yy < cols; ++yy) {
                 min = Math.min(min, noiseValues[xx][yy]);
@@ -44,11 +44,11 @@ public class NoiseImageViewer {
             }
         }
 
-        float scale = max - min;
+        double scale = max - min;
 
         for (int xx = 0; xx < rows; ++xx) {
             for (int yy = 0; yy < cols; ++yy) {
-                float value = noiseValues[xx][yy];
+                double value = noiseValues[xx][yy];
                 normalized[xx][yy] = (value - min) / scale;
             }
         }
