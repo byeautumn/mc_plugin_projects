@@ -1,16 +1,16 @@
 package org.byeautumn.chuachua.noise;
 
 public class Vector2 {
-    public double x;
-    public double y;
+    public float x;
+    public float y;
 
-    public Vector2(double x, double y) {
+    public Vector2(float x, float y) {
         this.x = x;
         this.y = y;
     }
 
     public Vector2 normalize() {
-        double length = (double) Math.sqrt(x * x + y * y);
+        float length = (float) Math.sqrt(x * x + y * y);
         if (length != 0) {
             return new Vector2(x / length, y / length);
         }

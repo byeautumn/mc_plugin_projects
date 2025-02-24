@@ -15,6 +15,7 @@ import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
+import org.byeautumn.chuachua.generate.world.MountainWorldGenerator;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.ChunkImporter;
 import org.byeautumn.chuachua.player.PlayerTracker;
@@ -28,6 +29,7 @@ import org.byeautumn.chuachua.generate.world.WorldManager;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class OperationCommand  implements CommandExecutor {
 
@@ -319,12 +321,14 @@ public class OperationCommand  implements CommandExecutor {
                     }
 
                     String worldName = args[1];
-                    World newWorld = WorldManager.createWorld(worldName, new FlatWorldGenerator());
+
+
+                    World newWorld = WorldManager.createWorld(worldName, new MountainWorldGenerator(8282011L) );
                     newWorld.setGameRuleValue("doMobSpawning", "false");
                     Universe.teleport(player, newWorld.getSpawnLocation());
-                    BiomeProvider bp = newWorld.getBiomeProvider();
-                    System.out.println("BiomeProvider: " + bp);
-                    System.out.println("Biomes: " + (newWorld.getBiomeProvider() == null ? null : bp.getBiomes(newWorld)));
+//                    BiomeProvider bp = newWorld.getBiomeProvider();
+//                    System.out.println("BiomeProvider: " + bp);
+//                    System.out.println("Biomes: " + (newWorld.getBiomeProvider() == null ? null : bp.getBiomes(newWorld)));
                     }
 
 

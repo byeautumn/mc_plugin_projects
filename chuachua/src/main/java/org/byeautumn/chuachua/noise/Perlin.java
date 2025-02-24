@@ -18,38 +18,38 @@ public class Perlin {
         this.random = new Random(seed);
     }
 
-    private double perlin(double x, double y) {
-        double x0 = Math.floor(x);
-        double y0 = Math.floor(y);
-        double x1 = Math.ceil(x);
-        double y1 = Math.ceil(y);
+    public float perlin(float x, float y) {
+        int x0 = (int) x;
+        int y0 = (int) y;
+        int x1 = x0 + 1;
+        int y1 = y0 + 1;
 
-        double sx = x - x0;
-        double sy = y - y0;
+        float sx = x - (float) x0;
+        float sy = y - (float) y0;
 
-        double n00 = dotGridGradient(x0, y0, x, y);
-        double n10 = dotGridGradient(x1, y0, x, y);
-        double ix0 = interpolate(n00, n10, sx);
+        float n00 = dotGridGradient(x0, y0, x, y);
+        float n10 = dotGridGradient(x1, y0, x, y);
+        float ix0 = interpolate(n00, n10, sx);
 
-        double n01 = dotGridGradient(x0, y1, x, y);
-        double n11 = dotGridGradient(x1, y1, x, y);
-        double ix1 = interpolate(n01, n11, sx);
+        float n01 = dotGridGradient(x0, y1, x, y);
+        float n11 = dotGridGradient(x1, y1, x, y);
+        float ix1 = interpolate(n01, n11, sx);
 
         return interpolate(ix0, ix1, sy);
     }
 
-    private double dotGridGradient(double ix, double iy, double x, double y) {
+    private float dotGridGradient(int ix, int iy, float x, float y) {
         Vector2 gradient = randomGradient(ix, iy);
-        double dx = x - (double) ix;
-        double dy = y - (double) iy;
+        float dx = x - (float) ix;
+        float dy = y - (float) iy;
         return (dx * gradient.x + dy * gradient.y);
     }
 
-    private Vector2 randomGradient(double ix, double iy) {
+    public Vector2 randomGradient(int ix, int iy) {
         final int w = 8 * Long.BYTES;
         final int s = w / 2;
-        long a = (long)ix;
-        long b = (long)iy;
+        long a = ix;
+        long b = iy;
 
         a *= 3284157443L;
         b ^= (a << s | a >>> w - s);
@@ -63,20 +63,20 @@ public class Perlin {
         double randomValue = random.nextDouble();
 
         Vector2 v = new Vector2(0, 0);
-        v.x = Math.sin(randomValue * 2 * Math.PI);
-        v.y = Math.cos(randomValue * 2 * Math.PI);
+        v.x = (float) Math.sin(randomValue * 2 * Math.PI);
+        v.y = (float) Math.cos(randomValue * 2 * Math.PI);
 
         return v;
     }
 
-    private double interpolate(double a0, double a1, double w) {
+    private float interpolate(float a0, float a1, float w) {
         return (a1 - a0) * (3 - w * 2) * w * w + a0;
     }
 
-    private double layeredPerlin(double x, double z, int octaves, double persistence) {
-        double total = 0;
-        double frequency = 1;
-        double amplitude = 1;
+    public float layeredPerlin(float x, float z, int octaves, float persistence) {
+        float total = 0;
+        float frequency = 1;
+        float amplitude = 1;
 
         for (int i = 0; i < octaves; i++) {
             total += perlin(x * frequency, z * frequency) * amplitude;
@@ -86,49 +86,100 @@ public class Perlin {
         return total;
     }
 
-    public int getHeight(double x, double z) {
-        int minHeight = 64;
-        int maxHeight = 256;
+    public int getHeight(float x, float z, int minHeight, int maxHeight) {
         int octaves = 8;
-        double persistence = 0.5d;
+        float persistence = 0.5f;
 
-        double perlinValue = layeredPerlin(x, z, octaves, persistence);
-        double normalizedPerlin = (perlinValue + 1.0f) / 2.0d;
+        float perlinValue = layeredPerlin(x, z, octaves, persistence);
+        float normalizedPerlin = (perlinValue + 1.0f) / 2.0f;
         int height = (int) (normalizedPerlin * (maxHeight - minHeight) + minHeight);
         height = Math.max(minHeight, Math.min(maxHeight, height));
 
         return height;
     }
 
+    public double[][] normalizedNoiseValues(int width, int depth) {
+        if (width < 1 || depth < 1) {
+            System.out.println("Invalid input(s) to function normalizedNoiseValues.");
+            return null;
+        }
+
+        double[][] noiseValues = new double[width][depth];
+        for (int xx = 0; xx < width; xx++) {
+            for (int zz = 0; zz < depth; zz++) {
+                int yy = getHeight(xx, zz, 64, 256);
+                noiseValues[xx][zz] = yy;
+                System.out.println("Original: [" + xx + "," + zz + "] -> " + yy);
+            }
+        }
+
+        return normalizedNoiseValues(noiseValues);
+    }
+
+    public double[][] normalizedNoiseValues(double[][] noiseValues) {
+        if (null == noiseValues || noiseValues.length < 1) {
+            System.out.println("The input matrix is either null or empty. Skip normalization ...");
+            return noiseValues;
+        }
+        int rows = noiseValues.length;
+        int cols = noiseValues[0].length;
+        if (cols < 1) {
+            System.out.println("The input matrix is empty. Skip normalization ...");
+            return noiseValues;
+        }
+
+        double[][] normalized = new double[rows][cols];
+        double min = Double.MAX_VALUE;
+        double max = Double.MIN_VALUE;
+        for (int xx = 0; xx < rows; ++xx) {
+            for (int yy = 0; yy < cols; ++yy) {
+                min = Math.min(min, noiseValues[xx][yy]);
+                max = Math.max(max, noiseValues[xx][yy]);
+            }
+        }
+
+        double scale = max - min;
+
+        for (int xx = 0; xx < rows; ++xx) {
+            for (int yy = 0; yy < cols; ++yy) {
+                double value = noiseValues[xx][yy];
+                normalized[xx][yy] = scale == 0.0 ? 0.0 : (value - min) / scale;
+                System.out.println("Normalized: [" + xx + "," + yy + "] -> " + normalized[xx][yy]);
+            }
+        }
+
+        return normalized;
+    }
+
     public static void main(String[] args) {
         int worldWidth = 256;
         int worldDepth = 256;
-        long seed = 8282011;
+        long seed = 12261977;
         Perlin perlinClass = new Perlin(seed);
-        double scale = 0.001d;
+        float scale = 0.001f;
 
         StringBuffer sb = new StringBuffer();
         for (int x1 = 0; x1 < worldWidth; x1++) {
             for (int z1 = 0; z1 < worldDepth; z1++) {
-
-                int y1 = perlinClass.getHeight((double)x1 * scale, (double)z1 * scale);
+                int y1 = perlinClass.getHeight((float)x1 * scale, (float)z1 * scale, 64, 256);
                 sb.append(x1).append(IOUntil.CC_SPLITTER).append(y1).append(IOUntil.CC_SPLITTER).append(z1);
                 sb.append(IOUntil.CC_SPLITTER).append("GRASS_BLOCK");
                 sb.append(IOUntil.CC_SPLITTER).append("minecraft:grass_block").append("\n");
             }
         }
-//
-        File ioDir = new File("/Users/alexgao/dev/minecraft/minecraft_spigot_server_1.21.4/io");
-        IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin" + seed, sb.toString());
 
+        File ioDir = new File("/Users/qiangao/dev/own/minecraft_spigot_server_1.21.4/io");
+        IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin" + seed, sb.toString());
 
         double[][] noiseValues = new double[worldWidth][worldDepth];
         for (int xx = 0; xx < worldWidth; xx++) {
             for (int zz = 0; zz < worldDepth; zz++) {
-                int yy = perlinClass.getHeight((double) xx * scale, (double) zz * scale);
+                int yy = perlinClass.getHeight((float) xx * scale, (float) zz * scale, 64, 256);
                 noiseValues[xx][zz] = yy;
             }
         }
+
+        noiseValues = perlinClass.normalizedNoiseValues(noiseValues);
 
         try {
             File imageFile = new File(ioDir, "perlin_noise_" + seed + ".png");
