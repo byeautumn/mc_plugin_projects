@@ -80,7 +80,7 @@ public class PerlinDS {
         int worldDepth = 1920;
         long seed = 8282011;
         PerlinDS perlin = new PerlinDS(seed);
-        double scale = 0.001d;
+        double scale = 0.01d;
 
         double[][] noiseValues = new double[worldWidth][worldDepth];
         for (int xx = 0; xx < worldWidth; xx++) {

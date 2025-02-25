@@ -58,9 +58,9 @@ public class Perlin {
         a *= 2048419325L;
 
         int index = (int) ((a ^ b) % 1024);
-        random.setSeed(this.seed + index);
+        Random localRandom = new Random(seed + index);
 
-        double randomValue = random.nextDouble();
+        double randomValue = localRandom.nextDouble();
 
         Vector2 v = new Vector2(0, 0);
         v.x = (float) Math.sin(randomValue * 2 * Math.PI);
@@ -75,8 +75,8 @@ public class Perlin {
 
     public float layeredPerlin(float x, float z, int octaves, float persistence) {
         float total = 0;
-        float frequency = 1;
-        float amplitude = 1;
+        float frequency = 1f;
+        float amplitude = 1f;
 
         for (int i = 0; i < octaves; i++) {
             total += perlin(x * frequency, z * frequency) * amplitude;
@@ -86,9 +86,7 @@ public class Perlin {
         return total;
     }
 
-    public int getHeight(float x, float z, int minHeight, int maxHeight) {
-        int octaves = 8;
-        float persistence = 0.5f;
+    public int getHeight(float x, float z, int minHeight, int maxHeight, int octaves, float persistence) {
 
         float perlinValue = layeredPerlin(x, z, octaves, persistence);
         float normalizedPerlin = (perlinValue + 1.0f) / 2.0f;
@@ -98,88 +96,33 @@ public class Perlin {
         return height;
     }
 
-    public double[][] normalizedNoiseValues(int width, int depth) {
-        if (width < 1 || depth < 1) {
-            System.out.println("Invalid input(s) to function normalizedNoiseValues.");
-            return null;
-        }
-
-        double[][] noiseValues = new double[width][depth];
-        for (int xx = 0; xx < width; xx++) {
-            for (int zz = 0; zz < depth; zz++) {
-                int yy = getHeight(xx, zz, 64, 256);
-                noiseValues[xx][zz] = yy;
-                System.out.println("Original: [" + xx + "," + zz + "] -> " + yy);
-            }
-        }
-
-        return normalizedNoiseValues(noiseValues);
-    }
-
-    public double[][] normalizedNoiseValues(double[][] noiseValues) {
-        if (null == noiseValues || noiseValues.length < 1) {
-            System.out.println("The input matrix is either null or empty. Skip normalization ...");
-            return noiseValues;
-        }
-        int rows = noiseValues.length;
-        int cols = noiseValues[0].length;
-        if (cols < 1) {
-            System.out.println("The input matrix is empty. Skip normalization ...");
-            return noiseValues;
-        }
-
-        double[][] normalized = new double[rows][cols];
-        double min = Double.MAX_VALUE;
-        double max = Double.MIN_VALUE;
-        for (int xx = 0; xx < rows; ++xx) {
-            for (int yy = 0; yy < cols; ++yy) {
-                min = Math.min(min, noiseValues[xx][yy]);
-                max = Math.max(max, noiseValues[xx][yy]);
-            }
-        }
-
-        double scale = max - min;
-
-        for (int xx = 0; xx < rows; ++xx) {
-            for (int yy = 0; yy < cols; ++yy) {
-                double value = noiseValues[xx][yy];
-                normalized[xx][yy] = scale == 0.0 ? 0.0 : (value - min) / scale;
-                System.out.println("Normalized: [" + xx + "," + yy + "] -> " + normalized[xx][yy]);
-            }
-        }
-
-        return normalized;
-    }
-
     public static void main(String[] args) {
         int worldWidth = 256;
         int worldDepth = 256;
-        long seed = 12261977;
+        long seed = 8282011L;
         Perlin perlinClass = new Perlin(seed);
         float scale = 0.001f;
 
         StringBuffer sb = new StringBuffer();
         for (int x1 = 0; x1 < worldWidth; x1++) {
             for (int z1 = 0; z1 < worldDepth; z1++) {
-                int y1 = perlinClass.getHeight((float)x1 * scale, (float)z1 * scale, 64, 256);
+                int y1 = perlinClass.getHeight((float)x1 * scale, (float)z1 * scale, 64, 256, 1, 0.0f);
                 sb.append(x1).append(IOUntil.CC_SPLITTER).append(y1).append(IOUntil.CC_SPLITTER).append(z1);
                 sb.append(IOUntil.CC_SPLITTER).append("GRASS_BLOCK");
                 sb.append(IOUntil.CC_SPLITTER).append("minecraft:grass_block").append("\n");
             }
         }
 
-        File ioDir = new File("/Users/qiangao/dev/own/minecraft_spigot_server_1.21.4/io");
+        File ioDir = new File("/Users/alexgao/dev/minecraft/minecraft_spigot_server_1.21.4/io");
         IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin" + seed, sb.toString());
 
         double[][] noiseValues = new double[worldWidth][worldDepth];
         for (int xx = 0; xx < worldWidth; xx++) {
             for (int zz = 0; zz < worldDepth; zz++) {
-                int yy = perlinClass.getHeight((float) xx * scale, (float) zz * scale, 64, 256);
+                int yy = perlinClass.getHeight((float) xx * scale, (float) zz * scale, 64, 256, 1, 0.0f);
                 noiseValues[xx][zz] = yy;
             }
         }
-
-        noiseValues = perlinClass.normalizedNoiseValues(noiseValues);
 
         try {
             File imageFile = new File(ioDir, "perlin_noise_" + seed + ".png");
