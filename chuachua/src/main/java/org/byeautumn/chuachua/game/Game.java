@@ -21,11 +21,12 @@ public class Game {
                         new ChapterConfig(0, "chapter 1", "chapter1_world",
                                 new LocationVector(8.0, 230, 23),
                                 Arrays.asList(new LocationVector(-304.0, 86.0, 16.0))))
-//                ,
-//                new Chapter(
-//                        new ChapterConfig(0, "chapter 2", "chapter2_world",
-//                                new LocationVector(0.0, 0.0, 0.0),
-//                                Arrays.asList(new LocationVector(0.0, 0.0, 0.0)))),
+                ,
+                new Chapter(
+                        new ChapterConfig(0, "chapter 2", "chapter2_world",
+                                new LocationVector(0.0, 0.0, 0.0),
+                                Arrays.asList(new LocationVector(0.0, 0.0, 0.0))))
+//                                ,
 //                new Chapter(
 //                        new ChapterConfig(0, "chapter 3", "chapter3_world",
 //                                new LocationVector(0.0, 0.0, 0.0),

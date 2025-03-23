@@ -19,8 +19,8 @@ public class Perlin {
     }
 
     public float perlin(float x, float y) {
-        int x0 = (int) x;
-        int y0 = (int) y;
+        int x0 = (int) Math.floor(x);
+        int y0 = (int) Math.floor(y);
         int x1 = x0 + 1;
         int y1 = y0 + 1;
 
@@ -57,7 +57,7 @@ public class Perlin {
         a ^= (b << s | b >>> w - s);
         a *= 2048419325L;
 
-        int index = (int) ((a ^ b) % 1024);
+        int index = (int) ((a ^ b) % 10240000);
         Random localRandom = new Random(seed + index);
 
         double randomValue = localRandom.nextDouble();
@@ -80,7 +80,7 @@ public class Perlin {
 
         for (int i = 0; i < octaves; i++) {
             total += perlin(x * frequency, z * frequency) * amplitude;
-            frequency *= 2;
+            frequency *= 2.0f;
             amplitude *= persistence;
         }
         return total;
@@ -113,7 +113,7 @@ public class Perlin {
             }
         }
 
-        File ioDir = new File("/Users/alexgao/dev/minecraft/minecraft_spigot_server_1.21.4/io");
+        File ioDir = new File("/Users/qiangao/dev/own/minecraft_spigot_server_1.21.4/io");
         IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin" + seed, sb.toString());
 
         double[][] noiseValues = new double[worldWidth][worldDepth];

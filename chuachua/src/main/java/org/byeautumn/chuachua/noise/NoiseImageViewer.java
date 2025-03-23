@@ -4,39 +4,36 @@ import java.awt.image.BufferedImage;
 
 public class NoiseImageViewer {
 
-    public BufferedImage createGreyScaleImage(int width, int height, double[][] noiseValues) {
+    public BufferedImage createGreyScaleImage(int width, int height, double[][] noiseValues, int overlap) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
         double[][] normalized = normalizeNoiseValues(noiseValues);
-        // Set the pixel values based on the Perlin noise
+
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                // Normalize the Perlin noise value to 0-255 (grayscale range)
-                int grayValue = (int) (normalized[x][y] * 255);  // Assuming noiseValues are between 0 and 1
-                grayValue = Math.max(0, Math.min(255, grayValue)); // Clamp to 0-255
-
-                // Set the pixel color (grayscale)
-                image.setRGB(x, y, (grayValue << 16) | (grayValue << 8) | grayValue); // Efficient grayscale
+                int grayValue = (int) (normalized[x][y] * 255);
+                grayValue = Math.max(0, Math.min(255, grayValue));
+                image.setRGB(x, y, (grayValue << 16) | (grayValue << 8) | grayValue);
             }
         }
 
         return image;
     }
 
+    public BufferedImage createGreyScaleImage(int width, int height, double[][] noiseValues) {
+        return createGreyScaleImage(width, height, noiseValues, 0);
+    }
+
     private double[][] normalizeNoiseValues(double[][] noiseValues) {
-        if (null == noiseValues || noiseValues.length < 1) {
-            System.out.println("The input matrix is either null or empty. Skip normalization ...");
-            return noiseValues;
-        }
-        int rows = noiseValues.length;
-        int cols = noiseValues[0].length;
-        if (cols < 1) {
-            System.out.println("The input matrix is empty. Skip normalization ...");
+        if (noiseValues == null || noiseValues.length == 0 || noiseValues[0].length == 0) {
             return noiseValues;
         }
 
+        int rows = noiseValues.length;
+        int cols = noiseValues[0].length;
         double[][] normalized = new double[rows][cols];
         double min = Double.MAX_VALUE;
         double max = Double.MIN_VALUE;
+
         for (int xx = 0; xx < rows; ++xx) {
             for (int yy = 0; yy < cols; ++yy) {
                 min = Math.min(min, noiseValues[xx][yy]);
@@ -45,11 +42,17 @@ public class NoiseImageViewer {
         }
 
         double scale = max - min;
-
-        for (int xx = 0; xx < rows; ++xx) {
-            for (int yy = 0; yy < cols; ++yy) {
-                double value = noiseValues[xx][yy];
-                normalized[xx][yy] = (value - min) / scale;
+        if (scale == 0) {
+            for (int xx = 0; xx < rows; ++xx) {
+                for (int yy = 0; yy < cols; ++yy) {
+                    normalized[xx][yy] = 0.0;
+                }
+            }
+        } else {
+            for (int xx = 0; xx < rows; ++xx) {
+                for (int yy = 0; yy < cols; ++yy) {
+                    normalized[xx][yy] = (noiseValues[xx][yy] - min) / scale;
+                }
             }
         }
 
