@@ -113,7 +113,7 @@ public class Perlin {
             }
         }
 
-        File ioDir = new File("/Users/qiangao/dev/own/minecraft_spigot_server_1.21.4/io");
+        File ioDir = new File("/Users/alexgao/dev/minecraft/minecraft_spigot_server_1.21.4/io");
         IOUntil.saveExportIntoAIOFile(ioDir, "try_perlin" + seed, sb.toString());
 
         double[][] noiseValues = new double[worldWidth][worldDepth];

@@ -3,17 +3,15 @@ package org.byeautumn.chuachua.generate.world;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.generator.ChunkGenerator;
-import org.byeautumn.chuachua.generate.world.BiomeGenerator;
 
+import java.awt.Color;
 import java.util.Random;
 
 public class BiomeWorldGenerator extends ChunkGenerator {
 
     private final BiomeGenerator biomeGenerator;
-    private final Random random;
 
     public BiomeWorldGenerator(long seed) {
-        this.random = new Random(seed);
         this.biomeGenerator = new BiomeGenerator(seed);
     }
 
@@ -26,12 +24,8 @@ public class BiomeWorldGenerator extends ChunkGenerator {
                 int worldX = chunkX * 16 + x;
                 int worldZ = chunkZ * 16 + z;
 
-                float temperature = biomeGenerator.getTemperature(worldX, worldZ);
-                float altitude = biomeGenerator.getAltitude(worldX, worldZ);
-                float hydration = biomeGenerator.getHydration(worldX, worldZ);
-
-                BiomeGenerator.BiomeType biome = biomeGenerator.getBiomeFromFactors(temperature, altitude, hydration, worldX, worldZ);
-                Material concreteColor = biomeGenerator.getBiomeColor(biome);
+                Color color = biomeGenerator.getBiomeColor(worldX, worldZ); // Get the Color
+                Material concreteColor = colorToConcreteMaterial(color); // Convert to Material
 
                 for (int y = 0; y < 64; y++) {
                     chunkData.setBlock(x, y, z, concreteColor);
@@ -39,5 +33,44 @@ public class BiomeWorldGenerator extends ChunkGenerator {
             }
         }
         return chunkData;
+    }
+
+    private Material colorToConcreteMaterial(Color color) {
+        int red = color.getRed();
+        int green = color.getGreen();
+        int blue = color.getBlue();
+
+        // Simple Color Matching Logic (Expand as needed)
+        if (red > 200 && green > 200 && blue > 200) {
+            return Material.WHITE_CONCRETE;
+        } else if (red > 200 && green > 200) {
+            return Material.YELLOW_CONCRETE;
+        } else if (red > 200 && blue > 200) {
+            return Material.MAGENTA_CONCRETE;
+        } else if (green > 200 && blue > 200) {
+            return Material.CYAN_CONCRETE;
+        } else if (red > 200) {
+            return Material.RED_CONCRETE;
+        } else if (green > 200) {
+            return Material.LIME_CONCRETE;
+        } else if (blue > 200) {
+            return Material.BLUE_CONCRETE;
+        } else if (red > 100 && green > 100 && blue > 100) {
+            return Material.LIGHT_GRAY_CONCRETE;
+        } else if (red > 100 && green > 100) {
+            return Material.ORANGE_CONCRETE;
+        } else if (red > 100 && blue > 100) {
+            return Material.PURPLE_CONCRETE;
+        } else if (green > 100 && blue > 100) {
+            return Material.LIGHT_BLUE_CONCRETE;
+        } else if (red > 100) {
+            return Material.BROWN_CONCRETE;
+        } else if (green > 100) {
+            return Material.GREEN_CONCRETE;
+        } else if (blue > 100) {
+            return Material.BLUE_CONCRETE;
+        } else {
+            return Material.GRAY_CONCRETE;
+        }
     }
 }
