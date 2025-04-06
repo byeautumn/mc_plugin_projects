@@ -34,7 +34,8 @@ public class MountainWorldGenerator extends ChunkGenerator {
     private final float highFrequencyPersistence = 0.6f;
     private final Perlin topDetailNoise;
     private final float topDetailScale = 0.01f;
-    private final float topDetailThreshold = 0.8f;
+    
+//    private final float topDetailThreshold = 0.8f;
 
     private final Perlin perlin;
     private final Perlin mountainMaskNoise;
