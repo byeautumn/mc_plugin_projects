@@ -126,133 +126,103 @@ public class MountainWorldGenerator extends ChunkGenerator {
                     }
                 }
                 if (blockMaterial == Material.GRASS_BLOCK && finalHeight > MIN_HEIGHT + 1 && random.nextInt(80) == 0) {
-                    generateRealisticTree(chunkData, xx, finalHeight, zz, random);
+                    generateConeTree(chunkData, xx, finalHeight, zz, random);
                 }
             }
         }
         return chunkData;
     }
 
-    private void generateRealisticTree(ChunkData chunkData, int x, int y, int z, Random random) {
-        // Determine tree type (for material variation - can be expanded)
-        Material logMaterial;
-        Material leafMaterial;
-        if (random.nextBoolean()) {
-            logMaterial = Material.OAK_LOG;
-            leafMaterial = Material.OAK_LEAVES;
-        } else {
-            logMaterial = Material.SPRUCE_LOG;
-            leafMaterial = Material.SPRUCE_LEAVES;
+    private void generateConeTree(ChunkData chunkData, int x, int y, int z, Random random) {
+        int treeHeight = random.nextInt(6) + 8; // Height between 8 and 13
+        Material trunkMaterial = Material.SPRUCE_LOG;
+        Material leafMaterial = Material.SPRUCE_LEAVES;
+        Material branchLogMaterial = Material.SPRUCE_LOG;
+        Material branchFenceMaterial = Material.SPRUCE_FENCE;
+
+        // Generate trunk with fence transitions
+        for (int i = 0; i < treeHeight - 2; i++) {
+            if (y + i < MAX_HEIGHT - 2) {
+                chunkData.setBlock(x, y + i, z, trunkMaterial);
+            }
         }
+        // Transition to fences
+        if (y + treeHeight - 2 < MAX_HEIGHT - 2) chunkData.setBlock(x, y + treeHeight - 2, z, Material.SPRUCE_FENCE);
+        if (y + treeHeight - 1 < MAX_HEIGHT - 2) chunkData.setBlock(x, y + treeHeight - 1, z, Material.SPRUCE_FENCE);
 
-        int trunkHeight = random.nextInt(8) + 8; // Height variation
-        double baseThickness = 1.5 + random.nextDouble(); // Trunk thickness at base
-        double taperRate = 0.6 + random.nextDouble() * 0.3; // How much the trunk tapers
+        // Generate cone-shaped leaves and branches
+        for (int yy = y + 2; yy < y + treeHeight + 2; yy++) { // Increased leaf height
+            int radius = Math.max(0, (int) Math.round((treeHeight + 2 - yy + y) / 1.8) - 1);
+            float normalizedHeight = (float) (yy - y - 2) / (treeHeight - 3); // 0 at bottom leaves, 1 at top
 
-        // Generate Trunk with slight variation
-        for (int i = 0; i < trunkHeight; i++) {
-            double currentThickness = baseThickness * Math.pow(taperRate, (double) i / trunkHeight);
-            int radius = (int) Math.round(currentThickness / 2.0);
-            for (int ox = -radius; ox <= radius; ox++) {
-                for (int oz = -radius; oz <= radius; oz++) {
-                    if (ox * ox + oz * oz <= radius * radius + 0.2) {
-                        int blockY = y + i;
-                        if (blockY < MAX_HEIGHT - 1) {
-                            chunkData.setBlock(x + ox, blockY, z + oz, logMaterial);
+            for (int xx = x - radius; xx <= x + radius; xx++) {
+                for (int zz = z - radius; zz <= z + radius; zz++) {
+                    double distanceSq = Math.pow(xx - x, 2) + Math.pow(zz - z, 2);
+                    if (distanceSq <= radius * radius + 0.5) {
+                        if (chunkData.getType(xx, yy, zz).isAir()) {
+                            chunkData.setBlock(xx, yy, zz, leafMaterial);
                         }
-                    }
-                }
-            }
-            // Slight random trunk bends
-            if (random.nextInt(5) == 0 && i > 2) {
-                x += random.nextInt(3) - 1;
-                z += random.nextInt(3) - 1;
-            }
-        }
+                        // Generate branches (sideways logs) sparsely, more at the bottom
+                        float branchChanceFactor = 1.0f - normalizedHeight * 0.7f; // Higher chance at lower levels
+                        if (random.nextFloat() < 0.05f * branchChanceFactor) { // Reduced base branch chance
+                            int offsetX = xx - x;
+                            int offsetZ = zz - z;
 
-        // Generate Branches (more at the bottom, shorter and thinner at the top)
-        int numBranches = random.nextInt(8) + 6;
-        for (int i = 0; i < numBranches; i++) {
-            double branchStartHeightRatio = 0.2 + (double) i / numBranches * 0.6; // Branches mostly in lower/mid section
-            int branchY = y + (int) (trunkHeight * branchStartHeightRatio) + random.nextInt(3) - 1;
-            if (branchY < y + 2) continue; // Don't place branches too low
-
-            double branchLength = (1.0 - branchStartHeightRatio) * 6 + random.nextDouble() * 3;
-            double branchThickness = 0.8 - branchStartHeightRatio * 0.6 + random.nextDouble() * 0.2;
-            double angleXZ = random.nextDouble() * 2 * Math.PI;
-            double angleY = Math.PI / 2 + (random.nextDouble() * 0.8 - 0.4); // Tend to grow outwards/slightly upwards
-
-            int branchStartX = x + (int) (Math.cos(angleXZ) * (baseThickness / 2));
-            int branchStartZ = z + (int) (Math.sin(angleXZ) * (baseThickness / 2));
-
-            int lastBX = branchStartX;
-            int lastBY = branchY;
-            int lastBZ = branchStartZ;
-
-            for (double j = 0; j < branchLength; j += 0.8) {
-                int bx = branchStartX + (int) (Math.cos(angleXZ) * Math.cos(angleY) * j);
-                int bz = branchStartZ + (int) (Math.sin(angleXZ) * Math.cos(angleY) * j);
-                int by = branchY + (int) (Math.sin(angleY) * j);
-
-                // Generate branch segments
-                drawLine(chunkData, lastBX, lastBY, lastBZ, bx, by, bz, logMaterial);
-                lastBX = bx;
-                lastBY = by;
-                lastBZ = bz;
-
-                if (by < MAX_HEIGHT - 1) {
-                    double currentBranchThickness = branchThickness * (1.0 - j / branchLength);
-                    if (currentBranchThickness < 0.5 && random.nextInt(3) == 0) {
-                        chunkData.setBlock(bx, by, bz, Material.SPRUCE_FENCE); // Simulate thinner twigs
-                    }
-                }
-            }
-
-            // Add leaves at the end of branches
-            int leafDensity = 3 + random.nextInt(4);
-            for (int ly = lastBY - leafDensity / 2; ly < lastBY + leafDensity / 2; ly++) {
-                for (int lx = lastBX - leafDensity / 2; lx < lastBX + leafDensity / 2; lx++) {
-                    for (int lz = lastBZ - leafDensity / 2; lz < lastBZ + leafDensity / 2; lz++) {
-                        if (Math.pow(lx - lastBX, 2) + Math.pow(ly - lastBY, 2) + Math.pow(lz - lastBZ, 2) < Math.pow(leafDensity / 2.0, 2) + 1 && chunkData.getType(lx, ly, lz).isAir() && ly < MAX_HEIGHT) {
-                            chunkData.setBlock(lx, ly, lz, leafMaterial);
+                            if (Math.abs(offsetX) > 0) {
+                                int branchX = x + (int) Math.signum(offsetX);
+                                if (chunkData.getType(branchX, yy, z).isAir() && Math.abs(branchX - x) <= radius + 2) {
+                                    chunkData.setBlock(branchX, yy, z, branchLogMaterial);
+                                    Orientable logData = (Orientable) branchLogMaterial.createBlockData();
+                                    logData.setAxis(org.bukkit.Axis.X);
+                                    chunkData.setBlock(branchX, yy, z, logData);
+                                    // Add fence extension, shorter at higher levels
+                                    float fenceChance = 0.6f * (1.0f - normalizedHeight * 0.8f);
+                                    int fenceLength = (int) (3 * (1.0f - normalizedHeight * 0.7f)); // Longer at bottom
+                                    for (int i = 1; i <= fenceLength; i++) {
+                                        int fenceX = branchX + i * (int) Math.signum(offsetX);
+                                        if (random.nextFloat() < fenceChance && chunkData.getType(fenceX, yy, z).isAir() && Math.abs(fenceX - x) <= radius + 3) {
+                                            chunkData.setBlock(fenceX, yy, z, branchFenceMaterial);
+                                        } else {
+                                            break; // Stop extending if chance fails or hits a block
+                                        }
+                                    }
+                                }
+                            } else if (Math.abs(offsetZ) > 0) {
+                                int branchZ = z + (int) Math.signum(offsetZ);
+                                if (chunkData.getType(x, yy, branchZ).isAir() && Math.abs(branchZ - z) <= radius + 2) {
+                                    chunkData.setBlock(x, yy, branchZ, branchLogMaterial);
+                                    Orientable logData = (Orientable) branchLogMaterial.createBlockData();
+                                    logData.setAxis(org.bukkit.Axis.Z);
+                                    chunkData.setBlock(x, yy, branchZ, logData);
+                                    // Add fence extension, shorter at higher levels
+                                    float fenceChance = 0.6f * (1.0f - normalizedHeight * 0.8f);
+                                    int fenceLength = (int) (3 * (1.0f - normalizedHeight * 0.7f)); // Longer at bottom
+                                    for (int i = 1; i <= fenceLength; i++) {
+                                        int fenceZ = branchZ + i * (int) Math.signum(offsetZ);
+                                        if (random.nextFloat() < fenceChance && chunkData.getType(x, yy, fenceZ).isAir() && Math.abs(fenceZ - z) <= radius + 3) {
+                                            chunkData.setBlock(x, yy, fenceZ, branchFenceMaterial);
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Add leaves at the top of the trunk (more defined shape)
-        int topLeafRadius = 2 + random.nextInt(2);
-        int topY = y + trunkHeight - 1;
-        for (int ly = topY - topLeafRadius; ly <= topY + topLeafRadius; ly++) {
-            for (int lx = x - topLeafRadius; lx <= x + topLeafRadius; lx++) {
-                for (int lz = z - topLeafRadius; lz <= z + topLeafRadius; lz++) {
-                    if (Math.pow(lx - x, 2) + Math.pow(ly - topY, 2) + Math.pow(lz - z, 2) <= topLeafRadius * topLeafRadius + 1 && chunkData.getType(lx, ly, lz).isAir() && ly < MAX_HEIGHT) {
-                        chunkData.setBlock(lx, ly, lz, leafMaterial);
-                    }
+        // Generate a denser top
+        for (int xx = x - 1; xx <= x + 1; xx++) {
+            for (int zz = z - 1; zz <= z + 1; zz++) {
+                if (chunkData.getType(xx, y + treeHeight + 1, zz).isAir()) {
+                    chunkData.setBlock(xx, y + treeHeight + 1, zz, leafMaterial);
                 }
             }
         }
-    }
-
-    private void drawLine(ChunkData chunkData, int x1, int y1, int z1, int x2, int y2, int z2, Material material) {
-        int dx = Math.abs(x2 - x1);
-        int dy = Math.abs(y2 - y1);
-        int dz = Math.abs(z2 - z1);
-        int sx = (x1 < x2) ? 1 : -1;
-        int sy = (y1 < y2) ? 1 : -1;
-        int sz = (z1 < z2) ? 1 : -1;
-        int err = dx - dy - dz;
-
-        while (true) {
-            if (y1 < MAX_HEIGHT - 1) {
-                chunkData.setBlock(x1, y1, z1, material);
-            }
-            if (x1 == x2 && y1 == y2 && z1 == z2) break;
-            int e2 = 2 * err;
-            if (e2 > -dy - dz) { err -= dy + dz; x1 += sx; }
-            else if (e2 < dx - dz) { err += dx - dz; y1 += sy; }
-            else /* if (e2 < dx - dy) */ { err += dx - dy; z1 += sz; }
+        if (chunkData.getType(x, y + treeHeight + 2, z).isAir()) {
+            chunkData.setBlock(x, y + treeHeight + 2, z, leafMaterial);
         }
     }
 
