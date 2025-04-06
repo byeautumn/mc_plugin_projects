@@ -24,16 +24,21 @@ public class BiomeWorldGenerator extends ChunkGenerator {
                 int worldX = chunkX * 16 + x;
                 int worldZ = chunkZ * 16 + z;
 
-                Color color = biomeGenerator.getBiomeColor(worldX, worldZ); // Get the Color
-                Material concreteColor = colorToConcreteMaterial(color); // Convert to Material
+                Color color = biomeGenerator.getBiomeColor(worldX, worldZ);
+                Material concreteColor = colorToConcreteMaterial(color);
+                int altitude = (int) biomeGenerator.getAltitude(worldX, worldZ); // get altitude without biome type.
 
-                for (int y = 0; y < 64; y++) {
+                for (int y = 0; y < altitude; y++) {
                     chunkData.setBlock(x, y, z, concreteColor);
+                }
+                for (int y = altitude; y < 64; y++) {
+                    chunkData.setBlock(x, y, z, Material.STONE);
                 }
             }
         }
         return chunkData;
     }
+
 
     private Material colorToConcreteMaterial(Color color) {
         int red = color.getRed();

@@ -12,7 +12,7 @@ public class SceneMapGenerator {
     public static void main(String[] args) {
         int worldWidth = 256;
         int worldDepth = 256;
-        long seed = 12261988;
+        long seed = 9876;
         BiomeGenerator biomeGenerator = new BiomeGenerator(seed);
 
         BufferedImage image = new BufferedImage(worldWidth, worldDepth, BufferedImage.TYPE_INT_RGB);

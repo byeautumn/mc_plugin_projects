@@ -314,8 +314,8 @@ public class OperationCommand implements CommandExecutor {
                         }
                     }
 
-//                    World newWorld = WorldManager.createWorld(worldName, new MountainWorldGenerator(seed));
-                    World newWorld = WorldManager.createWorld(worldName, new BiomeWorldGenerator(seed));
+                    World newWorld = WorldManager.createWorld(worldName, new MountainWorldGenerator(seed));
+//                    World newWorld = WorldManager.createWorld(worldName, new BiomeWorldGenerator(seed));
                     player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "A New World is Being Generated with the seed: '" + seed + "'!");
                     newWorld.setGameRuleValue("doMobSpawning", "false");
                     Universe.teleport(player, newWorld.getSpawnLocation());
