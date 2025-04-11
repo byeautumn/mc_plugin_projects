@@ -6,6 +6,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.byeautumn.chuachua.Chuachua;
@@ -14,8 +15,8 @@ import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
-import org.byeautumn.chuachua.generate.world.BiomeWorldGenerator;
 import org.byeautumn.chuachua.generate.world.MountainWorldGenerator;
+import org.byeautumn.chuachua.generate.world.TreePopulator;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.ChunkImporter;
 import org.byeautumn.chuachua.player.PlayerTracker;
@@ -315,8 +316,13 @@ public class OperationCommand implements CommandExecutor {
                     }
 
                     World newWorld = WorldManager.createWorld(worldName, new MountainWorldGenerator(seed));
-//                    World newWorld = WorldManager.createWorld(worldName, new BiomeWorldGenerator(seed));
                     player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "A New World is Being Generated with the seed: '" + seed + "'!");
+
+//                     Get the list of populators and add our TreePopulator
+//                    List<BlockPopulator> populators = newWorld.getPopulators();
+//                    populators.add(new TreePopulator(seed)); // Pass only the seed
+
+                    player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.DARK_GREEN + "Tree populator has been added to the world.");
                     newWorld.setGameRuleValue("doMobSpawning", "false");
                     Universe.teleport(player, newWorld.getSpawnLocation());
                     player.sendMessage(ChatColor.BLUE + "================================================");
