@@ -15,8 +15,7 @@ import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
-import org.byeautumn.chuachua.generate.world.MountainWorldGenerator;
-import org.byeautumn.chuachua.generate.world.TreePopulator;
+import org.byeautumn.chuachua.generate.world.*;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.ChunkImporter;
 import org.byeautumn.chuachua.player.PlayerTracker;
@@ -25,11 +24,8 @@ import org.byeautumn.chuachua.undo.ActionRecord;
 import org.byeautumn.chuachua.undo.ActionRecorder;
 import org.byeautumn.chuachua.undo.ActionRunner;
 import org.byeautumn.chuachua.undo.ActionType;
-import org.byeautumn.chuachua.generate.world.WorldManager;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class OperationCommand implements CommandExecutor {
 
@@ -315,14 +311,18 @@ public class OperationCommand implements CommandExecutor {
                         }
                     }
 
-                    World newWorld = WorldManager.createWorld(worldName, new MountainWorldGenerator(seed));
+                    Map<Integer, ChunkGenerationStage> chunkGenerationStages = new TreeMap<>();
+                    TerrainGenerator protoTerrainGeneration = new ProtoTerrainGeneration(seed);
+                    chunkGenerationStages.put(1, protoTerrainGeneration);
+
+                    World newWorld = WorldManager.createWorld(worldName, new WorldGenerator(chunkGenerationStages));
                     player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "A New World is Being Generated with the seed: '" + seed + "'!");
 
 //                     Get the list of populators and add our TreePopulator
 //                    List<BlockPopulator> populators = newWorld.getPopulators();
 //                    populators.add(new TreePopulator(seed)); // Pass only the seed
 
-                    player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.DARK_GREEN + "Tree populator has been added to the world.");
+//                    player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.DARK_GREEN + "Tree populator has been added to the world.");
                     newWorld.setGameRuleValue("doMobSpawning", "false");
                     Universe.teleport(player, newWorld.getSpawnLocation());
                     player.sendMessage(ChatColor.BLUE + "================================================");
