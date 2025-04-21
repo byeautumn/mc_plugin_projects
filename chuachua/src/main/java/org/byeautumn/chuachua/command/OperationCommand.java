@@ -6,7 +6,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.byeautumn.chuachua.Chuachua;
@@ -16,6 +15,7 @@ import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
 import org.byeautumn.chuachua.generate.world.*;
+import org.byeautumn.chuachua.generate.world.pipeline.*;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.ChunkImporter;
 import org.byeautumn.chuachua.player.PlayerTracker;
@@ -313,7 +313,9 @@ public class OperationCommand implements CommandExecutor {
 
                     Map<Integer, ChunkGenerationStage> chunkGenerationStages = new TreeMap<>();
                     TerrainGenerator protoTerrainGeneration = new ProtoTerrainGeneration(seed);
+                    ProtoBiomeGeneration protoBiomeGeneration = new ProtoBiomeGeneration(seed, seed + 1);
                     chunkGenerationStages.put(1, protoTerrainGeneration);
+                    chunkGenerationStages.put(2, protoBiomeGeneration);
 
                     World newWorld = WorldManager.createWorld(worldName, new WorldGenerator(chunkGenerationStages));
                     player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "A New World is Being Generated with the seed: '" + seed + "'!");

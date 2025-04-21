@@ -1,4 +1,4 @@
-package org.byeautumn.chuachua.generate.world;
+package org.byeautumn.chuachua.generate.world.pipeline;
 
 import org.bukkit.generator.LimitedRegion;
 import org.bukkit.generator.WorldInfo;

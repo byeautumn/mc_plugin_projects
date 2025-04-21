@@ -1,6 +1,6 @@
 package org.byeautumn.chuachua.scene;
 
-import org.byeautumn.chuachua.generate.world.BiomeGenerator;
+import org.byeautumn.chuachua.generate.world.pipeline.BiomeGeneratorOriginal;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -13,7 +13,7 @@ public class SceneMapGenerator {
         int worldWidth = 256;
         int worldDepth = 256;
         long seed = 9876;
-        BiomeGenerator biomeGenerator = new BiomeGenerator(seed);
+        BiomeGeneratorOriginal biomeGenerator = new BiomeGeneratorOriginal(seed);
 
         BufferedImage image = new BufferedImage(worldWidth, worldDepth, BufferedImage.TYPE_INT_RGB);
 

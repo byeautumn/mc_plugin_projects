@@ -1,4 +1,4 @@
-package org.byeautumn.chuachua.generate.world;
+package org.byeautumn.chuachua.generate.world.pipeline;
 
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -9,10 +9,10 @@ import java.util.Random;
 
 public class BiomeWorldGenerator extends ChunkGenerator {
 
-    private final BiomeGenerator biomeGenerator;
+    private final BiomeGeneratorOriginal biomeGenerator;
 
     public BiomeWorldGenerator(long seed) {
-        this.biomeGenerator = new BiomeGenerator(seed);
+        this.biomeGenerator = new BiomeGeneratorOriginal(seed);
     }
 
     @Override

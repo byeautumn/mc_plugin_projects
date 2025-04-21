@@ -1,11 +1,12 @@
 package org.byeautumn.chuachua.generate.world;
 
-import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
+import org.byeautumn.chuachua.generate.world.pipeline.BiomeGeneratorOriginal;
+import org.byeautumn.chuachua.generate.world.pipeline.TreePopulator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.awt.Color;
@@ -42,7 +43,7 @@ public class MountainWorldGenerator extends ChunkGenerator {
     private final Perlin perlin;
     private final Perlin mountainMaskNoise;
     private final Perlin highFrequencyNoise;
-    private final BiomeGenerator biomeGenerator;
+    private final BiomeGeneratorOriginal biomeGenerator;
     private final Logger logger;
     private final TreePopulator treePopulator;
 
@@ -52,7 +53,7 @@ public class MountainWorldGenerator extends ChunkGenerator {
         this.mountainMaskNoise = new Perlin(this.seed + 1);
         this.highFrequencyNoise = new Perlin(this.seed + 2);
         this.topDetailNoise = new Perlin(this.seed + 5);
-        this.biomeGenerator = new BiomeGenerator(this.seed);
+        this.biomeGenerator = new BiomeGeneratorOriginal(this.seed);
         this.logger = Logger.getLogger("MountainWorldGenerator");
         this.treePopulator = new TreePopulator(this.seed + 3);
     }

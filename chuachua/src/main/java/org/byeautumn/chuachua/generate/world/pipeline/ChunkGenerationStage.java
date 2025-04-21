@@ -1,4 +1,4 @@
-package org.byeautumn.chuachua.generate.world;
+package org.byeautumn.chuachua.generate.world.pipeline;
 
 import org.bukkit.World;
 import org.bukkit.generator.ChunkGenerator.BiomeGrid;

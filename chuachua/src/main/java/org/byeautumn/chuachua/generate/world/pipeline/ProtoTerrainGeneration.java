@@ -1,4 +1,4 @@
-package org.byeautumn.chuachua.generate.world;
+package org.byeautumn.chuachua.generate.world.pipeline;
 
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -10,7 +10,7 @@ import java.awt.*;
 import java.util.Random;
 import java.util.logging.Logger;
 
-public class ProtoTerrainGeneration implements TerrainGenerator{
+public class ProtoTerrainGeneration implements TerrainGenerator {
 
 
     private final float mountainIntensity = 0.25f; // Adjusted
@@ -32,7 +32,7 @@ public class ProtoTerrainGeneration implements TerrainGenerator{
     private final float highFrequencyScale = 0.015f;
     private final float highFrequencyIntensity = 8.0f;
     private final Logger logger;
-    private final BiomeGenerator biomeGenerator;
+    private final BiomeGeneratorOriginal biomeGenerator;
     private final static int SNOW_LINE_ELEVATION = 170;
 
 
@@ -43,7 +43,7 @@ public class ProtoTerrainGeneration implements TerrainGenerator{
         this.perlin = new Perlin(this.seed);
         this.mountainMaskNoise = new Perlin(this.seed + 1);
         this.logger = Logger.getLogger("MountainWorldGenerator");
-        this.biomeGenerator = new BiomeGenerator(this.seed);
+        this.biomeGenerator = new BiomeGeneratorOriginal(this.seed);
     }
 
     @Override

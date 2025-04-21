@@ -2,10 +2,10 @@ package org.byeautumn.chuachua.generate.world;
 
 import org.bukkit.World;
 import org.bukkit.generator.ChunkGenerator;
+import org.byeautumn.chuachua.generate.world.pipeline.ChunkGenerationStage;
 
 import java.util.Map;
 import java.util.Random;
-import java.util.TreeMap;
 
 public class WorldGenerator extends ChunkGenerator{
     Map<Integer, ChunkGenerationStage> ChunkGenerationStages;

@@ -1,9 +1,9 @@
-package org.byeautumn.chuachua.generate.world;
+package org.byeautumn.chuachua.generate.world.pipeline;
 
 import java.awt.Color;
 import java.util.Random;
 
-public class BiomeGenerator {
+public class BiomeGeneratorOriginal {
 
     public enum BiomeType {
         SNOWY_MOUNTAINS,
@@ -15,7 +15,7 @@ public class BiomeGenerator {
     private final long seed;
     private final Random random;
 
-    public BiomeGenerator(long seed) {
+    public BiomeGeneratorOriginal(long seed) {
         this.seed = seed;
         this.random = new Random(seed);
     }
