@@ -42,7 +42,7 @@ public class ProtoTerrainGeneration implements TerrainGenerator {
         this.topDetailNoise = new Perlin(this.seed + 2);
         this.perlin = new Perlin(this.seed);
         this.mountainMaskNoise = new Perlin(this.seed + 1);
-        this.logger = Logger.getLogger("MountainWorldGenerator");
+        this.logger = Logger.getLogger("ProtoTerrainGeneration");
         this.biomeGenerator = new BiomeGeneratorOriginal(this.seed);
     }
 

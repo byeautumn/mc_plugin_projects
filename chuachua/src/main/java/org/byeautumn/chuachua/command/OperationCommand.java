@@ -1,6 +1,7 @@
 package org.byeautumn.chuachua.command;
 
 import org.bukkit.*;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -30,11 +31,13 @@ import java.util.*;
 public class OperationCommand implements CommandExecutor {
 
     private static final List<String> BW_VALID_ARGS = Arrays.asList("exit", "tp", "listWorlds", "createWall", "undo", "undoGen"
-            , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import", "createWorld");
+            , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import", "createWorld", "getBiome");
     private final Chuachua plugin;
+    private Long seed;
 
     public OperationCommand(Chuachua plugin) {
         this.plugin = plugin;
+        this.seed = seed;
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -301,7 +304,7 @@ public class OperationCommand implements CommandExecutor {
 
                     String worldName = args[1];
                     Random random = new Random();
-                    long seed = random.nextLong();
+                    this.seed = random.nextLong();
                     if (args.length >= 3 && args[2] != null && !args[2].isEmpty()) {
                         try {
                             seed = Long.parseLong(args[2]);
@@ -313,7 +316,7 @@ public class OperationCommand implements CommandExecutor {
 
                     Map<Integer, ChunkGenerationStage> chunkGenerationStages = new TreeMap<>();
                     TerrainGenerator protoTerrainGeneration = new ProtoTerrainGeneration(seed);
-                    ProtoBiomeGeneration protoBiomeGeneration = new ProtoBiomeGeneration(seed, seed + 1);
+                    ProtoBiomeGeneration protoBiomeGeneration = new ProtoBiomeGeneration(seed);
                     chunkGenerationStages.put(1, protoTerrainGeneration);
                     chunkGenerationStages.put(2, protoBiomeGeneration);
 
@@ -328,6 +331,41 @@ public class OperationCommand implements CommandExecutor {
                     newWorld.setGameRuleValue("doMobSpawning", "false");
                     Universe.teleport(player, newWorld.getSpawnLocation());
                     player.sendMessage(ChatColor.BLUE + "================================================");
+                } else if (firstArg.equalsIgnoreCase("getBiome")) {
+                    Location playerLocation = player.getLocation();
+                    World currentWorld = playerLocation.getWorld();
+                    Biome currentBiome = currentWorld.getBiome(playerLocation);
+                    try {
+                        if (Bukkit.getWorlds().contains(currentWorld)) {
+                            BiomeConstants biomeConstants = new BiomeConstants();
+                            int playerX = playerLocation.getBlockX();
+                            int playerZ = playerLocation.getBlockZ();
+                            LocationBiomeValues locationBiomeValues = new LocationBiomeValues(seed + 2, seed + 1, seed, seed + 3, seed + 4);
+                            player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " Create World " + ChatColor.BLUE + "]================");
+                            player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "'" + player.getDisplayName() + "' " + ChatColor.YELLOW + "is currently in the biome: '" + ChatColor.AQUA + ChatColor.BOLD + currentBiome + "'.");
+                            player.sendMessage(ChatColor.BLUE + "================================================");
+                            player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "TEMP. = " + ChatColor.YELLOW + "'" + locationBiomeValues.getTemp(playerX + biomeConstants.getNoiseScale(), playerZ + biomeConstants.getNoiseScale()) + "'.");
+                            player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "HYDR. = " + ChatColor.YELLOW + "'" + locationBiomeValues.getHydr(playerX + biomeConstants.getNoiseScale(), playerZ + biomeConstants.getNoiseScale()) + "'.");
+                            player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "ALT. = " + ChatColor.YELLOW + "'" + locationBiomeValues.getAltitude(playerX + biomeConstants.getNoiseScale(), playerZ + biomeConstants.getNoiseScale()) + "'.");
+                            player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "CONT. = " + ChatColor.YELLOW + "'" + locationBiomeValues.getContinental(playerX + biomeConstants.getNoiseScale(), playerZ + biomeConstants.getNoiseScale()) + "'.");
+                            player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "REG. = " + ChatColor.YELLOW + "'" + locationBiomeValues.getRegional(playerX + biomeConstants.getNoiseScale(), playerZ + biomeConstants.getNoiseScale()) + "'.");
+                            player.sendMessage(ChatColor.BLUE + "================================================");
+
+                        } else {
+                            player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " Create World " + ChatColor.BLUE + "]================");
+                            player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "'" + player.getDisplayName() + "' " + ChatColor.YELLOW + "is currently in the biome: '" + ChatColor.AQUA + ChatColor.BOLD + currentBiome + "'.");
+                            player.sendMessage(ChatColor.BLUE + "================================================");
+                            player.sendMessage(ChatColor.RED + ">> " + "'" + ChatColor.AQUA + "" + currentWorld + "'" + ChatColor.RED + " is not in the world creation pool.");
+                            player.sendMessage(ChatColor.BLUE + "================================================");
+                        }
+
+                    } catch (NullPointerException exception) {
+                        player.sendMessage(ChatColor.BLUE + "================================================");
+                        player.sendMessage(ChatColor.RED + ">> Cannot figure out the seed of the world: '" + ChatColor.AQUA + "" + currentWorld.getName() + ChatColor.RED + "'.");
+                        player.sendMessage("This may be a temporary problem and will be fixed later.");
+                        player.sendMessage(ChatColor.BLUE + "================================================");
+                    }
+
                 }
             } else {
                 player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "Could not find the argument you wrote " + ChatColor.YELLOW + firstArg);
