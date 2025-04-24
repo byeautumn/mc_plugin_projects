@@ -7,6 +7,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.byeautumn.chuachua.common.LocationVector;
+import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorld;
 import org.byeautumn.chuachua.player.PlayerTracker;
 import org.byeautumn.chuachua.undo.ActionRecorder;
 
@@ -22,9 +23,11 @@ public class Universe {
 
     private static Map<UUID, ActionRecorder> PLAYER_ID_TO_RECORDER_MAP = new HashMap<>();
 
+    private static Map<UUID, ChuaWorld> UUID_TO_CHUAWORLD = new HashMap<>();
+
     public static void teleport(Player player, Location toLocation){
         player.teleport(toLocation);
-        player.sendMessage(ChatColor.GREEN + "You were teleported successfully");
+//        player.sendMessage(ChatColor.GREEN + "You were teleported successfully");
     }
 
     private static Location getLocation(String worldName, LocationVector vector) {
@@ -94,6 +97,11 @@ public class Universe {
 
         return PLAYER_ID_TO_RECORDER_MAP.get(player.getUniqueId());
     }
-
+    public static ChuaWorld getChuaWorld(UUID id) {
+        return UUID_TO_CHUAWORLD.getOrDefault(id, null);
+    }
+    public static void addChuaWorld(ChuaWorld chuaWorld){
+        UUID_TO_CHUAWORLD.put(chuaWorld.getID(), chuaWorld);
+    }
 
 }

@@ -13,6 +13,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.byeautumn.chuachua.Universe;
 import org.byeautumn.chuachua.common.LocationVector;
+import org.byeautumn.chuachua.common.PlayMode;
+import org.byeautumn.chuachua.player.PlayerStatus;
 import org.byeautumn.chuachua.player.PlayerTracker;
 
 public class GameListener implements Listener {
@@ -42,9 +44,14 @@ public class GameListener implements Listener {
         Player player = event.getPlayer();
         System.out.println("Player " + player.getDisplayName() + " is just going to lobby.");
         Universe.teleportToLobby(player);
-        Universe.resetPlayerTracker(player);
-        System.out.println("Game mode is set to ADVENTURE for player " + player.getDisplayName() + ".");
+        if (!player.isOp()){
+            Universe.resetPlayerTracker(player);
+        } else {
+            player.sendMessage("* " + ChatColor.YELLOW + "You are op-ed and have automatically been set into " +ChatColor.AQUA + "'EDIT'" + ChatColor.YELLOW + " mode.");
+            Universe.getPlayerTracker(player).setPlayMode(PlayMode.EDIT);
+        }
         player.setGameMode(GameMode.ADVENTURE);
+        System.out.println("Game mode is set to ADVENTURE for player " + player.getDisplayName() + ".");
     }
 
 }

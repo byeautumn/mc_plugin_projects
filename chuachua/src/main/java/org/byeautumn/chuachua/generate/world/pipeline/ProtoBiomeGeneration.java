@@ -17,7 +17,7 @@ public class ProtoBiomeGeneration implements BiomeGenerator {
 
     public ProtoBiomeGeneration(Long seed) { //added seeds
         this.logger = Logger.getLogger("ProtoBiomeGeneration");
-        this.locationBiomeValues = new LocationBiomeValues(seed + 2, seed + 1, seed, seed + 3, seed+ 4);
+        this.locationBiomeValues = new LocationBiomeValues(seed + 2, seed + 1, seed, seed + 3, seed + 4, seed + 5);
         this.biomeConstants= new BiomeConstants();
     }
 
@@ -93,10 +93,10 @@ public class ProtoBiomeGeneration implements BiomeGenerator {
     }
 
     private Biome getBiome(float temp, float hydr, float altitude, float continental, float regional) { //added continental and regional
-        if (altitude < -0.2f) {
+        if (altitude < -0.6f && hydr > 1.2f && temp > -0.15f && continental < -0.5 ) {
             return Biome.DEEP_OCEAN;
-        } else if (altitude < 0.0f) {
-            return Biome.OCEAN;
+        } else if (altitude < -0.3f && hydr > 1.0f && temp > 0.25f && continental < -0.8) {
+            return Biome.WARM_OCEAN;
         }
 
 

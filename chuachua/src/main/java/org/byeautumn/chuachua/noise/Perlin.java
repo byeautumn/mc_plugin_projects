@@ -76,7 +76,7 @@ public class Perlin {
     public float layeredPerlin(float x, float z, int octaves, float persistence) {
         float total = 0;
         float frequency = 1f;
-        float amplitude = 3f;
+        float amplitude = 2.5f;
 
         for (int i = 0; i < octaves; i++) {
             total += perlin(x * frequency, z * frequency) * amplitude;
