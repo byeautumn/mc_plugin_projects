@@ -148,7 +148,7 @@ public class Universe {
             }
 
 //            UUID_TO_CHUAWORLD.put(chuaWorld.getWorld().getUID(), chuaWorld);
-            addChuaWorld(accessor.get);
+            addChuaWorld(chuaWorld);
             System.out.println("UUID_TO_CHUAWORLD: " + UUID_TO_CHUAWORLD);
         }
 
