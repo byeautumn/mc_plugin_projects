@@ -7,11 +7,14 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.byeautumn.chuachua.common.LocationVector;
-import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorld;
+import org.byeautumn.chuachua.generate.world.WorldManager;
+import org.byeautumn.chuachua.generate.world.pipeline.*;
 import org.byeautumn.chuachua.player.PlayerTracker;
 import org.byeautumn.chuachua.undo.ActionRecorder;
+import org.byeautumn.chuachua.generate.world.WorldGenerator;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Universe {
     private static final String LOBBY_WORLD_NAME = "world";
@@ -24,6 +27,8 @@ public class Universe {
     private static Map<UUID, ActionRecorder> PLAYER_ID_TO_RECORDER_MAP = new HashMap<>();
 
     private static Map<UUID, ChuaWorld> UUID_TO_CHUAWORLD = new HashMap<>();
+
+    private static Set<String> bukkitWorldSet;
 
     public static void teleport(Player player, Location toLocation){
         player.teleport(toLocation);
@@ -104,4 +109,54 @@ public class Universe {
         UUID_TO_CHUAWORLD.put(chuaWorld.getID(), chuaWorld);
     }
 
+    public static ChuaWorld createWorld(long createSeed, String worldName) {
+        if (null == bukkitWorldSet) {
+            loadBukkitWorldSet();
+        }
+
+        if (bukkitWorldSet.contains(worldName)) {
+            System.out.println("World named '" + worldName + "' exists already. The world creation skipped.");
+            return null;
+        }
+
+        Map<Integer, ChunkGenerationStage> chunkGenerationStages = new TreeMap<>();
+        TerrainGenerator protoTerrainGeneration = new ProtoTerrainGeneration(createSeed);
+        ProtoBiomeGeneration protoBiomeGeneration = new ProtoBiomeGeneration(createSeed);
+        chunkGenerationStages.put(1, protoTerrainGeneration);
+        chunkGenerationStages.put(2, protoBiomeGeneration);
+
+        World newWorld = WorldManager.createWorld(worldName, new WorldGenerator(chunkGenerationStages));
+        ChuaWorld chuaWorld = new ChuaWorld(createSeed, newWorld);
+        Universe.addChuaWorld(chuaWorld);
+
+        newWorld.setGameRuleValue("doMobSpawning", "false");
+        return chuaWorld;
+    }
+
+
+    public static void loadChuaWorldsToMap(ChuaWorldConfigAccessor accessor){
+        List<String> chuaWorlds = accessor.getKnownWorlds();
+        System.out.println("getKnowWorlds: " + accessor.getKnownWorlds());
+        for (String chuaWorldString : chuaWorlds){
+            ChuaWorld chuaWorld = createWorld(accessor.getWorldSeed(chuaWorldString), chuaWorldString);
+            System.out.println("accessor.getWorldSeed(chuaWorldString: " + accessor.getWorldSeed(chuaWorldString));
+            if (null == chuaWorld) {
+                System.out.println("World creation for '" + chuaWorldString + "' skipped.");
+                continue;
+            } else {
+                System.out.println("World created " + chuaWorldString);
+            }
+
+//            UUID_TO_CHUAWORLD.put(chuaWorld.getWorld().getUID(), chuaWorld);
+            addChuaWorld(accessor.get);
+            System.out.println("UUID_TO_CHUAWORLD: " + UUID_TO_CHUAWORLD);
+        }
+
+    }
+
+    private static void loadBukkitWorldSet() {
+        bukkitWorldSet = Bukkit.getWorlds().stream()
+                .map(World::getName)
+                .collect(Collectors.toCollection(HashSet::new));
+    }
 }

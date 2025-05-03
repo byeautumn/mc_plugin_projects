@@ -373,25 +373,11 @@ public class OperationCommand implements CommandExecutor {
                             Random random = new Random();
                             createSeed = random.nextLong();
                         }
-
-                        Map<Integer, ChunkGenerationStage> chunkGenerationStages = new TreeMap<>();
-                        TerrainGenerator protoTerrainGeneration = new ProtoTerrainGeneration(createSeed);
-                        ProtoBiomeGeneration protoBiomeGeneration = new ProtoBiomeGeneration(createSeed);
-                        chunkGenerationStages.put(1, protoTerrainGeneration);
-                        chunkGenerationStages.put(2, protoBiomeGeneration);
-
-                        World newWorld = WorldManager.createWorld(worldName, new WorldGenerator(chunkGenerationStages));
-                        ChuaWorld chuaWorld = new ChuaWorld(createSeed, newWorld);
-                        Universe.addChuaWorld(chuaWorld);
+                        ChuaWorld chuaWorld = Universe.createWorld(createSeed, worldName);
                         player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "A New World is Being Generated with the seed: '" + createSeed + "'!");
-
-//                     Get the list of populators and add our TreePopulator
-//                    List<BlockPopulator> populators = newWorld.getPopulators();
-//                    populators.add(new TreePopulator(seed)); // Pass only the seed
-
-//                    player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.DARK_GREEN + "Tree populator has been added to the world.");
-                        newWorld.setGameRuleValue("doMobSpawning", "false");
-                        Universe.teleport(player, newWorld.getSpawnLocation());
+                        Universe.teleport(player, chuaWorld.getWorld().getSpawnLocation());
+                        ChuaWorldConfigAccessor accessor = new ChuaWorldConfigAccessor(plugin);
+                        accessor.addNewWorld(worldName, createSeed, chuaWorld.getWorld().getSpawnLocation());
                     }
                     player.sendMessage(ChatColor.BLUE + "================================================");
                 } else if (firstArg.equalsIgnoreCase("getBiome")) {

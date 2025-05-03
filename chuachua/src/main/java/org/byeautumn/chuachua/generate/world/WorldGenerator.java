@@ -12,7 +12,6 @@ public class WorldGenerator extends ChunkGenerator{
 
     public WorldGenerator(Map<Integer, ChunkGenerationStage> chunkGenerationStages) {
         ChunkGenerationStages = chunkGenerationStages;
-
     }
 
 

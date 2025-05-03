@@ -1,0 +1,10 @@
+worlds:
+  chua_world_01:
+    worldname: chua_world_01
+    seed: 123456
+    spawnlocation:
+      x: 0
+      y: 80
+      z: 0
+      pitch: 90
+      yaw: 90

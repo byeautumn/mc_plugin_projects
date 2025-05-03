@@ -7,6 +7,7 @@ import org.byeautumn.chuachua.block.BlockListener;
 import org.byeautumn.chuachua.command.OperationCommand;
 import org.byeautumn.chuachua.custom.ResourcePackListener;
 import org.byeautumn.chuachua.game.GameListener;
+import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorldConfigAccessor;
 
 import java.util.Objects;
 
@@ -27,6 +28,11 @@ public final class Chuachua extends JavaPlugin {
         resourcePackURL = config.getString("resource-pack-url", "");
         getServer().getPluginManager().registerEvents(new ResourcePackListener(resourcePackURL), this);
 
+        ChuaWorldConfigAccessor chuaWorldConfigAccessor = new ChuaWorldConfigAccessor(this);
+//        chuaWorldConfigAccessor.loadWorldsOnStartup();
+        Universe.loadChuaWorldsToMap(chuaWorldConfigAccessor);
+        chuaWorldConfigAccessor.saveConfig();
+
         getLogger().info("YourPlugin has been enabled!");
 
     }
@@ -34,5 +40,6 @@ public final class Chuachua extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+
     }
 }
