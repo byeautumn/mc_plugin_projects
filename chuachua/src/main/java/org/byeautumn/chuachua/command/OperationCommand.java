@@ -32,7 +32,7 @@ public class OperationCommand implements CommandExecutor {
 
     private static final List<String> BW_VALID_ARGS = Arrays.asList("exit", "tp", "listWorlds", "createWall", "undo", "undoGen"
             , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import", "createWorld"
-            , "getBiome", "chuaWorldInfo");
+            , "getBiome", "chuaWorldInfo", "generateTree");
     private final Chuachua plugin;
 
     public OperationCommand(Chuachua plugin) {
@@ -433,6 +433,32 @@ public class OperationCommand implements CommandExecutor {
                         player.sendMessage(ChatColor.BLUE + "================================================");
                     }
 
+
+                } else if (firstArg.equalsIgnoreCase("generateTree")) {
+                    player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " Generating a tree " + ChatColor.BLUE + "]================");
+                    PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                    if (PlayMode.EDIT != playerTracker.getPlayMode()) {
+                        player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "The play mode needs to be Edit to do generation.");
+                        return true;
+                    }
+                    if (args.length != 2) {
+                        player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "Usage: /cc generateTree treeType");
+                        return true;
+                    }
+                    String treeType = args[1];
+                    Location location = player.getLocation();
+                    TreeConfigure treeConfigure = TreeGenerationOrganizer.getTreeConfigure(treeType);
+                    if (treeConfigure == null) {
+                        player.sendMessage(ChatColor.RED + ">> " + "'" + ChatColor.AQUA + "" + treeType + "'" + ChatColor.RED + " is not a pre-defined tree type.");
+
+                    } else {
+                        LSystemTreeGenerator treeGenerator = new LSystemTreeGenerator();
+                        treeGenerator.generate(location, treeConfigure);
+                    }
+
+
+
+                    player.sendMessage(ChatColor.BLUE + "================================================");
 
                 } else {
                     player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "Could not find the argument you wrote " + ChatColor.YELLOW + firstArg);
