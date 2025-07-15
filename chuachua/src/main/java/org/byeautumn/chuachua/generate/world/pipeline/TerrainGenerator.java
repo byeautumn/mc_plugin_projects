@@ -1,7 +1,11 @@
 package org.byeautumn.chuachua.generate.world.pipeline;
 
-import org.byeautumn.chuachua.generate.world.pipeline.ChunkGenerationStage;
+import org.bukkit.World;
+import org.bukkit.generator.ChunkGenerator;
 
-public interface TerrainGenerator extends ChunkGenerationStage {
+import java.util.Random;
 
+public interface TerrainGenerator extends ChunkGenerationStage{
+    // This method is the internal primary entry point for this pipeline stage,
+    // responsible for calculating the heightmap and populating the context.
 }

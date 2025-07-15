@@ -403,7 +403,10 @@ public class OperationCommand implements CommandExecutor {
                                 BiomeConstants biomeConstants = new BiomeConstants();
                                 int playerX = playerLocation.getBlockX();
                                 int playerZ = playerLocation.getBlockZ();
+                                // Ensure LocationBiomeValues constructor parameters match its actual definition.
+                                // You are using seed + N for different noise types, which is common.
                                 LocationBiomeValues locationBiomeValues = new LocationBiomeValues(seed + 2, seed + 1, seed, seed + 3, seed + 4, seed + 5);
+
                                 player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " Create World " + ChatColor.BLUE + "]================");
                                 player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "'" + player.getDisplayName() + "' " + ChatColor.YELLOW + "is currently in the biome: '" + ChatColor.AQUA + ChatColor.BOLD + currentBiome + "'.");
                                 player.sendMessage(ChatColor.BLUE + "================================================");
@@ -413,6 +416,11 @@ public class OperationCommand implements CommandExecutor {
                                 player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "CONT. = " + ChatColor.YELLOW + "'" + locationBiomeValues.getContinental(playerX + biomeConstants.getContinentalScale(), playerZ + biomeConstants.getContinentalScale()) + "'.");
                                 player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "REG. = " + ChatColor.YELLOW + "'" + locationBiomeValues.getRegional(playerX + biomeConstants.getRegionalScale(), playerZ + biomeConstants.getRegionalScale()) + "'.");
                                 player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "EROS. = " + ChatColor.YELLOW + "'" + locationBiomeValues.getErosion(playerX + biomeConstants.getErosionScale(), playerZ + biomeConstants.getErosionScale()) + "'.");
+
+                                // --- FIX: Add the Regional value here ---
+                                player.sendMessage(ChatColor.WHITE + ">> " + ChatColor.AQUA + "REGION = " + ChatColor.YELLOW + "'" + locationBiomeValues.getRegional(playerX + biomeConstants.getRegionalScale(), playerZ + biomeConstants.getRegionalScale()) + "'.");
+                                // --- END FIX ---
+
                                 player.sendMessage(ChatColor.BLUE + "================================================");
 
 //                        } else {

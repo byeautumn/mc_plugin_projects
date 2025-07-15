@@ -6,7 +6,6 @@ import org.bukkit.generator.ChunkGenerator.ChunkData;
 
 import java.util.Random;
 
-public interface ChunkGenerationStage {
-    void generate(World world, Random random, int chunkX, int chunkZ, ChunkData chunkData, BiomeGrid biomeGrid);
-    void setContext(GenerationContext context);
+public interface RegionGenerator extends ChunkGenerationStage {
+    void generateRegionMap(int chunkX, int chunkZ, int mapWidth, int mapHeight);
 }

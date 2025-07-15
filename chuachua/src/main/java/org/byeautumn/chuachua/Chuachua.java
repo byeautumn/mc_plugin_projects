@@ -33,6 +33,7 @@ public final class Chuachua extends JavaPlugin {
         Universe.loadChuaWorldsToMap(chuaWorldConfigAccessor);
         chuaWorldConfigAccessor.saveConfig();
 
+        getLogger().setLevel(java.util.logging.Level.FINE);
         getLogger().info("YourPlugin has been enabled!");
 
     }

@@ -6,14 +6,17 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin; // IMPORTANT: Add this import
 import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.generate.world.WorldManager;
-import org.byeautumn.chuachua.generate.world.pipeline.*;
+import org.byeautumn.chuachua.generate.world.pipeline.*; // This imports ChunkGenerationStage, RegionGenerator, TerrainGenerator, BiomeGenerator
 import org.byeautumn.chuachua.player.PlayerTracker;
 import org.byeautumn.chuachua.undo.ActionRecorder;
-import org.byeautumn.chuachua.generate.world.WorldGenerator;
+import org.byeautumn.chuachua.generate.world.WorldGenerator; // Assuming this is your custom WorldGenerator
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class Universe {
@@ -119,13 +122,38 @@ public class Universe {
             return null;
         }
 
-        Map<Integer, ChunkGenerationStage> chunkGenerationStages = new TreeMap<>();
-        TerrainGenerator protoTerrainGeneration = new ProtoTerrainGeneration(createSeed);
-        ProtoBiomeGeneration protoBiomeGeneration = new ProtoBiomeGeneration(createSeed);
-        chunkGenerationStages.put(1, protoTerrainGeneration);
-        chunkGenerationStages.put(2, protoBiomeGeneration);
+        // --- START OF CORRECTED INSTANTIATION AND MAPPING FOR MULTI-STAGE PIPELINE ---
 
-        World newWorld = WorldManager.createWorld(worldName, new WorldGenerator(chunkGenerationStages));
+        Map<Integer, ChunkGenerationStage> chunkGenerationStages = new TreeMap<>();
+
+        // 1. Instantiate each concrete pipeline stage class.
+        //    Declare them using their specific interface types for good practice.
+        RegionGenerator protoRegionGeneration = new ProtoRegionGeneration(createSeed);
+        TerrainGenerator protoTerrainGeneration = new ProtoTerrainGeneration(createSeed); // Constructor now takes only seed
+        BiomeGenerator protoBiomeGeneration = new ProtoBiomeGeneration(createSeed);
+
+        // 2. Add each stage to the map in the desired execution order.
+        //    The WorldGenerator will iterate through this map.
+        chunkGenerationStages.put(0, protoRegionGeneration); // First: Generate the region map
+        chunkGenerationStages.put(1, protoTerrainGeneration); // Second: Generate the heightmap (reads region map)
+        chunkGenerationStages.put(2, protoBiomeGeneration);   // Third: Generate biomes (reads region map & heightmap)
+
+        // --- END OF CORRECTED INSTANTIATION AND MAPPING ---
+
+        // Get the logger from your main plugin class (Chuachua).
+        Logger pluginLogger;
+        try {
+            pluginLogger = JavaPlugin.getPlugin(Chuachua.class).getLogger();
+        } catch (IllegalStateException e) {
+            System.err.println("Plugin 'Chuachua' not yet loaded or not found. Using System.err for logging.");
+            pluginLogger = Logger.getLogger("ChuaWorldCreatorFallback");
+            pluginLogger.setLevel(Level.WARNING);
+        }
+
+        // Pass the chunkGenerationStages map (containing all stages) and the pluginLogger
+        // to your custom WorldGenerator.
+        World newWorld = WorldManager.createWorld(worldName, new WorldGenerator(chunkGenerationStages, pluginLogger));
+
         ChuaWorld chuaWorld = new ChuaWorld(createSeed, newWorld);
         Universe.addChuaWorld(chuaWorld);
 
@@ -147,7 +175,6 @@ public class Universe {
                 System.out.println("World created " + chuaWorldString);
             }
 
-//            UUID_TO_CHUAWORLD.put(chuaWorld.getWorld().getUID(), chuaWorld);
             addChuaWorld(chuaWorld);
             System.out.println("UUID_TO_CHUAWORLD: " + UUID_TO_CHUAWORLD);
         }
