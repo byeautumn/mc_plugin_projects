@@ -130,13 +130,13 @@ public class Universe {
         //    Declare them using their specific interface types for good practice.
         RegionGenerator protoRegionGeneration = new ProtoRegionGeneration(createSeed);
         TerrainGenerator protoTerrainGeneration = new ProtoTerrainGeneration(createSeed); // Constructor now takes only seed
-        BiomeGenerator protoBiomeGeneration = new ProtoBiomeGeneration(createSeed);
+        BiomeGenerator protoBiomeAssignment = new ProtoBiomeAssignment(); // <-- This is your BiomeGenerator
 
         // 2. Add each stage to the map in the desired execution order.
         //    The WorldGenerator will iterate through this map.
         chunkGenerationStages.put(0, protoRegionGeneration); // First: Generate the region map
-        chunkGenerationStages.put(1, protoTerrainGeneration); // Second: Generate the heightmap (reads region map)
-        chunkGenerationStages.put(2, protoBiomeGeneration);   // Third: Generate biomes (reads region map & heightmap)
+        chunkGenerationStages.put(1, protoBiomeAssignment); // Second: Generate the heightmap (reads region map) // <-- Problem here
+        chunkGenerationStages.put(2, protoTerrainGeneration);   // Third: Generate biomes (reads region map & heightmap)
 
         // --- END OF CORRECTED INSTANTIATION AND MAPPING ---
 

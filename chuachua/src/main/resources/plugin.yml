@@ -4,4 +4,21 @@ main: org.byeautumn.chuachua.Chuachua
 api-version: '1.21'
 commands:
   cc:
-    usage: /<command>
+    description: Main command for ChuaChua world generation.
+    usage: /<command> [arg]
+    permission: chuachua.command.use
+    permission-message: You do not have permission to use this command.
+  cc_teleport_internal:
+    description: INTERNAL - Do not use directly. Used for clickable teleports.
+    usage: /<command> <x> <y> <z>
+    permission: chuachua.internal.teleport # Assign a specific permission
+    permission-message: You do not have permission to use this internal command.
+permissions:
+  chuachua.command.use:
+    description: Allows use of the /cc command.
+    default: op
+  chuachua.internal.teleport:
+    description: Allows use of the internal teleport command.
+    default: op # Set to 'op' or a specific permission group
+    # You might want to make this permission only available to trusted players or OPs
+    # as it's triggered by clickable messages.

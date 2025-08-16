@@ -11,7 +11,13 @@ import java.util.Random;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-import static org.byeautumn.chuachua.generate.world.pipeline.GenerationContext.MAP_ARRAY_DIM;
+// Import static constants from ProtoTerrainGeneration for consistency
+import static org.byeautumn.chuachua.generate.world.pipeline.ProtoTerrainGeneration.CHUNK_SIZE;
+import static org.byeautumn.chuachua.generate.world.pipeline.ProtoTerrainGeneration.MAP_ARRAY_BORDER;
+import static org.byeautumn.chuachua.generate.world.pipeline.ProtoTerrainGeneration.MAP_ARRAY_DIM;
+// Import REGION_WORLEY_SCALE from ProtoBiomeGeneration for consistency
+import static org.byeautumn.chuachua.generate.world.pipeline.ProtoBiomeGeneration.REGION_WORLEY_SCALE;
+
 
 public class ProtoRegionGeneration implements RegionGenerator {
 
@@ -20,11 +26,9 @@ public class ProtoRegionGeneration implements RegionGenerator {
     private GenerationContext context;
     private Logger stageLogger;
 
-    private static final double REGION_WORLEY_SCALE = 0.00005;
-
     public ProtoRegionGeneration(long seed) {
         this.seed = seed;
-        this.worleyNoise = new WorleyNoise(seed, 1); // <-- CRITICAL FIX: Initialize worleyNoise here!
+        this.worleyNoise = new WorleyNoise(seed, 1); // Initialize worleyNoise here!
         // Logger initialized in setContext, as context provides the parent logger
     }
 
@@ -49,8 +53,8 @@ public class ProtoRegionGeneration implements RegionGenerator {
         }
         stageLogger.info("ProtoRegionGeneration: Starting generateRegionMap for chunk (" + chunkX + ", " + chunkZ + "). Map dimensions: " + mapWidth + "x" + mapHeight);
 
-        int CHUNK_SIZE = 16;
-        int MAP_ARRAY_BORDER = 1;
+        // Removed local definitions of CHUNK_SIZE and MAP_ARRAY_BORDER
+        // They are now imported statically from ProtoTerrainGeneration.
 
         try {
             for (int localX = 0; localX < mapWidth; localX++) {
@@ -60,8 +64,8 @@ public class ProtoRegionGeneration implements RegionGenerator {
 
                     // This call will now work because worleyNoise is initialized
                     double rawRegionValue = worleyNoise.noise2D(
-                            worldX * REGION_WORLEY_SCALE,
-                            worldZ * REGION_WORLEY_SCALE,
+                            worldX * REGION_WORLEY_SCALE, // Using imported REGION_WORLEY_SCALE
+                            worldZ * REGION_WORLEY_SCALE, // Using imported REGION_WORLEY_SCALE
                             FeatureType.F2_MINUS_F1
                     );
 
