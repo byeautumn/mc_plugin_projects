@@ -6,7 +6,7 @@ import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.byeautumn.chuachua.generate.world.pipeline.BiomeGeneratorOriginal;
-import org.byeautumn.chuachua.generate.world.pipeline.TreePopulator;
+import org.byeautumn.chuachua.generate.world.pipeline.tree.TreePopulator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.awt.Color;

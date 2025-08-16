@@ -1,4 +1,4 @@
-package org.byeautumn.chuachua.generate.world.pipeline;
+package org.byeautumn.chuachua.generate.world.pipeline.tree;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -7,7 +7,6 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 public class LSystemTreeGenerator {

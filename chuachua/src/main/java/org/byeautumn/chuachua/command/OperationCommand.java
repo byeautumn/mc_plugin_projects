@@ -17,6 +17,9 @@ import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
 import org.byeautumn.chuachua.generate.world.*;
 import org.byeautumn.chuachua.generate.world.pipeline.*;
+import org.byeautumn.chuachua.generate.world.pipeline.tree.SCATreeGenerationConfigure;
+import org.byeautumn.chuachua.generate.world.pipeline.tree.SCATreeGenerator;
+import org.byeautumn.chuachua.generate.world.pipeline.tree.TreeGenerator;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.ChunkImporter;
 import org.byeautumn.chuachua.player.PlayerTracker;
@@ -455,16 +458,29 @@ public class OperationCommand implements CommandExecutor {
                     }
                     String treeType = args[1];
                     Location location = player.getLocation();
-                    TreeConfigure treeConfigure = TreeGenerationOrganizer.getTreeConfigure(treeType);
-                    if (treeConfigure == null) {
-                        player.sendMessage(ChatColor.RED + ">> " + "'" + ChatColor.AQUA + "" + treeType + "'" + ChatColor.RED + " is not a pre-defined tree type.");
+//                    TreeConfigure treeConfigure = TreeGenerationOrganizer.getTreeConfigure(treeType);
+//                    if (treeConfigure == null) {
+//                        player.sendMessage(ChatColor.RED + ">> " + "'" + ChatColor.AQUA + "" + treeType + "'" + ChatColor.RED + " is not a pre-defined tree type.");
+//
+//                    } else {
+//                        LSystemTreeGenerator treeGenerator = new LSystemTreeGenerator();
+//                        treeGenerator.generate(location, treeConfigure);
+//                    }
 
+                    // Create an instance of the specific configuration
+
+                    System.out.println("Generating " + treeType + " trees at [" + location.toString() + "].");
+                    SCATreeGenerationConfigure scaConfigure = SCATreeGenerationConfigure.getDefaultOakConfig();
+
+                    // Pass it to the generic interface type
+                    TreeGenerator treeGenerator = new SCATreeGenerator();
+                    boolean success = treeGenerator.generate(location, scaConfigure); // Pass the specific config
+
+                    if (success) {
+                        player.sendMessage("Tree generated successfully!");
                     } else {
-                        LSystemTreeGenerator treeGenerator = new LSystemTreeGenerator();
-                        treeGenerator.generate(location, treeConfigure);
+                        player.sendMessage("Failed to generate tree. Check console for errors or space availability.");
                     }
-
-
 
                     player.sendMessage(ChatColor.BLUE + "================================================");
 

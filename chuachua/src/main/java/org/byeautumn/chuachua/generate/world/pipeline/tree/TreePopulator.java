@@ -1,4 +1,4 @@
-package org.byeautumn.chuachua.generate.world.pipeline;
+package org.byeautumn.chuachua.generate.world.pipeline.tree;
 
 import org.bukkit.Axis;
 import org.bukkit.Chunk;
