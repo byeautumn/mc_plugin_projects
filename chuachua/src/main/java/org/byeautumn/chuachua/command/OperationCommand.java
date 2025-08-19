@@ -6,6 +6,7 @@ import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -13,9 +14,9 @@ import org.byeautumn.chuachua.Chuachua;
 import org.byeautumn.chuachua.Universe;
 import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
+import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
-import org.byeautumn.chuachua.generate.world.*;
 import org.byeautumn.chuachua.generate.world.pipeline.*;
 import org.byeautumn.chuachua.generate.world.pipeline.tree.SCATreeGenerationConfigure;
 import org.byeautumn.chuachua.generate.world.pipeline.tree.SCATreeGenerator;
@@ -29,13 +30,17 @@ import org.byeautumn.chuachua.undo.ActionRecorder;
 import org.byeautumn.chuachua.undo.ActionRunner;
 import org.byeautumn.chuachua.undo.ActionType;
 
+import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class OperationCommand implements CommandExecutor {
 
+    private final Map<UUID, String> pendingConfirmations = new HashMap<>();
+
     private static final List<String> BW_VALID_ARGS = Arrays.asList("exit", "tp", "listWorlds", "createWall", "undo", "undoGen"
             , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import", "createWorld"
-            , "getBiome", "chuaWorldInfo", "generateTree");
+            , "getBiome", "chuaWorldInfo", "generateTree", "createFirstLandWorlds", "deleteWorld", "confirm", "cancel");
     private final Chuachua plugin;
 
     public OperationCommand(Chuachua plugin) {
@@ -65,7 +70,7 @@ public class OperationCommand implements CommandExecutor {
                     player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " World List " + ChatColor.BLUE + "]================");
                     for (World world : Bukkit.getWorlds()) {
                         UUID worldID = world.getUID();
-                        if (Universe.getChuaWorld(worldID) != null) {
+                        if (Universe.getChuaWorldById(worldID) != null) {
                             player.sendMessage(ChatColor.GOLD + world.getName() + ChatColor.WHITE + " -- " + ChatColor.GRAY + world.getWorldType().getName() + ChatColor.GRAY + "(ChuaGeneratedWorld)");
                         } else {
                             player.sendMessage(ChatColor.AQUA + world.getName() + ChatColor.WHITE + " -- " + ChatColor.GRAY + world.getWorldType().getName());
@@ -77,12 +82,12 @@ public class OperationCommand implements CommandExecutor {
                         World world = player.getWorld();
                         UUID worldID = world.getUID();
                         String worldName = world.getName();
-                        if (Universe.getChuaWorld(worldID) == null) {
+                        if (Universe.getChuaWorldById(worldID) == null) {
                             player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + worldName + " Info " + ChatColor.BLUE + "]================");
                             player.sendMessage(ChatColor.RED + ">> '" + ChatColor.YELLOW + worldName + ChatColor.RED + "' is not a ChuaWorld.");
 
                         } else {
-                            ChuaWorld chuaWorld = Universe.getChuaWorld(worldID);
+                            ChuaWorld chuaWorld = Universe.getChuaWorldById(worldID);
                             seed = chuaWorld.getSeed();
                             player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + worldName + " Info " + ChatColor.BLUE + "]================");
                             player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.WHITE + "seed: '" + ChatColor.AQUA + seed + ChatColor.WHITE + "'.");
@@ -101,9 +106,9 @@ public class OperationCommand implements CommandExecutor {
                         if (Bukkit.getWorlds().contains(Bukkit.getWorld(worldName))) {
                             world = Bukkit.getWorld(worldName);
                             UUID worldID = world.getUID();
-                            ChuaWorld chuaWorld = Universe.getChuaWorld(worldID);
+                            ChuaWorld chuaWorld = Universe.getChuaWorldById(worldID);
                             seed = chuaWorld.getSeed();
-                            if (Universe.getChuaWorld(Bukkit.getWorld(worldName).getUID()) != null) {
+                            if (Universe.getChuaWorldById(Bukkit.getWorld(worldName).getUID()) != null) {
                                 player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + worldName + " Info " + ChatColor.BLUE + "]================");
                                 player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.WHITE + "seed: '" + ChatColor.AQUA + seed + ChatColor.WHITE + "'.");
                                 player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.WHITE + "UUID: '" + ChatColor.AQUA + Bukkit.getWorld(worldName).getUID() + ChatColor.WHITE + "'.");
@@ -391,7 +396,7 @@ public class OperationCommand implements CommandExecutor {
                     try {
                         UUID worldID = currentWorld.getUID();
 
-                        if (Universe.getChuaWorld(worldID) == null) {
+                        if (Universe.getChuaWorldById(worldID) == null) {
                             player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " Create World " + ChatColor.BLUE + "]================");
                             player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "'" + player.getDisplayName() + "' " + ChatColor.YELLOW + "is currently in the biome: '" + ChatColor.AQUA + ChatColor.BOLD + currentBiome + "'.");
                             player.sendMessage(ChatColor.BLUE + "================================================");
@@ -400,7 +405,7 @@ public class OperationCommand implements CommandExecutor {
                             player.sendMessage(ChatColor.YELLOW + ">>" + ChatColor.AQUA + currentWorld.getName() + ChatColor.WHITE + "--" + ChatColor.AQUA + player.getDisplayName() + "is in the Biome " + player.getWorld().getBiome(player.getLocation()));
                             player.sendMessage(ChatColor.BLUE + "================================================");
                         } else {
-                            ChuaWorld chuaWorld = Universe.getChuaWorld(worldID);
+                            ChuaWorld chuaWorld = Universe.getChuaWorldById(worldID);
                             seed = chuaWorld.getSeed();
                             if (Bukkit.getWorlds().contains(currentWorld)) {
                                 BiomeConstants biomeConstants = new BiomeConstants();
@@ -483,13 +488,163 @@ public class OperationCommand implements CommandExecutor {
                     }
 
                     player.sendMessage(ChatColor.BLUE + "================================================");
+                } else if (firstArg.equalsIgnoreCase("createFirstLandWorlds")) {
+                    player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " Generating More Worlds " + ChatColor.BLUE + "]================");
+                    PlayerTracker playerTracker = Universe.getPlayerTracker(player);
+                    if (PlayMode.EDIT != playerTracker.getPlayMode()) {
+                        player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "The play mode needs to be Edit to do generation.");
+                        return true;
+                    }
+                    if (args.length != 2) {
+                        player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "Usage: /cc createFirstLandWorlds [amount]");
+                        return true;
+                    }
+
+                    String worldAmountString = args[1];
+                    int worldAmount = 0;
+                    try {
+                        worldAmount = Integer.parseInt(worldAmountString);
+                    } catch (NumberFormatException e) {
+                        player.sendMessage(ChatColor.RED + "The value '" + ChatColor.YELLOW + worldAmountString + "' " + ChatColor.RED + "is not a number, so the command cannot be performed.");
+                        return true;
+                    }
+                    if (worldAmount <= 0) {
+                        player.sendMessage(ChatColor.RED + "The value '" + ChatColor.YELLOW + worldAmount + "' " + ChatColor.RED + "is non-positive");
+                        return true;
+                    }
+
+                    FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
+                    Random random = new Random();
+
+                    // 1. Sync and clean the config before any creation.
+                    Universe.loadFirstLandWorldsToMap(configAccessor);
+
+                    // 2. Find the lowest available world number to reuse deleted slots.
+                    Set<Integer> existingWorldNumbers = configAccessor.getKnownWorlds().stream()
+                            .map(worldName -> {
+                                try {
+                                    return Integer.parseInt(worldName.substring("First_Land_World_".length()));
+                                } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+                                    return -1; // Ignore improperly named worlds
+                                }
+                            })
+                            .filter(number -> number != -1)
+                            .collect(Collectors.toSet());
+
+                    int nextAvailableNumber = 0;
+                    while (existingWorldNumbers.contains(nextAvailableNumber)) {
+                        nextAvailableNumber++;
+                    }
+
+                    int worldsCreatedSuccessfully = 0;
+
+                    // 3. Loop to create the specified amount of worlds.
+                    for (int i = 0; i < worldAmount; i++) {
+                        String formattedNumber = String.format("%02d", nextAvailableNumber);
+                        String worldName = "First_Land_World_" + formattedNumber;
+
+                        long seed = random.nextLong();
+                        boolean success = Universe.processFirstLandWorldCreation(worldName, seed, player, configAccessor, plugin);
+
+                        if (success) {
+                            worldsCreatedSuccessfully++;
+                            // Move to the next available number for the next iteration.
+                            existingWorldNumbers.add(nextAvailableNumber);
+                            while (existingWorldNumbers.contains(nextAvailableNumber)) {
+                                nextAvailableNumber++;
+                            }
+                        }
+                    }
+
+                    // 4. Provide a final summary message.
+                    if (worldsCreatedSuccessfully > 0) {
+                        player.sendMessage(ChatColor.BLUE + "Successfully created " + worldsCreatedSuccessfully + " new worlds.");
+                    } else {
+                        player.sendMessage(ChatColor.RED + "No new worlds were created.");
+                    }
+
+                    player.sendMessage(ChatColor.BLUE + "================================================");
+                    return true;
+                } else if (firstArg.equalsIgnoreCase("deleteWorld")) {
+                    if (args.length < 2) {
+                        player.sendMessage(ChatColor.RED + "Usage: /cc deleteWorld [worldName] or /cc deleteWorld [wildcard]");
+                        return true;
+                    }
+
+                    String target = args[1];
+                    List<String> worldsToDelete = new ArrayList<>();
+                    FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
+
+                    if (target.contains("*")) {
+                        // Wildcard deletion logic
+                        String prefix = target.substring(0, target.indexOf('*'));
+                        configAccessor.getKnownWorlds().forEach(worldName -> {
+                            if (worldName.startsWith(prefix) && !Universe.isVanillaWorld(worldName)) {
+                                worldsToDelete.add(worldName);
+                            }
+                        });
+                        if (worldsToDelete.isEmpty()) {
+                            player.sendMessage(ChatColor.RED + "No worlds found matching the wildcard '" + target + "'.");
+                            return true;
+                        }
+                    } else {
+                        // Single world deletion logic
+                        if (Universe.isVanillaWorld(target)) {
+                            player.sendMessage(ChatColor.RED + "You cannot delete a vanilla world!");
+                            return true;
+                        }
+                        worldsToDelete.add(target);
+                    }
+
+                    // Convert the list of worlds to a string to store in the universal map
+                    String worldsToDeleteString = String.join(",", worldsToDelete);
+                    pendingConfirmations.put(player.getUniqueId(), "delete:" + worldsToDeleteString);
+
+                    player.sendMessage(ChatColor.GOLD + "You are about to delete the following worlds: " + ChatColor.YELLOW + String.join(", ", worldsToDelete));
+                    player.sendMessage(ChatColor.YELLOW + "To confirm, type " + ChatColor.GREEN + "/cc confirm" + ChatColor.YELLOW + ". To cancel, type " + ChatColor.RED + "/cc cancel");
+                    return true;
+
+                } else if (firstArg.equalsIgnoreCase("confirm")) {
+                    String pendingAction = pendingConfirmations.remove(player.getUniqueId());
+
+                    if (pendingAction == null) {
+                        player.sendMessage(ChatColor.RED + "You have no pending actions to confirm.");
+                        return true;
+                    }
+
+                    if (pendingAction.startsWith("delete:")) {
+                        String worldsToDeleteString = pendingAction.substring("delete:".length());
+                        List<String> worldsToConfirm = Arrays.asList(worldsToDeleteString.split(","));
+
+                        player.sendMessage(ChatColor.BLUE + "Starting deletion of " + worldsToConfirm.size() + " world(s)...");
+                        FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
+                        for (String worldName : worldsToConfirm) {
+                            boolean success = Universe.deleteFirstLandWorld(worldName, player, configAccessor);
+                            if (success) {
+                                player.sendMessage(ChatColor.GREEN + "Successfully deleted world '" + worldName + "'.");
+                            } else {
+                                player.sendMessage(ChatColor.RED + "Failed to delete world '" + worldName + "'.");
+                            }
+                        }
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Unknown pending action. Please contact an admin.");
+                    }
+                    return true;
+
+                } else if (firstArg.equalsIgnoreCase("cancel")) {
+                    if (pendingConfirmations.remove(player.getUniqueId()) != null) {
+                        player.sendMessage(ChatColor.GREEN + "Action cancelled.");
+                    } else {
+                        player.sendMessage(ChatColor.RED + "You have no pending actions to cancel.");
+                    }
+                    return true;
+                }
 
                 } else {
                     player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "Could not find the argument you wrote " + ChatColor.YELLOW + firstArg);
                 }
 
             }
-        }
         return true;
     }
 }

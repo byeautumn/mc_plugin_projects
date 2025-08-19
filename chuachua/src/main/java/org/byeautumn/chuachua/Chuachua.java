@@ -7,6 +7,7 @@ import org.byeautumn.chuachua.block.BlockListener;
 import org.byeautumn.chuachua.command.OperationCommand;
 import org.byeautumn.chuachua.custom.ResourcePackListener;
 import org.byeautumn.chuachua.game.GameListener;
+import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
 import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorldConfigAccessor;
 
 import java.util.Objects;
@@ -77,6 +78,11 @@ public final class Chuachua extends JavaPlugin {
         ChuaWorldConfigAccessor chuaWorldConfigAccessor = new ChuaWorldConfigAccessor(this);
         Universe.loadChuaWorldsToMap(chuaWorldConfigAccessor);
         chuaWorldConfigAccessor.saveConfig();
+
+        //Load FirstLand Worlds
+        FirstLandWorldConfigAccessor firstLandWorldConfigAccessor = new FirstLandWorldConfigAccessor(this);
+        Universe.loadFirstLandWorldsToMap(firstLandWorldConfigAccessor);
+        firstLandWorldConfigAccessor.saveConfig();
 
         // Register the internal /cc_teleport_internal command using the single instance
         if (this.getCommand("cc_teleport_internal") != null) {
