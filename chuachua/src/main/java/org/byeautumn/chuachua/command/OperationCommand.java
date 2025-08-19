@@ -488,6 +488,7 @@ public class OperationCommand implements CommandExecutor {
                     }
 
                     player.sendMessage(ChatColor.BLUE + "================================================");
+
                 } else if (firstArg.equalsIgnoreCase("createFirstLandWorlds")) {
                     player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " Generating More Worlds " + ChatColor.BLUE + "]================");
                     PlayerTracker playerTracker = Universe.getPlayerTracker(player);
@@ -513,19 +514,31 @@ public class OperationCommand implements CommandExecutor {
                         return true;
                     }
 
+                    // New logic: Check if confirmation is required and add warning text.
+                    if (worldAmount >= 5) {
+                        player.sendMessage(""); // Add a blank line for readability.
+                        player.sendMessage(ChatColor.RED + "WARNING: Generating " + worldAmount + " worlds is a resource-intensive task.");
+                        player.sendMessage(ChatColor.RED + "This may cause temporary server lag, crashes, or data corruption if not handled properly.");
+                        player.sendMessage(""); // Add another blank line.
+
+                        pendingConfirmations.put(player.getUniqueId(), "create:" + worldAmount);
+                        player.sendMessage(ChatColor.GOLD + "You are about to create " + worldAmount + " new worlds.");
+                        player.sendMessage(ChatColor.YELLOW + "To confirm, type " + ChatColor.GREEN + "/cc confirm" + ChatColor.YELLOW + ". To cancel, type " + ChatColor.RED + "/cc cancel");
+                        return true;
+                    }
+
+                    // Existing world creation logic for less than 5 worlds.
                     FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
                     Random random = new Random();
 
-                    // 1. Sync and clean the config before any creation.
                     Universe.loadFirstLandWorldsToMap(configAccessor);
 
-                    // 2. Find the lowest available world number to reuse deleted slots.
                     Set<Integer> existingWorldNumbers = configAccessor.getKnownWorlds().stream()
                             .map(worldName -> {
                                 try {
                                     return Integer.parseInt(worldName.substring("First_Land_World_".length()));
                                 } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
-                                    return -1; // Ignore improperly named worlds
+                                    return -1;
                                 }
                             })
                             .filter(number -> number != -1)
@@ -538,7 +551,6 @@ public class OperationCommand implements CommandExecutor {
 
                     int worldsCreatedSuccessfully = 0;
 
-                    // 3. Loop to create the specified amount of worlds.
                     for (int i = 0; i < worldAmount; i++) {
                         String formattedNumber = String.format("%02d", nextAvailableNumber);
                         String worldName = "First_Land_World_" + formattedNumber;
@@ -548,7 +560,6 @@ public class OperationCommand implements CommandExecutor {
 
                         if (success) {
                             worldsCreatedSuccessfully++;
-                            // Move to the next available number for the next iteration.
                             existingWorldNumbers.add(nextAvailableNumber);
                             while (existingWorldNumbers.contains(nextAvailableNumber)) {
                                 nextAvailableNumber++;
@@ -556,13 +567,11 @@ public class OperationCommand implements CommandExecutor {
                         }
                     }
 
-                    // 4. Provide a final summary message.
                     if (worldsCreatedSuccessfully > 0) {
                         player.sendMessage(ChatColor.BLUE + "Successfully created " + worldsCreatedSuccessfully + " new worlds.");
                     } else {
                         player.sendMessage(ChatColor.RED + "No new worlds were created.");
                     }
-
                     player.sendMessage(ChatColor.BLUE + "================================================");
                     return true;
                 } else if (firstArg.equalsIgnoreCase("deleteWorld")) {
@@ -626,6 +635,55 @@ public class OperationCommand implements CommandExecutor {
                                 player.sendMessage(ChatColor.RED + "Failed to delete world '" + worldName + "'.");
                             }
                         }
+                    } else if (pendingAction.startsWith("create:")) {
+                        // New create logic
+                        int worldAmount = Integer.parseInt(pendingAction.substring("create:".length()));
+
+                        FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
+                        Random random = new Random();
+
+                        Universe.loadFirstLandWorldsToMap(configAccessor);
+
+                        Set<Integer> existingWorldNumbers = configAccessor.getKnownWorlds().stream()
+                                .map(worldName -> {
+                                    try {
+                                        return Integer.parseInt(worldName.substring("First_Land_World_".length()));
+                                    } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+                                        return -1;
+                                    }
+                                })
+                                .filter(number -> number != -1)
+                                .collect(Collectors.toSet());
+
+                        int nextAvailableNumber = 0;
+                        while (existingWorldNumbers.contains(nextAvailableNumber)) {
+                            nextAvailableNumber++;
+                        }
+
+                        int worldsCreatedSuccessfully = 0;
+
+                        for (int i = 0; i < worldAmount; i++) {
+                            String formattedNumber = String.format("%02d", nextAvailableNumber);
+                            String worldName = "First_Land_World_" + formattedNumber;
+
+                            long seed = random.nextLong();
+                            boolean success = Universe.processFirstLandWorldCreation(worldName, seed, player, configAccessor, plugin);
+
+                            if (success) {
+                                worldsCreatedSuccessfully++;
+                                existingWorldNumbers.add(nextAvailableNumber);
+                                while (existingWorldNumbers.contains(nextAvailableNumber)) {
+                                    nextAvailableNumber++;
+                                }
+                            }
+                        }
+
+                        if (worldsCreatedSuccessfully > 0) {
+                            player.sendMessage(ChatColor.BLUE + "Successfully created " + worldsCreatedSuccessfully + " new worlds.");
+                        } else {
+                            player.sendMessage(ChatColor.RED + "No new worlds were created.");
+                        }
+                        player.sendMessage(ChatColor.BLUE + "================================================");
                     } else {
                         player.sendMessage(ChatColor.RED + "Unknown pending action. Please contact an admin.");
                     }
