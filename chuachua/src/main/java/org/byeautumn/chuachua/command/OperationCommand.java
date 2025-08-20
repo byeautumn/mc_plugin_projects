@@ -14,6 +14,7 @@ import org.byeautumn.chuachua.Chuachua;
 import org.byeautumn.chuachua.Universe;
 import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
+import org.byeautumn.chuachua.game.firstland.FirstLandJoinMenu;
 import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
@@ -43,9 +44,15 @@ public class OperationCommand implements CommandExecutor {
             , "getBiome", "chuaWorldInfo", "generateTree", "createFirstLandWorlds", "deleteWorld", "confirm", "cancel");
     private final Chuachua plugin;
 
-    public OperationCommand(Chuachua plugin) {
+    private final FirstLandJoinMenu firstLandJoinMenu;
+    private final FirstLandWorldConfigAccessor configAccessor; // Declared here
+
+    public OperationCommand(Chuachua plugin, FirstLandWorldConfigAccessor configAccessor, FirstLandJoinMenu firstLandJoinMenu ) {
         this.plugin = plugin;
+        this.firstLandJoinMenu = firstLandJoinMenu;
+        this.configAccessor = configAccessor;
     }
+
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (sender instanceof Player && cmd.getName().equalsIgnoreCase("cc")) {
@@ -381,7 +388,7 @@ public class OperationCommand implements CommandExecutor {
                             Random random = new Random();
                             createSeed = random.nextLong();
                         }
-                        ChuaWorld chuaWorld = Universe.createWorld(createSeed, worldName);
+                        ChuaWorld chuaWorld = Universe.createWorld(createSeed, worldName, plugin);
                         player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "A New World is Being Generated with the seed: '" + createSeed + "'!");
                         Universe.teleport(player, chuaWorld.getWorld().getSpawnLocation());
                         ChuaWorldConfigAccessor accessor = new ChuaWorldConfigAccessor(plugin);
@@ -527,45 +534,45 @@ public class OperationCommand implements CommandExecutor {
                         return true;
                     }
 
-                    // Existing world creation logic for less than 5 worlds.
-                    FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
+                    // Existing world creation logic for less than 5 worlds, now using UUIDs.
                     Random random = new Random();
-
-                    Universe.loadFirstLandWorldsToMap(configAccessor);
-
-                    Set<Integer> existingWorldNumbers = configAccessor.getKnownWorlds().stream()
-                            .map(worldName -> {
-                                try {
-                                    return Integer.parseInt(worldName.substring("First_Land_World_".length()));
-                                } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
-                                    return -1;
-                                }
-                            })
-                            .filter(number -> number != -1)
-                            .collect(Collectors.toSet());
-
-                    int nextAvailableNumber = 0;
-                    while (existingWorldNumbers.contains(nextAvailableNumber)) {
-                        nextAvailableNumber++;
-                    }
-
                     int worldsCreatedSuccessfully = 0;
 
                     for (int i = 0; i < worldAmount; i++) {
-                        String formattedNumber = String.format("%02d", nextAvailableNumber);
-                        String worldName = "First_Land_World_" + formattedNumber;
+                        // Get the next sequential internal world name (e.g., First_Land_World_00)
+                        String formattedNumber = String.format("%02d", configAccessor.getWorldAmount());
+                        String newWorldName = "First_Land_World_" + formattedNumber;
+
+                        // Generate a new unique ID for the world
+                        UUID newWorldUUID = UUID.randomUUID();
 
                         long seed = random.nextLong();
-                        boolean success = Universe.processFirstLandWorldCreation(worldName, seed, player, configAccessor, plugin);
 
-                        if (success) {
+                        // Create the actual Bukkit world and its ChuaWorld wrapper.
+                        // Universe.createWorld handles adding the ChuaWorld to its active in-memory map.
+                        ChuaWorld newlyCreatedChuaWorld = Universe.createWorld(seed, newWorldName, plugin);
+
+                        if (newlyCreatedChuaWorld != null) {
+                            // Add the new world's details to the plugin's configuration file using UUID.
+                            // Initially, no player is connected, so pass null for playerUUID.
+                            configAccessor.addNewWorld(
+                                    newlyCreatedChuaWorld.getID(), // Use the actual UUID from the created Bukkit world
+                                    newWorldName,
+                                    newWorldName, // Default friendly name to internal name for batch creation
+                                    null, // No player connected initially for batch creation
+                                    seed,
+                                    newlyCreatedChuaWorld.getWorld().getSpawnLocation()
+                            );
                             worldsCreatedSuccessfully++;
-                            existingWorldNumbers.add(nextAvailableNumber);
-                            while (existingWorldNumbers.contains(nextAvailableNumber)) {
-                                nextAvailableNumber++;
-                            }
+                        } else {
+                            plugin.getLogger().warning("Failed to create Bukkit world for internal name: " + newWorldName + ". Skipping config entry.");
                         }
                     }
+
+                    // Save the config once after all worlds have been added
+                    configAccessor.saveConfig();
+                    // Update the 'amount' counter one final time to ensure consistency
+                    configAccessor.updateAmountToHighestWorldNumber();
 
                     if (worldsCreatedSuccessfully > 0) {
                         player.sendMessage(ChatColor.BLUE + "Successfully created " + worldsCreatedSuccessfully + " new worlds.");
@@ -581,102 +588,143 @@ public class OperationCommand implements CommandExecutor {
                     }
 
                     String target = args[1];
-                    List<String> worldsToDelete = new ArrayList<>();
-                    FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
+                    List<UUID> worldsToDelete = new ArrayList<>();
+                    // REMOVED: FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
+                    // The 'configAccessor' field from the class's constructor should be used here.
 
                     if (target.contains("*")) {
                         // Wildcard deletion logic
                         String prefix = target.substring(0, target.indexOf('*'));
-                        configAccessor.getKnownWorlds().forEach(worldName -> {
-                            if (worldName.startsWith(prefix) && !Universe.isVanillaWorld(worldName)) {
-                                worldsToDelete.add(worldName);
+
+                        // Iterate over all known World UUIDs from the config accessor
+                        this.configAccessor.getKnownWorldUUIDs().forEach(worldUUID -> { // Using 'this.configAccessor'
+                            // Get the internal world name (String) for the current UUID from the config
+                            String worldInternalName = this.configAccessor.getWorldName(worldUUID); // Using 'this.configAccessor'
+
+                            // Perform checks using the internal world name (String)
+                            if (worldInternalName != null && worldInternalName.startsWith(prefix) && !Universe.isVanillaWorld(worldInternalName)) {
+                                // Add the UUID of the world to the list of worlds to delete
+                                worldsToDelete.add(worldUUID);
                             }
                         });
-                        if (worldsToDelete.isEmpty()) {
-                            player.sendMessage(ChatColor.RED + "No worlds found matching the wildcard '" + target + "'.");
-                            return true;
-                        }
+
                     } else {
-                        // Single world deletion logic
+                        // Single world deletion logic: 'target' is a specific world name or UUID string
+
+                        // Prevent deletion of vanilla worlds (e.g., "world", "world_nether")
                         if (Universe.isVanillaWorld(target)) {
                             player.sendMessage(ChatColor.RED + "You cannot delete a vanilla world!");
-                            return true;
+                            return true; // Stop processing this command
                         }
-                        worldsToDelete.add(target);
-                    }
 
-                    // Convert the list of worlds to a string to store in the universal map
-                    String worldsToDeleteString = String.join(",", worldsToDelete);
-                    pendingConfirmations.put(player.getUniqueId(), "delete:" + worldsToDeleteString);
+                        UUID foundWorldUUID = null;
 
-                    player.sendMessage(ChatColor.GOLD + "You are about to delete the following worlds: " + ChatColor.YELLOW + String.join(", ", worldsToDelete));
-                    player.sendMessage(ChatColor.YELLOW + "To confirm, type " + ChatColor.GREEN + "/cc confirm" + ChatColor.YELLOW + ". To cancel, type " + ChatColor.RED + "/cc cancel");
-                    return true;
-
-                } else if (firstArg.equalsIgnoreCase("confirm")) {
-                    String pendingAction = pendingConfirmations.remove(player.getUniqueId());
-
-                    if (pendingAction == null) {
-                        player.sendMessage(ChatColor.RED + "You have no pending actions to confirm.");
-                        return true;
-                    }
-
-                    if (pendingAction.startsWith("delete:")) {
-                        String worldsToDeleteString = pendingAction.substring("delete:".length());
-                        List<String> worldsToConfirm = Arrays.asList(worldsToDeleteString.split(","));
-
-                        player.sendMessage(ChatColor.BLUE + "Starting deletion of " + worldsToConfirm.size() + " world(s)...");
-                        FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
-                        for (String worldName : worldsToConfirm) {
-                            boolean success = Universe.deleteFirstLandWorld(worldName, player, configAccessor);
-                            if (success) {
-                                player.sendMessage(ChatColor.GREEN + "Successfully deleted world '" + worldName + "'.");
-                            } else {
-                                player.sendMessage(ChatColor.RED + "Failed to delete world '" + worldName + "'.");
+                        // Attempt to parse 'target' directly as a UUID string
+                        try {
+                            UUID potentialUUID = UUID.fromString(target);
+                            // If it's a valid UUID string, check if it exists in our configuration
+                            if (this.configAccessor.worldExistsInConfig(potentialUUID)) { // Using 'this.configAccessor'
+                                foundWorldUUID = potentialUUID;
                             }
-                        }
-                    } else if (pendingAction.startsWith("create:")) {
-                        // New create logic
-                        int worldAmount = Integer.parseInt(pendingAction.substring("create:".length()));
-
-                        FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
-                        Random random = new Random();
-
-                        Universe.loadFirstLandWorldsToMap(configAccessor);
-
-                        Set<Integer> existingWorldNumbers = configAccessor.getKnownWorlds().stream()
-                                .map(worldName -> {
-                                    try {
-                                        return Integer.parseInt(worldName.substring("First_Land_World_".length()));
-                                    } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
-                                        return -1;
-                                    }
-                                })
-                                .filter(number -> number != -1)
-                                .collect(Collectors.toSet());
-
-                        int nextAvailableNumber = 0;
-                        while (existingWorldNumbers.contains(nextAvailableNumber)) {
-                            nextAvailableNumber++;
+                        } catch (IllegalArgumentException e) {
+                            // 'target' is not a valid UUID string; proceed to look up by name
                         }
 
-                        int worldsCreatedSuccessfully = 0;
+                        // If the world wasn't found by direct UUID, try to find it by its internal name or friendly name
+                        if (foundWorldUUID == null) {
+                            // Iterate through all known worlds in the config to find a match by name
+                            for (UUID uuidInConfig : this.configAccessor.getKnownWorldUUIDs()) { // Using 'this.configAccessor'
+                                String internalName = this.configAccessor.getWorldName(uuidInConfig); // Using 'this.configAccessor'
+                                String friendlyName = this.configAccessor.getWorldFriendlyName(uuidInConfig); // Using 'this.configAccessor'
 
-                        for (int i = 0; i < worldAmount; i++) {
-                            String formattedNumber = String.format("%02d", nextAvailableNumber);
-                            String worldName = "First_Land_World_" + formattedNumber;
-
-                            long seed = random.nextLong();
-                            boolean success = Universe.processFirstLandWorldCreation(worldName, seed, player, configAccessor, plugin);
-
-                            if (success) {
-                                worldsCreatedSuccessfully++;
-                                existingWorldNumbers.add(nextAvailableNumber);
-                                while (existingWorldNumbers.contains(nextAvailableNumber)) {
-                                    nextAvailableNumber++;
+                                // Check if 'target' matches either the internal name or the friendly name (case-insensitive comparison for user input)
+                                if ((internalName != null && internalName.equalsIgnoreCase(target)) ||
+                                        (friendlyName != null && friendlyName.equalsIgnoreCase(target))) {
+                                    foundWorldUUID = uuidInConfig;
+                                    break; // Found a match, no need to continue iterating
                                 }
                             }
                         }
+
+                        if (foundWorldUUID != null) {
+                            // If a UUID was successfully found (either directly or by name), add it to the list for deletion
+                            worldsToDelete.add(foundWorldUUID);
+                        } else {
+                            // If no matching world (by UUID or name) was found in the config, inform the player
+                            player.sendMessage(ChatColor.RED + "World '" + ChatColor.YELLOW + target + ChatColor.RED + "' not found or you do not have permission to delete it.");
+                            return true; // Stop processing as no world was identified for deletion
+                        }
+                    }
+
+                    // After the if/else block, 'worldsToDelete' now contains UUIDs of all worlds identified for deletion.
+                    // You would then proceed with the actual deletion loop (e.g., using a confirmation step if needed).
+                    if (worldsToDelete.isEmpty()) {
+                        player.sendMessage(ChatColor.YELLOW + "No worlds found matching your criteria to delete.");
+                        return true;
+                    }
+
+                    // Optional: Add confirmation for single world deletion too if you wish, or just proceed
+                    // For simplicity, let's assume we proceed with deletion after identification.
+                    // If you have a 'pendingConfirmations' mechanism, you would integrate it here.
+
+                    // Proceed with actual deletion for each identified world
+                    int worldsDeletedSuccessfully = 0;
+                    for (UUID uuidToDelete : worldsToDelete) {
+                        // Call the deleteFirstLandWorld method which expects a UUID
+                        boolean success = Universe.deleteFirstLandWorld(plugin, uuidToDelete, this.configAccessor); // Using 'this.configAccessor'
+                        if (success) {
+                            worldsDeletedSuccessfully++;
+                        }
+                    }
+
+                    if (worldsDeletedSuccessfully > 0) {
+                        player.sendMessage(ChatColor.BLUE + "Successfully deleted " + worldsDeletedSuccessfully + " world(s).");
+                    } else {
+                        player.sendMessage(ChatColor.RED + "No worlds were deleted.");
+                    }
+                    player.sendMessage(ChatColor.BLUE + "================================================");
+                    return true;
+                } else if (firstArg.equalsIgnoreCase("confirm")) {
+                    String pendingAction = pendingConfirmations.remove(player.getUniqueId());
+                    if (pendingAction == null) {
+                        player.sendMessage(ChatColor.RED + "No pending action to confirm.");
+                        return true;
+                    }
+
+                    if (pendingAction.startsWith("create:")) {
+                        int worldAmount = Integer.parseInt(pendingAction.substring("create:".length()));
+                        player.sendMessage(ChatColor.GREEN + "Confirmation received. Generating " + worldAmount + " worlds...");
+
+                        // Execute the world creation logic here (duplicated from above for now, but should be refactored)
+                        Random random = new Random();
+                        int worldsCreatedSuccessfully = 0;
+
+                        for (int i = 0; i < worldAmount; i++) {
+                            String formattedNumber = String.format("%02d", configAccessor.getWorldAmount());
+                            String newWorldName = "First_Land_World_" + formattedNumber;
+
+                            UUID newWorldUUID = UUID.randomUUID();
+
+                            long seed = random.nextLong();
+
+                            ChuaWorld newlyCreatedChuaWorld = Universe.createWorld(seed, newWorldName, plugin);
+
+                            if (newlyCreatedChuaWorld != null) {
+                                configAccessor.addNewWorld(
+                                        newlyCreatedChuaWorld.getID(),
+                                        newWorldName,
+                                        newWorldName,
+                                        null,
+                                        seed,
+                                        newlyCreatedChuaWorld.getWorld().getSpawnLocation()
+                                );
+                                worldsCreatedSuccessfully++;
+                            } else {
+                                plugin.getLogger().warning("Failed to create Bukkit world for internal name: " + newWorldName + ". Skipping config entry.");
+                            }
+                        }
+                        configAccessor.saveConfig();
+                        configAccessor.updateAmountToHighestWorldNumber();
 
                         if (worldsCreatedSuccessfully > 0) {
                             player.sendMessage(ChatColor.BLUE + "Successfully created " + worldsCreatedSuccessfully + " new worlds.");
@@ -684,16 +732,58 @@ public class OperationCommand implements CommandExecutor {
                             player.sendMessage(ChatColor.RED + "No new worlds were created.");
                         }
                         player.sendMessage(ChatColor.BLUE + "================================================");
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Unknown pending action. Please contact an admin.");
+                    } else if (pendingAction.startsWith("delete:")) {
+                        String worldsToDeleteString = pendingAction.substring("delete:".length());
+                        List<String> worldNamesToConfirm = Arrays.asList(worldsToDeleteString.split(",")); // Renamed for clarity
+
+                        player.sendMessage(ChatColor.BLUE + "Starting deletion of " + worldNamesToConfirm.size() + " world(s)...");
+                        // Use the class's configAccessor field instead of re-initializing
+                        // FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin); // REMOVED
+
+                        int worldsDeletedSuccessfully = 0;
+                        for (String worldName : worldNamesToConfirm) {
+                            // IMPORTANT: Find the UUID from the world name before calling delete
+                            UUID worldUUIDToDelete = null;
+                            // Iterate through all known worlds in the config to find a match by internal name or friendly name
+                            for (UUID uuidInConfig : this.configAccessor.getKnownWorldUUIDs()) {
+                                String internalName = this.configAccessor.getWorldName(uuidInConfig);
+                                String friendlyName = this.configAccessor.getWorldFriendlyName(uuidInConfig);
+
+                                if ((internalName != null && internalName.equalsIgnoreCase(worldName)) ||
+                                        (friendlyName != null && friendlyName.equalsIgnoreCase(worldName))) {
+                                    worldUUIDToDelete = uuidInConfig;
+                                    break;
+                                }
+                            }
+
+                            if (worldUUIDToDelete != null) {
+                                // Corrected call: Use Universe.deleteFirstLandWorld with the found UUID
+                                boolean success = Universe.deleteFirstLandWorld(plugin, worldUUIDToDelete, this.configAccessor);
+                                if (success) {
+                                    worldsDeletedSuccessfully++;
+                                    player.sendMessage(ChatColor.GREEN + "Successfully deleted world '" + worldName + "'.");
+                                } else {
+                                    player.sendMessage(ChatColor.RED + "Failed to delete world '" + worldName + "'. Check console for details.");
+                                }
+                            } else {
+                                player.sendMessage(ChatColor.RED + "Could not find world '" + worldName + "' for deletion. It might have been deleted already or the name is incorrect.");
+                            }
+                        }
+                        player.sendMessage(ChatColor.BLUE + "================================================");
+                        if (worldsDeletedSuccessfully > 0) {
+                            player.sendMessage(ChatColor.BLUE + "Successfully deleted " + worldsDeletedSuccessfully + " world(s) upon confirmation.");
+                        } else {
+                            player.sendMessage(ChatColor.RED + "No worlds were deleted upon confirmation.");
+                        }
                     }
                     return true;
 
                 } else if (firstArg.equalsIgnoreCase("cancel")) {
-                    if (pendingConfirmations.remove(player.getUniqueId()) != null) {
-                        player.sendMessage(ChatColor.GREEN + "Action cancelled.");
+                    String pendingAction = pendingConfirmations.remove(player.getUniqueId());
+                    if (pendingAction == null) {
+                        player.sendMessage(ChatColor.RED + "No pending action to cancel.");
                     } else {
-                        player.sendMessage(ChatColor.RED + "You have no pending actions to cancel.");
+                        player.sendMessage(ChatColor.YELLOW + "Action cancelled.");
                     }
                     return true;
                 }

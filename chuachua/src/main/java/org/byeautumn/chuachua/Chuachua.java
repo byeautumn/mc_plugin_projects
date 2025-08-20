@@ -7,8 +7,12 @@ import org.byeautumn.chuachua.block.BlockListener;
 import org.byeautumn.chuachua.command.OperationCommand;
 import org.byeautumn.chuachua.custom.ResourcePackListener;
 import org.byeautumn.chuachua.game.GameListener;
+import org.byeautumn.chuachua.game.firstland.FirstLandJoinMenu;
+import org.byeautumn.chuachua.game.firstland.FirstLandViewMenu;
 import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
+import org.byeautumn.chuachua.game.firstland.FirstLandWorldNameListener;
 import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorldConfigAccessor;
+import org.checkerframework.checker.guieffect.qual.UI;
 
 import java.util.Objects;
 import java.util.logging.Level;
@@ -20,6 +24,10 @@ public final class Chuachua extends JavaPlugin {
     public static Chuachua getInstance; // Made public static as per your code
     private String resourcePackURL;
     private OperationCommand operationCommand; // Declare a field for your command executor
+    private FirstLandJoinMenu firstLandJoinMenu; // Declare an instance
+    private FirstLandWorldConfigAccessor firstLandWorldConfigAccessor;
+
+    public static final int MAIN_CONFIG_DEFAULT_MAX_WORLDS = 3;
 
     @Override
     public void onEnable() {
@@ -52,12 +60,17 @@ public final class Chuachua extends JavaPlugin {
         getLogger().info("Set ProtoBiomeGeneration logger level to FINE.");
         // --- End: Programmatic Logging Configuration ---
 
+        this.firstLandWorldConfigAccessor = new FirstLandWorldConfigAccessor(this);
 
+        this.firstLandJoinMenu = new FirstLandJoinMenu(this, firstLandWorldConfigAccessor);
         // Initialize your OperationCommand ONCE
-        this.operationCommand = new OperationCommand(this);
+        this.operationCommand = new OperationCommand(this, firstLandWorldConfigAccessor, firstLandJoinMenu);
 
-        // Register listeners
-        getServer().getPluginManager().registerEvents(new GameListener(),this);
+        FirstLandWorldNameListener firstLandWorldNameListener = new FirstLandWorldNameListener(this);
+
+        getServer().getPluginManager().registerEvents(firstLandWorldNameListener, this);
+        getServer().getPluginManager().registerEvents(firstLandJoinMenu, this);
+        getServer().getPluginManager().registerEvents(new GameListener(this, firstLandWorldConfigAccessor),this);
         getServer().getPluginManager().registerEvents(new BlockListener(this),this);
 
         // Register the main /cc command using the single instance
@@ -68,20 +81,30 @@ public final class Chuachua extends JavaPlugin {
             getLogger().log(Level.WARNING, "Command 'cc' not found in plugin.yml. Please ensure it's defined.");
         }
 
-        // Load config and resource pack
         saveDefaultConfig();
-        FileConfiguration config = getConfig();
-        resourcePackURL = config.getString("resource-pack-url", "");
+
+        // 2. Load the main config
+        FileConfiguration mainConfig = getConfig();
+
+        // 3. Add default for max-worlds-per-player in the main config
+        // This ensures the key exists with a default if it's missing in config.yml
+        mainConfig.addDefault("max-worlds-per-player", MAIN_CONFIG_DEFAULT_MAX_WORLDS);
+        mainConfig.options().copyDefaults(true); // Apply defaults
+        saveConfig(); // Save the updated config.yml with new default
+        resourcePackURL = mainConfig.getString("resource-pack-url", "");
         getServer().getPluginManager().registerEvents(new ResourcePackListener(resourcePackURL), this);
 
         // Load ChuaWorlds
         ChuaWorldConfigAccessor chuaWorldConfigAccessor = new ChuaWorldConfigAccessor(this);
-        Universe.loadChuaWorldsToMap(chuaWorldConfigAccessor);
+        Universe.loadChuaWorldsToMap(chuaWorldConfigAccessor, this);
         chuaWorldConfigAccessor.saveConfig();
 
         //Load FirstLand Worlds
-        FirstLandWorldConfigAccessor firstLandWorldConfigAccessor = new FirstLandWorldConfigAccessor(this);
-        Universe.loadFirstLandWorldsToMap(firstLandWorldConfigAccessor);
+//        FirstLandWorldConfigAccessor firstLandWorldConfigAccessor = new FirstLandWorldConfigAccessor(this);
+        Universe.loadFirstLandWorldsToMap(this, firstLandWorldConfigAccessor);
+        firstLandWorldConfigAccessor.saveConfig();
+
+        Universe.loadPlayerConnectionsFromConfig(this, firstLandWorldConfigAccessor);
         firstLandWorldConfigAccessor.saveConfig();
 
         // Register the internal /cc_teleport_internal command using the single instance
@@ -101,5 +124,12 @@ public final class Chuachua extends JavaPlugin {
         getLogger().info("Chuachua plugin is disabling...");
         // Any cleanup code can go here
         getLogger().info("Chuachua plugin has been disabled!");
+        firstLandWorldConfigAccessor.saveConfig();
+    }
+    public FirstLandJoinMenu getFirstLandMenu() {
+        return firstLandJoinMenu;
+    }
+    public FirstLandWorldConfigAccessor getFirstLandWorldConfigAccessor() {
+        return this.firstLandWorldConfigAccessor;
     }
 }
