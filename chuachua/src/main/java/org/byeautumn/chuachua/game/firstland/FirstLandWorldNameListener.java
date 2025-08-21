@@ -52,7 +52,7 @@ public class FirstLandWorldNameListener implements Listener {
             }
 
             // Schedule the world creation and teleport to run on the main thread
-            Universe.createOrConnectExistingWorldWithPlayer(player, plugin, configAccessor);
+            Universe.createOrConnectExistingWorldWithPlayer(player, plugin, configAccessor, message);
         }
     }
 }

@@ -21,25 +21,34 @@ public class FirstLandWorldConfigAccessor {
     private final File configFile; // Still manages its own world-data-specific config file
     private final YamlConfiguration config; // Still manages its own world-data-specific config
 
+    private final Object fileLock = new Object();
+
     public FirstLandWorldConfigAccessor(JavaPlugin plugin) {
         this.plugin = plugin;
         this.configFile = new File(plugin.getDataFolder(), "first_land_world_storing.yml");
         if (!plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdirs();
         }
+        // This call handles creation and saving of default config if the file doesn't exist
+        saveDefaultConfig();
+
+        // Now, always load the final, definitive version of the config from disk
         this.config = YamlConfiguration.loadConfiguration(configFile);
-        saveDefaultConfig(); // This saveDefaultConfig pertains only to 'first_land_world_storing.yml'
     }
 
     private void saveDefaultConfig() {
-        if (!configFile.exists()) {
-            try {
-                configFile.createNewFile();
-                config.createSection("worlds");
-                config.set("amount", 0); // Initialize the amount counter for world naming
-                saveConfig();
-            } catch (IOException e) {
-                plugin.getLogger().log(Level.SEVERE, "Could not create config file: " + configFile, e);
+        synchronized (fileLock) {
+            if (!configFile.exists()) {
+                try {
+                    configFile.createNewFile();
+                    // We create a temporary config object to set defaults without interfering with the main 'this.config'
+                    YamlConfiguration tempConfig = new YamlConfiguration();
+                    tempConfig.createSection("worlds");
+                    tempConfig.set("amount", 0);
+                    tempConfig.save(configFile); // Save the temp config to the file
+                } catch (IOException e) {
+                    plugin.getLogger().log(Level.SEVERE, "Could not create config file: " + configFile, e);
+                }
             }
         }
     }
@@ -64,15 +73,20 @@ public class FirstLandWorldConfigAccessor {
     }
 
     public void saveConfig() {
-        try {
-            config.save(configFile);
-        } catch (IOException e) {
-            plugin.getLogger().log(Level.SEVERE, "Could not save config to " + configFile, e);
+        synchronized (fileLock) {
+            try {
+                config.save(configFile);
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.SEVERE, "Could not save config to " + configFile, e);
+            }
         }
     }
 
     public YamlConfiguration getConfig() {
-        return config;
+        // Synchronize on read access as well
+        synchronized (fileLock) {
+            return config;
+        }
     }
 
     /**
@@ -88,42 +102,41 @@ public class FirstLandWorldConfigAccessor {
      * @param spawnLocation The spawn location of the world.
      */
     public void addNewWorld(UUID worldUUID, String worldName, String friendlyName, UUID playerUUID, long seed, Location spawnLocation) {
-        String worldPath = "worlds." + worldUUID.toString(); // Use World UUID as primary key
-        boolean isNewEntry = !config.contains(worldPath); // Check if the path already exists
+        synchronized (fileLock) {
+            String worldPath = "worlds." + worldUUID.toString();
+            boolean isNewEntry = !config.contains(worldPath);
 
-        config.set(worldPath + ".worldname", worldName); // Still store internal Bukkit name
-        config.set(worldPath + ".friendly-name", friendlyName);
-        config.set(worldPath + ".connected-player-uuid", playerUUID != null ? playerUUID.toString() : "none"); // Store Player UUID string
-        config.set(worldPath + ".seed", seed);
-        config.set(worldPath + ".spawnlocation.x", spawnLocation.getX());
-        config.set(worldPath + ".spawnlocation.y", spawnLocation.getY());
-        config.set(worldPath + ".spawnlocation.z", spawnLocation.getZ());
-        config.set(worldPath + ".spawnlocation.yaw", spawnLocation.getYaw());
-        config.set(worldPath + ".spawnlocation.pitch", spawnLocation.getPitch());
-        config.set(worldPath + ".created-at", System.currentTimeMillis());
+            config.set(worldPath + ".worldname", worldName);
+            config.set(worldPath + ".friendly-name", friendlyName);
+            config.set(worldPath + ".connected-player-uuid", playerUUID != null ? playerUUID.toString() : "none");
+            config.set(worldPath + ".seed", seed);
+            config.set(worldPath + ".spawnlocation.x", spawnLocation.getX());
+            config.set(worldPath + ".spawnlocation.y", spawnLocation.getY());
+            config.set(worldPath + ".spawnlocation.z", spawnLocation.getZ());
+            config.set(worldPath + ".spawnlocation.yaw", spawnLocation.getYaw());
+            config.set(worldPath + ".spawnlocation.pitch", spawnLocation.getPitch());
+            config.set(worldPath + ".created-at", System.currentTimeMillis());
 
-        // Update the 'amount' based on the highest numerical suffix of "First_Land_World_XX"
-        // This logic remains tied to the worldName format, which is fine as a counter for new world generation naming.
-        int worldNumber = -1;
-        try {
-            if (worldName.startsWith("First_Land_World_")) {
-                worldNumber = Integer.parseInt(worldName.substring("First_Land_World_".length()));
+            int worldNumber = -1;
+            try {
+                if (worldName.startsWith("First_Land_World_")) {
+                    worldNumber = Integer.parseInt(worldName.substring("First_Land_World_".length()));
+                }
+            } catch (NumberFormatException | StringIndexOutOfBoundsException ignored) {}
+
+            if (worldNumber != -1) {
+                if (worldNumber >= config.getInt("amount", 0)) {
+                    config.set("amount", worldNumber + 1);
+                }
             }
-        } catch (NumberFormatException | StringIndexOutOfBoundsException ignored) {}
 
-        if (worldNumber != -1) {
-            if (worldNumber >= config.getInt("amount", 0)) {
-                config.set("amount", worldNumber + 1);
+            if (isNewEntry) {
+                plugin.getLogger().info("Added NEW world entry for UUID '" + worldUUID + "' with friendly name '" + friendlyName + "'.");
+            } else {
+                plugin.getLogger().info("UPDATED existing world entry for UUID '" + worldUUID + "' with friendly name '" + friendlyName + "'.");
             }
+            saveConfig();
         }
-
-        // Enhanced logging
-        if (isNewEntry) {
-            plugin.getLogger().info("Added NEW world entry for UUID '" + worldUUID + "' with friendly name '" + friendlyName + "'.");
-        } else {
-            plugin.getLogger().info("UPDATED existing world entry for UUID '" + worldUUID + "' with friendly name '" + friendlyName + "'.");
-        }
-        saveConfig();
     }
 
     /**
@@ -154,19 +167,20 @@ public class FirstLandWorldConfigAccessor {
      * @return A list of World UUIDs.
      */
     public List<UUID> getKnownWorldUUIDs() {
-        List<UUID> worldUUIDs = new ArrayList<>();
-        if (config.isConfigurationSection("worlds")) {
-            Set<String> keys = config.getConfigurationSection("worlds").getKeys(false);
-            for (String key : keys) {
-                try {
-                    worldUUIDs.add(UUID.fromString(key));
-                }
-                catch (IllegalArgumentException e) {
-                    plugin.getLogger().warning("Invalid UUID found as world key in config: " + key);
+        synchronized (fileLock) {
+            List<UUID> worldUUIDs = new ArrayList<>();
+            if (config.isConfigurationSection("worlds")) {
+                Set<String> keys = config.getConfigurationSection("worlds").getKeys(false);
+                for (String key : keys) {
+                    try {
+                        worldUUIDs.add(UUID.fromString(key));
+                    } catch (IllegalArgumentException e) {
+                        plugin.getLogger().warning("Invalid UUID found as world key in config: " + key);
+                    }
                 }
             }
+            return worldUUIDs;
         }
-        return worldUUIDs;
     }
 
     /**
@@ -203,8 +217,10 @@ public class FirstLandWorldConfigAccessor {
      * @return The UUID of the connected player as a String, or "none" if unconnected.
      */
     public String getConnectedPlayerUUID(UUID worldUUID) {
-        String connectedPlayerUUID = config.getString("worlds." + worldUUID.toString() + ".connected-player-uuid");
-        return (connectedPlayerUUID != null && !connectedPlayerUUID.isEmpty()) ? connectedPlayerUUID : "none";
+        synchronized (fileLock) {
+            String connectedPlayerUUID = config.getString("worlds." + worldUUID.toString() + ".connected-player-uuid");
+            return (connectedPlayerUUID != null && !connectedPlayerUUID.isEmpty()) ? connectedPlayerUUID : "none";
+        }
     }
 
     /**
@@ -215,13 +231,15 @@ public class FirstLandWorldConfigAccessor {
      * @param playerUUID The UUID of the player to connect (or null to disconnect).
      */
     public void updateConnectedPlayer(UUID worldUUID, UUID playerUUID) {
-        String playerUUIDString = (playerUUID != null) ? playerUUID.toString() : "none";
-        if (worldUUID != null) {
-            config.set("worlds." + worldUUID.toString() + ".connected-player-uuid", playerUUIDString);
-            saveConfig();
-            plugin.getLogger().info("Updated player connection for world UUID '" + worldUUID + "' to player UUID '" + playerUUIDString + "'.");
-        } else {
-            plugin.getLogger().warning("Attempted to update connected player for a null world UUID.");
+        synchronized (fileLock) {
+            String playerUUIDString = (playerUUID != null) ? playerUUID.toString() : "none";
+            if (worldUUID != null) {
+                config.set("worlds." + worldUUID.toString() + ".connected-player-uuid", playerUUIDString);
+                saveConfig();
+                plugin.getLogger().info("Updated player connection for world UUID '" + worldUUID + "' to player UUID '" + playerUUIDString + "'.");
+            } else {
+                plugin.getLogger().warning("Attempted to update connected player for a null world UUID.");
+            }
         }
     }
 

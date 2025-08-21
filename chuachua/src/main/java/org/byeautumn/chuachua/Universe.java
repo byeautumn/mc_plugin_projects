@@ -478,7 +478,7 @@ public class Universe {
                 plugin.getLogger().info("Teleported " + player.getName() + " from world '" + worldName + "'.");
 
                 // Clear in-memory connection for this player
-                Universe.setPlayerConnectedChuaWorld(player.getUniqueId(), null, plugin);
+                Universe.removePlayerConnectedSpecificChuaWorld(player.getUniqueId(), worldUUID);
             }
             Bukkit.unloadWorld(world, false);
             plugin.getLogger().info("Unloaded world '" + worldName + "'.");
@@ -529,6 +529,8 @@ public class Universe {
 
         // Step 6: Remove from UUID_TO_CHUAWORLD map
         UUID_TO_CHUAWORLD.remove(worldUUID);
+
+        configAccessor.saveConfig();
 
         plugin.getLogger().info("Successfully deleted world '" + worldName + "' (UUID: " + worldUUID + ").");
         return true;
@@ -600,6 +602,7 @@ public class Universe {
 
         // Update the in-memory map to reflect that this player is now connected to this new world
         Universe.setPlayerConnectedChuaWorld(player.getUniqueId(), targetChuaWorld, plugin);
+        configAccessor.saveConfig();
 
         // Schedule the player teleportation to happen on the main server thread
         new BukkitRunnable() {
@@ -632,37 +635,17 @@ public class Universe {
         return createAndConnectNewWorld(player, plugin, configAccessor, newWorldName);
     }
 
-    public static void createOrConnectExistingWorldWithPlayer(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor) {
+    public static void createOrConnectExistingWorldWithPlayer(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, String friendlyName) {
         new BukkitRunnable() {
             @Override
             public void run() {
-                Universe.findOrCreateAndConnectFirstLandWorld(player, plugin, configAccessor);
+                Universe.findOrCreateAndConnectFirstLandWorld(player, plugin, configAccessor, friendlyName);
             }
         }.runTask(plugin);
     }
 
-    public static boolean connectPlayerToSpecificWorld(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, String worldIdentifier) {
+    public static boolean connectPlayerToSpecificWorld(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, String worldIdentifier, UUID worldUuid) {
         plugin.getLogger().info("Attempting to connect player " + player.getName() + " to specific world: " + worldIdentifier);
-
-        // Check if player is already connected to a First Land world
-        List<ChuaWorld> existingPlayerWorlds = getPlayerConnectedChuaWorld(player.getUniqueId());
-
-        for(ChuaWorld existingPlayerWorld : existingPlayerWorlds){
-            if (existingPlayerWorld != null) {
-                if (player.getWorld().getName().equalsIgnoreCase(worldIdentifier)) {
-                    player.sendMessage(ChatColor.YELLOW + "You are already connected to this world!");
-                    return false;
-                } else {
-                    player.sendMessage(ChatColor.GREEN + "Teleporting you to the requested World.");
-                    // Implicitly disconnect from previous world by new connection, but explicit clear is safer
-                    Universe.setPlayerConnectedChuaWorld(player.getUniqueId(), null, plugin);
-                    // Also update config for previous world if it was connected
-                    configAccessor.updateConnectedPlayer(existingPlayerWorld.getID(), null);
-                }
-            }
-        }
-
-
 
         UUID targetWorldUUID = null;
         String targetInternalWorldName = null;
@@ -739,7 +722,7 @@ public class Universe {
      * @param configAccessor The config accessor for First Land worlds.
      * @return true if the player was successfully connected to a world, false otherwise.
      */
-    public static boolean findOrCreateAndConnectFirstLandWorld(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor) {
+    public static boolean findOrCreateAndConnectFirstLandWorld(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, String friendlyName) {
         plugin.getLogger().info("Attempting to find or create a First Land world for player " + player.getName() + "...");
 
         // Check if the player already has a connected world
@@ -779,7 +762,7 @@ public class Universe {
                 player.sendMessage(ChatColor.GREEN + "Connecting you to an existing unused world...");
                 plugin.getLogger().info("Reusing existing unconnected world (UUID: " + unconnectedWorldUUID + ", Internal: " + internalWorldNameToUse + ") for player " + player.getName());
                 // World is prepared, now update its connection in config
-                String friendlyName = configAccessor.getWorldFriendlyName(unconnectedWorldUUID); // Keep existing friendly name
+//                String friendlyName = configAccessor.getWorldFriendlyName(unconnectedWorldUUID); // Keep existing friendly name
                 configAccessor.addNewWorld( // Re-use addNewWorld to update player connection
                         worldUUIDToUse,
                         internalWorldNameToUse,
@@ -816,10 +799,11 @@ public class Universe {
             }
 
             // Add the new world's details to the plugin's configuration file using UUID.
+//            String friendlyName = configAccessor.getWorldFriendlyName(unconnectedWorldUUID); // Keep existing friendly name
             configAccessor.addNewWorld(
                     worldUUIDToUse,
                     internalWorldNameToUse,
-                    internalWorldNameToUse, // Default friendly name to internal name for findOrCreate
+                    friendlyName, // Default friendly name to internal name for findOrCreate
                     player.getUniqueId(), // Connect the player who created it
                     seedToUse,
                     createdOrLoadedChuaWorld.getWorld().getSpawnLocation()
@@ -859,30 +843,9 @@ public class Universe {
      * If `chuaWorld` is null, it effectively clears all connections for that player.
      * If `chuaWorld` is not null and not already in the list, it's added.
      *
-     * @param playerUUID The UUID of the player.
-     * @param chuaWorld The ChuaWorld instance to connect the player to, or null to disconnect all.
      */
     public static void setPlayerConnectedChuaWorld(UUID playerUUID, ChuaWorld chuaWorld, JavaPlugin plugin) {
-        if (chuaWorld == null) {
-            PLAYER_UUID_TO_CONNECTED_CHUAWORLD_MAPS.remove(playerUUID);
-            // Logger info for debugging, get plugin instance if available
-            try {
-                plugin.getLogger().info("Player " + playerUUID + " disconnected from all their ChuaWorlds in memory.");
-            } catch (IllegalStateException e) {
-                // Plugin not enabled yet or instance not set, log to console directly
-                System.out.println("Player " + playerUUID + " disconnected from all their ChuaWorlds in memory (plugin not ready for full logging).");
-            }
-        } else {
-            // Use computeIfAbsent to get the list (or create if absent) and then add the world if not already present
-            PLAYER_UUID_TO_CONNECTED_CHUAWORLD_MAPS.computeIfAbsent(playerUUID, k -> new ArrayList<>()).add(chuaWorld);
-            // Logger info for debugging, get plugin instance if available
-            try {
-                plugin.getLogger().info("Player " + playerUUID + " connected to world UUID: " + chuaWorld.getID());
-            } catch (IllegalStateException e) {
-                // Plugin not enabled yet or instance not set, log to console directly
-                System.out.println("Player " + playerUUID + " connected to world UUID: " + chuaWorld.getID() + " (plugin not ready for full logging).");
-            }
-        }
+        PLAYER_UUID_TO_CONNECTED_CHUAWORLD_MAPS.computeIfAbsent(playerUUID, k -> new ArrayList<>()).add(chuaWorld);
     }
 
     /**
@@ -896,9 +859,17 @@ public class Universe {
 
     public static void removePlayerConnectedSpecificChuaWorld(UUID playerUUID, UUID worldUUID){
         List<ChuaWorld> chuaWorlds = PLAYER_UUID_TO_CONNECTED_CHUAWORLD_MAPS.get(playerUUID);
-        for(ChuaWorld chuaWorld : chuaWorlds){
-            if(chuaWorld.getID().equals(worldUUID)){
-                chuaWorlds.remove(chuaWorld);
+        // Check if chuaWorlds is null before trying to iterate over it
+        if(chuaWorlds == null){
+            return; // No worlds to remove the player from, so we can exit the method.
+        }
+
+        Iterator<ChuaWorld> iterator = chuaWorlds.iterator();
+        while (iterator.hasNext()) {
+            ChuaWorld chuaWorld = iterator.next();
+            if (chuaWorld.getID().equals(worldUUID)) {
+                iterator.remove();
+
                 return;
             }
         }

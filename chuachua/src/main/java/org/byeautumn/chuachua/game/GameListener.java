@@ -69,18 +69,6 @@ public class GameListener implements Listener {
 
     @EventHandler
     private void onPlayerQuitEvent(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        // Get the ChuaWorld the player was connected to, if any
-        List<ChuaWorld> connectedChuaWorlds = Universe.getPlayerConnectedChuaWorld(player.getUniqueId());
-        for(ChuaWorld connectedChuaWorld : connectedChuaWorlds){
-            if (connectedChuaWorld != null) {
-                // Updated to pass the world's UUID and null for the player UUID (to disconnect)
-                configAccessor.updateConnectedPlayer(connectedChuaWorld.getID(), null);
-                Universe.removePlayerConnectedChuaWorlds(player.getUniqueId(), plugin);
-                plugin.getLogger().info("Player " + player.getName() + " disconnected. Marked world '" + connectedChuaWorld.getWorld().getName() + "' as unconnected (UUID: " + connectedChuaWorld.getID() + ").");
-            }
-        }
-
-
+        
     }
 }

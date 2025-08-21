@@ -229,11 +229,12 @@ public class FirstLandDeleteMenu implements Listener {
         if (worldUUIDToDelete == null) {
             player.sendMessage(ChatColor.RED + "No world selected for deletion. Please try again.");
             player.closeInventory();
-            HandlerList.unregisterAll(this); // Unregister this menu's listener
+            // Removed: HandlerList.unregisterAll(this);
+            // This is handled when returning to the parent menu.
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    FirstLandDeleteMenu.this.parentJoinMenu.openInventory(player); // Go back to parent menu
+                    FirstLandDeleteMenu.this.parentJoinMenu.openInventory(player);
                 }
             }.runTaskLater(plugin, 5L);
             return;
@@ -241,24 +242,45 @@ public class FirstLandDeleteMenu implements Listener {
 
         if (clickedItem.getType() == Material.LIME_WOOL && Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName().equals(ChatColor.GREEN + "Confirm Delete")) {
             player.closeInventory();
-            HandlerList.unregisterAll(this); // Unregister this menu's listener
+            // Do NOT unregister here. We need this listener to be active for the re-opened menu.
+            // HandlerList.unregisterAll(this); // <-- REMOVE THIS LINE
 
-            // Retrieve friendly name BEFORE calling deletion
             String friendlyName = configAccessor.getWorldFriendlyName(worldUUIDToDelete);
-            if (friendlyName == null) { // Fallback if friendly name is somehow not available
-                friendlyName = worldUUIDToDelete.toString(); // Use UUID as fallback name
+            if (friendlyName == null) {
+                friendlyName = worldUUIDToDelete.toString();
             }
 
             player.sendMessage(ChatColor.YELLOW + "Attempting to delete world: " + friendlyName + "...");
 
             UUID finalWorldUUIDToDelete = worldUUIDToDelete;
-            String finalFriendlyName = friendlyName; // Make final for runnable
+            String finalFriendlyName = friendlyName;
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    Universe.removePlayerConnectedSpecificChuaWorld(player.getUniqueId(), worldUUIDToDelete);
-                    performWorldDeletion(player, finalWorldUUIDToDelete, finalFriendlyName); // Pass UUID and friendly name
+                    boolean deletionSuccess = Universe.deleteFirstLandWorld(
+                            plugin,
+                            finalWorldUUIDToDelete,
+                            configAccessor
+                    );
+
+                    if (deletionSuccess) {
+                        player.sendMessage(ChatColor.GREEN + "World '" + finalFriendlyName + "' has been successfully deleted!");
+                        plugin.getLogger().info("Successfully completed full deletion process for world (UUID: " + finalWorldUUIDToDelete + ")");
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Failed to delete world '" + finalFriendlyName + "'. Check console for details.");
+                        plugin.getLogger().log(Level.SEVERE, "Deletion failed for world (UUID: " + finalWorldUUIDToDelete + ")");
+                    }
+
                     pendingDeletions.remove(player.getUniqueId());
+
+                    // Refresh the menu after the deletion attempt
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            FirstLandDeleteMenu.this.populateWorlds();
+                            FirstLandDeleteMenu.this.openInventory();
+                        }
+                    }.runTaskLater(plugin, 5L);
                 }
             }.runTask(plugin);
 
@@ -266,11 +288,16 @@ public class FirstLandDeleteMenu implements Listener {
             player.sendMessage(ChatColor.GRAY + "World deletion cancelled.");
             pendingDeletions.remove(player.getUniqueId());
             player.closeInventory();
-            HandlerList.unregisterAll(this); // Unregister this menu's listener
+            // Now you are returning to the main menu.
+            // Don't unregister here either, as the main menu listener is still needed.
+            // HandlerList.unregisterAll(this); // <-- REMOVE THIS LINE
+
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    FirstLandDeleteMenu.this.parentJoinMenu.openInventory(player); // Go back to parent menu
+                    // The main menu will be populated and reopened, and its listener is still active.
+                    FirstLandDeleteMenu.this.populateWorlds();
+                    FirstLandDeleteMenu.this.openInventory();
                 }
             }.runTaskLater(plugin, 5L);
         }
@@ -318,6 +345,7 @@ public class FirstLandDeleteMenu implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
+                new FirstLandDeleteMenu(plugin, configAccessor, player, parentJoinMenu);
                 FirstLandDeleteMenu.this.populateWorlds(); // Re-populate the menu with current worlds
                 FirstLandDeleteMenu.this.openInventory(); // Re-open the menu
             }
