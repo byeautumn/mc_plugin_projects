@@ -10,12 +10,14 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.byeautumn.chuachua.Chuachua;
 import org.byeautumn.chuachua.Universe;
 import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.game.firstland.FirstLandJoinMenu;
 import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
+import org.byeautumn.chuachua.game.firstland.WorldGenerationTask;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
 import org.byeautumn.chuachua.generate.world.pipeline.*;
@@ -33,6 +35,8 @@ import org.byeautumn.chuachua.undo.ActionType;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class OperationCommand implements CommandExecutor {
@@ -516,72 +520,21 @@ public class OperationCommand implements CommandExecutor {
                         player.sendMessage(ChatColor.RED + "The value '" + ChatColor.YELLOW + worldAmountString + "' " + ChatColor.RED + "is not a number, so the command cannot be performed.");
                         return true;
                     }
+
                     if (worldAmount <= 0) {
                         player.sendMessage(ChatColor.RED + "The value '" + ChatColor.YELLOW + worldAmount + "' " + ChatColor.RED + "is non-positive");
                         return true;
                     }
 
-                    // New logic: Check if confirmation is required and add warning text.
-                    if (worldAmount >= 5) {
-                        player.sendMessage(""); // Add a blank line for readability.
-                        player.sendMessage(ChatColor.RED + "WARNING: Generating " + worldAmount + " worlds is a resource-intensive task.");
-                        player.sendMessage(ChatColor.RED + "This may cause temporary server lag, crashes, or data corruption if not handled properly.");
-                        player.sendMessage(""); // Add another blank line.
+                    // The confirmation logic now runs every time.
+                    player.sendMessage(""); // Add a blank line for readability.
+                    player.sendMessage(ChatColor.RED + "WARNING: Generating " + worldAmount + " worlds is a resource-intensive task.");
+                    player.sendMessage(ChatColor.RED + "This may cause temporary server lag, crashes, or data corruption if not handled properly.");
+                    player.sendMessage(""); // Add another blank line.
 
-                        pendingConfirmations.put(player.getUniqueId(), "create:" + worldAmount);
-                        player.sendMessage(ChatColor.GOLD + "You are about to create " + worldAmount + " new worlds.");
-                        player.sendMessage(ChatColor.YELLOW + "To confirm, type " + ChatColor.GREEN + "/cc confirm" + ChatColor.YELLOW + ". To cancel, type " + ChatColor.RED + "/cc cancel");
-                        return true;
-                    }
-
-                    // Existing world creation logic for less than 5 worlds, now using UUIDs.
-                    Random random = new Random();
-                    int worldsCreatedSuccessfully = 0;
-
-                    for (int i = 0; i < worldAmount; i++) {
-                        // Get the next sequential internal world name (e.g., First_Land_World_00)
-                        String formattedNumber = String.format("%02d", configAccessor.getWorldAmount());
-                        String newWorldName = "First_Land_World_" + formattedNumber;
-
-                        // Generate a new unique ID for the world
-                        UUID newWorldUUID = UUID.randomUUID();
-
-                        long seed = random.nextLong();
-
-                        // Create the actual Bukkit world and its ChuaWorld wrapper.
-                        // Universe.createWorld handles adding the ChuaWorld to its active in-memory map.
-                        ChuaWorld newlyCreatedChuaWorld = Universe.createWorld(seed, newWorldName, plugin);
-
-                        if (newlyCreatedChuaWorld != null) {
-                            // Add the new world's details to the plugin's configuration file using UUID.
-                            // Initially, no player is connected, so pass null for playerUUID.
-                            configAccessor.addNewWorld(
-                                    newlyCreatedChuaWorld.getID(), // Use the actual UUID from the created Bukkit world
-                                    newWorldName,
-                                    null, // Default friendly name to internal name for batch creation
-                                    null, // No player connected initially for batch creation
-                                    seed,
-                                    newlyCreatedChuaWorld.getWorld().getSpawnLocation()
-                            );
-                            worldsCreatedSuccessfully++;
-                            player.sendMessage(ChatColor.GREEN + "Successfully created " + newWorldName);
-                        } else {
-                            player.sendMessage(ChatColor.RED + "Failed to create " + newWorldName + " please contact a Admin");
-                            plugin.getLogger().warning("Failed to create Bukkit world for internal name: " + newWorldName + ". Skipping config entry.");
-                        }
-                    }
-
-                    // Save the config once after all worlds have been added
-                    configAccessor.saveConfig();
-                    // Update the 'amount' counter one final time to ensure consistency
-                    configAccessor.updateAmountToHighestWorldNumber();
-
-                    if (worldsCreatedSuccessfully > 0) {
-                        player.sendMessage(ChatColor.BLUE + "Successfully created " + worldsCreatedSuccessfully + " new worlds.");
-                    } else {
-                        player.sendMessage(ChatColor.RED + "No new worlds were created.");
-                    }
-                    player.sendMessage(ChatColor.BLUE + "================================================");
+                    pendingConfirmations.put(player.getUniqueId(), "create:" + worldAmount);
+                    player.sendMessage(ChatColor.GOLD + "You are about to create " + worldAmount + " new worlds.");
+                    player.sendMessage(ChatColor.YELLOW + "To confirm, type " + ChatColor.GREEN + "/cc confirm" + ChatColor.YELLOW + ". To cancel, type " + ChatColor.RED + "/cc cancel");
                     return true;
 
                 } else if (firstArg.equalsIgnoreCase("deleteWorld")) {
@@ -664,46 +617,40 @@ public class OperationCommand implements CommandExecutor {
 
                     if (pendingAction.startsWith("create:")) {
                         int worldAmount = Integer.parseInt(pendingAction.substring("create:".length()));
-                        player.sendMessage(ChatColor.GREEN + "Confirmation received. Generating " + worldAmount + " worlds...");
 
-                        Random random = new Random();
-                        int worldsCreatedSuccessfully = 0;
-
-                        for (int i = 0; i < worldAmount; i++) {
-                            // Get the current amount from the config to ensure unique naming
-                            int currentWorldCount = configAccessor.getWorldAmount();
-                            String formattedNumber = String.format("%02d", currentWorldCount);
-                            String newWorldName = "First_Land_World_" + formattedNumber;
-
-                            long seed = random.nextLong();
-
-                            ChuaWorld newlyCreatedChuaWorld = Universe.createWorld(seed, newWorldName, plugin);
-
-                            if (newlyCreatedChuaWorld != null) {
-                                // Ensure a valid UUID is passed. Universe.createWorld should return a valid ChuaWorld
-                                configAccessor.addNewWorld(
-                                        newlyCreatedChuaWorld.getID(),
-                                        newWorldName,
-                                        newWorldName,
-                                        null,
-                                        seed,
-                                        newlyCreatedChuaWorld.getWorld().getSpawnLocation()
-                                );
-                                worldsCreatedSuccessfully++;
-                            } else {
-                                plugin.getLogger().warning("Failed to create Bukkit world for internal name: " + newWorldName + ". Skipping config entry.");
-                            }
+                        if (worldAmount <= 0) {
+                            player.sendMessage(ChatColor.RED + "The amount must be a positive number.");
+                            return true;
                         }
-                        // Save config and update amount after the loop to ensure atomic operation
-                        configAccessor.saveConfig();
-                        configAccessor.updateAmountToHighestWorldNumber();
 
-                        if (worldsCreatedSuccessfully > 0) {
-                            player.sendMessage(ChatColor.BLUE + "Successfully created " + worldsCreatedSuccessfully + " new worlds.");
-                        } else {
-                            player.sendMessage(ChatColor.RED + "No new worlds were created.");
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            // Title: "Server World Generation" (in yellow and bold)
+                            // Subtitle: "This may cause temporary lag." (in aqua)
+                            // Fade-in time (in ticks), stay time, fade-out time
+                            p.sendTitle(
+                                    ChatColor.YELLOW + "" + ChatColor.BOLD + "Server World Generation",
+                                    ChatColor.AQUA + "This may cause temporary lag.",
+                                    10,  // 0.5 seconds fade in
+                                    70,  // 3.5 seconds stay
+                                    20   // 1 second fade out
+                            );
                         }
-                        player.sendMessage(ChatColor.BLUE + "================================================");
+
+                        // Notify all players about the upcoming lag
+                        Bukkit.broadcastMessage(ChatColor.DARK_AQUA + "§l=======================================");
+                        Bukkit.broadcastMessage(ChatColor.YELLOW + "" + ChatColor.BOLD + "       ⚠️  Server World Generation  ⚠️");
+                        Bukkit.broadcastMessage(ChatColor.AQUA + "       A large number of worlds are being created.");
+                        Bukkit.broadcastMessage(ChatColor.AQUA + "        This may cause temporary server lag.");
+                        Bukkit.broadcastMessage(ChatColor.AQUA + "              Thank you for your patience.");
+                        Bukkit.broadcastMessage(ChatColor.DARK_AQUA + "§l=======================================");
+
+                        player.sendMessage(ChatColor.GREEN + "Confirmation received. Starting world generation in the background...");
+                        player.sendMessage(ChatColor.GRAY + "You will be notified as worlds are created. Please be patient.");
+
+                        new WorldGenerationTask(plugin, configAccessor, player, worldAmount).runTaskTimer(plugin, 0L, 1L);
+
+                        return true;
+
                     } else if (pendingAction.startsWith("delete:")) {
                         String worldsToDeleteString = pendingAction.substring("delete:".length());
                         List<String> worldUUIDsToConfirm = Arrays.asList(worldsToDeleteString.split(","));

@@ -69,6 +69,6 @@ public class GameListener implements Listener {
 
     @EventHandler
     private void onPlayerQuitEvent(PlayerQuitEvent event) {
-        
+
     }
 }
