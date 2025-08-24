@@ -56,7 +56,7 @@ public class GameListener implements Listener {
     private void onPlayerJoinEvent(PlayerJoinEvent event){
         Player player = event.getPlayer();
         System.out.println("Player " + player.getDisplayName() + " is just going to lobby.");
-        Universe.teleportToLobby(player);
+        Universe.teleportToLobby(player, configAccessor);
         if (!player.isOp()){
             Universe.resetPlayerTracker(player);
         } else {

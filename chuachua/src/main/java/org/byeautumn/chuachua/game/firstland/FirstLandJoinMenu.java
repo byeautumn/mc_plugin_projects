@@ -11,10 +11,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.byeautumn.chuachua.game.firstland.FirstLandDeleteMenu;
-import org.byeautumn.chuachua.game.firstland.FirstLandViewMenu;
-import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
-import org.byeautumn.chuachua.game.firstland.FirstLandWorldNameListener;
 
 import java.util.*;
 
@@ -28,9 +24,8 @@ public class FirstLandJoinMenu implements Listener {
     private final ItemStack DELETE_WORLD_ITEM;
     private final ItemStack FILLER_ITEM;
 
-    // Cooldown map to prevent spamming
     private final Map<UUID, Long> cooldowns = new HashMap<>();
-    private static final long COOLDOWN_MILLIS = 3000; // 3 seconds
+    private static final long COOLDOWN_MILLIS = 3000;
 
     public FirstLandJoinMenu(JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor) {
         this.plugin = plugin;
@@ -60,19 +55,17 @@ public class FirstLandJoinMenu implements Listener {
 
         FILLER_ITEM = createGuiItem(
                 Material.GRAY_STAINED_GLASS_PANE,
-                " " // Display name is just a space to make it invisible
+                " "
         );
 
         setupInventory();
     }
 
     private void setupInventory() {
-        // Place the main items
         inventory.setItem(11, YOUR_WORLDS_ITEM);
         inventory.setItem(13, CREATE_NAMED_WORLD_ITEM);
         inventory.setItem(15, DELETE_WORLD_ITEM);
 
-        // Fill the rest of the inventory with the filler item
         setupFillerItems();
     }
 
@@ -103,7 +96,6 @@ public class FirstLandJoinMenu implements Listener {
             return;
         }
 
-        // --- Anti-Spam Cooldown Check ---
         long now = System.currentTimeMillis();
         long lastClickTime = cooldowns.getOrDefault(playerId, 0L);
 
@@ -113,10 +105,8 @@ public class FirstLandJoinMenu implements Listener {
             return;
         }
 
-        // Update the cooldown for the player
         cooldowns.put(playerId, now);
 
-        // We only care about clicks on the main menu items, not the glass panes
         if (clickedItem.equals(YOUR_WORLDS_ITEM)) {
             player.closeInventory();
             FirstLandViewMenu firstLandViewMenu = new FirstLandViewMenu(plugin, configAccessor, player, this);
@@ -133,26 +123,11 @@ public class FirstLandJoinMenu implements Listener {
         }
     }
 
-    /**
-     * Checks if a player has reached their maximum number of owned worlds.
-     *
-     * @param player The player to check.
-     * @param configAccessor The accessor for world configuration.
-     * @return true if the player has reached the world limit, false otherwise.
-     */
     public static boolean checkIfPlayerReachedMaxWorlds(Player player, FirstLandWorldConfigAccessor configAccessor) {
         UUID id = player.getUniqueId();
         return configAccessor.getPlayerOwnedWorldUUIDs(id).size() >= configAccessor.getMaxWorldsPerPlayer();
     }
 
-    /**
-     * Helper method to create a GUI item with a specific material, name, and lore.
-     *
-     * @param material The material of the item.
-     * @param name The display name of the item.
-     * @param lore An array of strings for the item's lore.
-     * @return The created ItemStack.
-     */
     private ItemStack createGuiItem(final Material material, final String name, final String... lore) {
         final ItemStack item = new ItemStack(material, 1);
         final ItemMeta meta = item.getItemMeta();

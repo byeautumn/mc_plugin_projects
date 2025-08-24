@@ -17,6 +17,7 @@ import org.byeautumn.chuachua.Universe;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.profile.PlayerProfile;
 import org.bukkit.profile.PlayerTextures;
+import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorld;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +35,6 @@ public class FirstLandViewMenu implements Listener {
     private final Player menuOpener;
     private final FirstLandJoinMenu parentJoinMenu;
 
-    // GUI Item Constants
     private static ItemStack BLUE_FILLER;
     private static ItemStack LIGHT_BLUE_FILLER;
     private static ItemStack PINK_FILLER;
@@ -49,7 +49,6 @@ public class FirstLandViewMenu implements Listener {
         this.menuOpener = player;
         this.parentJoinMenu = parentJoinMenu;
 
-        // Change inventory size to 27
         this.inventory = Bukkit.createInventory(null, 27, ChatColor.DARK_BLUE + "First Land Showcase");
 
         initializeGuiItems();
@@ -81,7 +80,6 @@ public class FirstLandViewMenu implements Listener {
         int maxWorlds = configAccessor.getMaxWorldsPerPlayer();
         int availableSlotsCount = maxWorlds - ownedWorldsCount;
 
-        // Create a new, mutable copy of the SLOT_SUMMARY_HEAD item
         ItemStack mutableSummaryHead = SLOT_SUMMARY_HEAD.clone();
         ItemMeta slotsMeta = mutableSummaryHead.getItemMeta();
 
@@ -92,16 +90,13 @@ public class FirstLandViewMenu implements Listener {
         slotsMeta.setLore(lore);
         mutableSummaryHead.setItemMeta(slotsMeta);
 
-        // Place the updated player head at the new central top slot (4)
         inventory.setItem(4, mutableSummaryHead);
 
-        // Define the content slots for a 27-slot GUI (middle row)
         List<Integer> contentSlots = Arrays.asList(
                 11, 12, 13, 14, 15
         );
         int currentContentSlot = 0;
 
-        // Place owned worlds
         for (UUID worldUUID : ownedWorldUUIDs) {
             if (currentContentSlot >= contentSlots.size()) break;
 
@@ -121,7 +116,6 @@ public class FirstLandViewMenu implements Listener {
             inventory.setItem(contentSlots.get(currentContentSlot++), worldItem);
         }
 
-        // Place available slots
         for (int i = ownedWorldsCount; i < maxWorlds; i++) {
             if (currentContentSlot >= contentSlots.size()) break;
             inventory.setItem(contentSlots.get(currentContentSlot++), AVAILABLE_SLOT_ITEM);
@@ -129,37 +123,27 @@ public class FirstLandViewMenu implements Listener {
     }
 
     private void setupVisualLayout() {
-        // Place black glass corners for 27 slots
         inventory.setItem(0, BLACK_FILLER);
         inventory.setItem(8, BLACK_FILLER);
         inventory.setItem(18, BLACK_FILLER);
         inventory.setItem(26, BLACK_FILLER);
 
-        // Place pink glass at slots 2 and 6
         inventory.setItem(2, PINK_FILLER);
         inventory.setItem(6, PINK_FILLER);
 
-        // Place blue glass for the rest of the top row and side borders
         inventory.setItem(1, BLUE_FILLER);
         inventory.setItem(3, BLUE_FILLER);
         inventory.setItem(5, BLUE_FILLER);
         inventory.setItem(7, BLUE_FILLER);
-        inventory.setItem(9, BLUE_FILLER); // Left side, middle row
-        inventory.setItem(17, BLUE_FILLER); // Right side, middle row
+        inventory.setItem(9, BLUE_FILLER);
+        inventory.setItem(17, BLUE_FILLER);
 
-        // Fill the bottom row with blue glass
         IntStream.range(19, 26).forEach(i -> inventory.setItem(i, BLUE_FILLER));
 
-        // Place the back item at the center of the bottom row (22)
         inventory.setItem(22, BACK_ITEM);
 
-        // Remove the call to set the summary head here, as it's handled in populateWorlds()
-        // inventory.setItem(4, SLOT_SUMMARY_HEAD);
-
-        // Place a light blue inner frame
         inventory.setItem(10, LIGHT_BLUE_FILLER);
         inventory.setItem(16, LIGHT_BLUE_FILLER);
-        // Additional slots for light blue filler if needed for the new layout
     }
 
     @EventHandler
@@ -173,7 +157,6 @@ public class FirstLandViewMenu implements Listener {
 
         if (clickedItem == null || clickedItem.getType().isAir()) return;
 
-        // Handle button clicks
         if (clickedItem.equals(BACK_ITEM)) {
             player.closeInventory();
             HandlerList.unregisterAll(this);
@@ -181,8 +164,6 @@ public class FirstLandViewMenu implements Listener {
             return;
         }
 
-        // Handle clicks on filler items, summary head
-        // Note: Checking the display name is more robust than using .equals() on static items
         ItemMeta meta = clickedItem.getItemMeta();
         if (meta != null) {
             String displayName = meta.getDisplayName();
@@ -191,7 +172,6 @@ public class FirstLandViewMenu implements Listener {
             }
         }
 
-        // Handle available slot clicks
         if (clickedItem.equals(AVAILABLE_SLOT_ITEM)) {
             player.closeInventory();
             HandlerList.unregisterAll(this);
@@ -199,7 +179,6 @@ public class FirstLandViewMenu implements Listener {
             return;
         }
 
-        // Handle world item clicks
         if (clickedItem.getType() == Material.GRASS_BLOCK) {
             if (meta == null || !meta.hasLore()) return;
 
@@ -217,7 +196,15 @@ public class FirstLandViewMenu implements Listener {
             if (targetWorldUUID != null) {
                 player.closeInventory();
                 HandlerList.unregisterAll(this);
-                Universe.connectPlayerToSpecificWorld(player, plugin, configAccessor, Objects.requireNonNull(Universe.getChuaWorldById(targetWorldUUID)).getWorld().getName(), targetWorldUUID);
+                // --- MODIFIED LINE ---
+                ChuaWorld chuaWorld = Universe.getChuaWorldById(targetWorldUUID);
+                if (chuaWorld != null) {
+                    // Use chuaWorld.getWorld().getName() for the internal Bukkit world name
+                    Universe.connectPlayerToSpecificWorld(player, plugin, configAccessor, chuaWorld.getWorld().getName(), targetWorldUUID);
+                } else {
+                    player.sendMessage(ChatColor.RED + "Error: World data not found. Please try again.");
+                    plugin.getLogger().warning("Attempted to join world " + targetWorldUUID + " but ChuaWorld instance was null.");
+                }
             }
         }
     }

@@ -66,6 +66,8 @@ public final class Chuachua extends JavaPlugin {
         // Initialize your OperationCommand ONCE
         this.operationCommand = new OperationCommand(this, firstLandWorldConfigAccessor, firstLandJoinMenu);
 
+        Universe.setupPlayerDataStorage(this);
+
         FirstLandWorldNameListener firstLandWorldNameListener = new FirstLandWorldNameListener(this);
 
         getServer().getPluginManager().registerEvents(firstLandWorldNameListener, this);
@@ -94,10 +96,10 @@ public final class Chuachua extends JavaPlugin {
         resourcePackURL = mainConfig.getString("resource-pack-url", "");
         getServer().getPluginManager().registerEvents(new ResourcePackListener(resourcePackURL), this);
 
-        // Load ChuaWorlds
-        ChuaWorldConfigAccessor chuaWorldConfigAccessor = new ChuaWorldConfigAccessor(this);
-        Universe.loadChuaWorldsToMap(chuaWorldConfigAccessor, this);
-        chuaWorldConfigAccessor.saveConfig();
+//        // Load ChuaWorlds
+//        ChuaWorldConfigAccessor chuaWorldConfigAccessor = new ChuaWorldConfigAccessor(this);
+//        Universe.loadChuaWorldsToMap(chuaWorldConfigAccessor, this);
+//        chuaWorldConfigAccessor.saveConfig();
 
         //Load FirstLand Worlds
 //        FirstLandWorldConfigAccessor firstLandWorldConfigAccessor = new FirstLandWorldConfigAccessor(this);
@@ -120,11 +122,16 @@ public final class Chuachua extends JavaPlugin {
 
     @Override
     public void onDisable() {
+
+        Universe.saveAllPlayerCommonData();
+
+        firstLandWorldConfigAccessor.saveConfig();
         // Plugin shutdown logic
         getLogger().info("Chuachua plugin is disabling...");
         // Any cleanup code can go here
         getLogger().info("Chuachua plugin has been disabled!");
-        firstLandWorldConfigAccessor.saveConfig();
+
+
     }
     public FirstLandJoinMenu getFirstLandMenu() {
         return firstLandJoinMenu;

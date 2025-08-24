@@ -28,7 +28,7 @@ public class GameOrganizer {
         if (null == chapter) {
             System.out.println("There is no available chapter for player " + player.getDisplayName() + ".");
             System.out.println("Player " + player.getDisplayName() + " will be teleport to lobby.");
-            Universe.teleportToLobby(player);
+            Universe.teleportToLobby(player, null);
             Universe.resetPlayerTracker(player);
             return;
         }

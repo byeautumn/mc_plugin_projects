@@ -18,12 +18,12 @@ public class FirstLandWorldNameListener implements Listener {
 
     private final Chuachua plugin;
 
-    public FirstLandWorldNameListener(Chuachua plugin){
+    public FirstLandWorldNameListener(Chuachua plugin) {
         this.plugin = plugin;
     }
 
     public static void startNamingProcess(Player player, FirstLandWorldConfigAccessor configAccessor) {
-        if(FirstLandJoinMenu.checkIfPlayerReachedMaxWorlds(player, configAccessor)){
+        if (FirstLandJoinMenu.checkIfPlayerReachedMaxWorlds(player, configAccessor)) {
             player.sendMessage(ChatColor.RED + "You have reached the max amount of worlds created");
             return;
         }
@@ -51,7 +51,6 @@ public class FirstLandWorldNameListener implements Listener {
                 return;
             }
 
-            // Schedule the world creation and teleport to run on the main thread
             Universe.createOrConnectExistingWorldWithPlayer(player, plugin, configAccessor, message);
         }
     }
