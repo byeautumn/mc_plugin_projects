@@ -9,6 +9,7 @@ import org.byeautumn.chuachua.custom.ResourcePackListener;
 import org.byeautumn.chuachua.game.GameListener;
 import org.byeautumn.chuachua.game.firstland.*;
 import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorldConfigAccessor;
+import org.byeautumn.chuachua.player.InventoryDataAccessor;
 import org.byeautumn.chuachua.player.PlayerDataAccessor;
 import org.checkerframework.checker.guieffect.qual.UI;
 
@@ -27,6 +28,7 @@ public final class Chuachua extends JavaPlugin {
     private FirstLandWorldConfigAccessor firstLandWorldConfigAccessor;
     private WorldDataAccessor worldDataAccessor;
     private PlayerDataAccessor playerDataAccessor;
+    private InventoryDataAccessor inventoryDataAccessor;
 
 
     public static final int MAIN_CONFIG_DEFAULT_MAX_WORLDS = 3;
@@ -66,18 +68,19 @@ public final class Chuachua extends JavaPlugin {
 
         this.worldDataAccessor = new WorldDataAccessor(new File(pluginDataFolder, "data"));
         this.playerDataAccessor = new PlayerDataAccessor(new File(pluginDataFolder, "data"));
+        this.inventoryDataAccessor = new InventoryDataAccessor(new File(getDataFolder(), "data"));
 
         this.firstLandWorldConfigAccessor = new FirstLandWorldConfigAccessor(this);
 
         this.firstLandJoinMenu = new FirstLandJoinMenu(this, worldDataAccessor, playerDataAccessor);
         // Initialize your OperationCommand ONCE
-        this.operationCommand = new OperationCommand(this, firstLandWorldConfigAccessor, firstLandJoinMenu, worldDataAccessor, playerDataAccessor);
+        this.operationCommand = new OperationCommand(this, firstLandWorldConfigAccessor, firstLandJoinMenu, worldDataAccessor, playerDataAccessor, inventoryDataAccessor);
 
         FirstLandWorldNameListener firstLandWorldNameListener = new FirstLandWorldNameListener( playerDataAccessor,this);
 
         getServer().getPluginManager().registerEvents(firstLandWorldNameListener, this);
         getServer().getPluginManager().registerEvents(firstLandJoinMenu, this);
-        getServer().getPluginManager().registerEvents(new GameListener(this, worldDataAccessor, playerDataAccessor),this);
+        getServer().getPluginManager().registerEvents(new GameListener(this, worldDataAccessor, playerDataAccessor, inventoryDataAccessor),this);
         getServer().getPluginManager().registerEvents(new BlockListener(this),this);
 
         // Register the main /cc command using the single instance

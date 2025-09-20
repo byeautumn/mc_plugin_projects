@@ -27,10 +27,7 @@ import org.byeautumn.chuachua.generate.world.pipeline.tree.SCATreeGenerator;
 import org.byeautumn.chuachua.generate.world.pipeline.tree.TreeGenerator;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.ChunkImporter;
-import org.byeautumn.chuachua.player.PlayerData;
-import org.byeautumn.chuachua.player.PlayerDataAccessor;
-import org.byeautumn.chuachua.player.PlayerTracker;
-import org.byeautumn.chuachua.player.PlayerUtil;
+import org.byeautumn.chuachua.player.*;
 import org.byeautumn.chuachua.undo.ActionRecord;
 import org.byeautumn.chuachua.undo.ActionRecorder;
 import org.byeautumn.chuachua.undo.ActionRunner;
@@ -48,20 +45,22 @@ public class OperationCommand implements CommandExecutor {
 
     private static final List<String> BW_VALID_ARGS = Arrays.asList("exit", "tp", "listWorlds", "createWall", "undo", "undoGen"
             , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import", "createWorld"
-            , "getBiome", "chuaWorldInfo", "generateTree", "createFirstLandWorlds", "deleteWorld", "confirm", "cancel", "genWorldData", "addPlayerToWorld");
+            , "getBiome", "chuaWorldInfo", "generateTree", "createFirstLandWorlds", "deleteWorld", "confirm", "cancel", "genWorldData", "addPlayerToWorld", "delete-player-worlds");
     private final Chuachua plugin;
 
     private final FirstLandJoinMenu firstLandJoinMenu;
     private final FirstLandWorldConfigAccessor configAccessor; // Declared here
     private final WorldDataAccessor worldDataAccessor;
     private final PlayerDataAccessor playerDataAccessor;
+    private final InventoryDataAccessor inventoryDataAccessor;
 
-    public OperationCommand(Chuachua plugin, FirstLandWorldConfigAccessor configAccessor, FirstLandJoinMenu firstLandJoinMenu, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor) {
+    public OperationCommand(Chuachua plugin, FirstLandWorldConfigAccessor configAccessor, FirstLandJoinMenu firstLandJoinMenu, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor, InventoryDataAccessor inventoryDataAccessor) {
         this.plugin = plugin;
         this.firstLandJoinMenu = firstLandJoinMenu;
         this.configAccessor = configAccessor;
         this.worldDataAccessor = worldDataAccessor;
         this.playerDataAccessor = playerDataAccessor;
+        this.inventoryDataAccessor = inventoryDataAccessor;
     }
 
 
@@ -77,13 +76,15 @@ public class OperationCommand implements CommandExecutor {
                 if (firstArg.equalsIgnoreCase("exit")) {
 
                     UUID currentWorldUUID = player.getWorld().getUID();
-
                     Location currentLocation = player.getLocation();
 
                     System.out.println("Player " + player.getName() + " is exiting world with UUID: " + currentWorldUUID.toString());
 
                     double currentHealth = player.getHealth();
                     int currentHunger = player.getFoodLevel();
+
+                    // Save inventory before leaving the world
+                    inventoryDataAccessor.saveInventory(player.getUniqueId(), currentWorldUUID.toString(), player.getInventory().getContents());
 
                     player.sendMessage("Exiting world: " + currentWorldUUID.toString());
                     PlayerData currentPlayerData = PlayerData.builder()
@@ -112,6 +113,7 @@ public class OperationCommand implements CommandExecutor {
                     player.setHealth(20.0);
                     Universe.resetPlayerTracker(player);
                     player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "Exited the world and saved your progress!");
+                    return true;
                 } else if (firstArg.equalsIgnoreCase("listWorlds")) {
                     player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " World List " + ChatColor.BLUE + "]================");
                     for (World world : Bukkit.getWorlds()) {
@@ -643,6 +645,32 @@ public class OperationCommand implements CommandExecutor {
 
                     return true;
 
+                } else if (firstArg.equalsIgnoreCase("delete-player-worlds")) {
+                    if (args.length < 2) {
+                        player.sendMessage(ChatColor.RED + "Usage: /op delete-player-worlds <player UUID>");
+                        return true;
+                    }
+                    String playerUUIDString = args[1];
+                    try {
+                        UUID playerUUID = UUID.fromString(playerUUIDString);
+                        List<UUID> playerWorlds = playerDataAccessor.getPlayerWorlds(playerUUID);
+
+                        if (playerWorlds.isEmpty()) {
+                            player.sendMessage(ChatColor.YELLOW + "No worlds found for player with UUID: " + playerUUID);
+                            return true;
+                        }
+
+                        player.sendMessage(ChatColor.RED + "You are about to delete the following worlds for player " + playerUUID + ":");
+                        player.sendMessage(playerWorlds.stream().map(UUID::toString).collect(Collectors.joining(", ")));
+                        player.sendMessage(ChatColor.YELLOW + "Type '/op confirm' to proceed or '/op cancel' to stop.");
+
+                        // Store pending action
+                        pendingConfirmations.put(player.getUniqueId(), playerWorlds.stream().map(UUID::toString).collect(Collectors.joining(",")));
+                        return true;
+                    } catch (IllegalArgumentException e) {
+                        player.sendMessage(ChatColor.RED + "Invalid player UUID format. Please provide a valid UUID.");
+                        return true;
+                    }
                 } else if (firstArg.equalsIgnoreCase("confirm")) {
                     String pendingAction = pendingConfirmations.remove(player.getUniqueId());
                     if (pendingAction != null && pendingAction.startsWith("create:")) {

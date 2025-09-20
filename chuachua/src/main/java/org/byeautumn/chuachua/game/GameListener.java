@@ -10,9 +10,11 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent; // Import for PlayerQuitEvent
+import org.bukkit.inventory.ItemStack;
 import org.byeautumn.chuachua.Chuachua;
 import org.byeautumn.chuachua.Universe;
 import org.byeautumn.chuachua.common.PlayMode;
@@ -20,9 +22,12 @@ import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
 import org.byeautumn.chuachua.game.firstland.WorldDataAccessor;
 import org.byeautumn.chuachua.game.firstland.WorldGenerationTask;
 import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorld; // Import for ChuaWorld
+import org.byeautumn.chuachua.player.InventoryDataAccessor;
 import org.byeautumn.chuachua.player.PlayerData;
 import org.byeautumn.chuachua.player.PlayerDataAccessor;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,11 +37,13 @@ public class GameListener implements Listener {
     private final WorldDataAccessor configAccessor;
     private final PlayerDataAccessor playerDataAccessor;
     private final Chuachua plugin;
+    private final InventoryDataAccessor inventoryDataAccessor;
 
-    public GameListener(Chuachua plugin, WorldDataAccessor configAccessor, PlayerDataAccessor playerDataAccessor){
+    public GameListener(Chuachua plugin, WorldDataAccessor configAccessor, PlayerDataAccessor playerDataAccessor, InventoryDataAccessor inventoryDataAccessor) {
         this.plugin = plugin;
         this.configAccessor = configAccessor;
         this.playerDataAccessor = playerDataAccessor;
+        this.inventoryDataAccessor = inventoryDataAccessor;
     }
 
     @EventHandler
@@ -104,19 +111,19 @@ public class GameListener implements Listener {
         }
 
         // Always reset the player tracker if not an op
-        if (!player.isOp()){
+        if (!player.isOp()) {
             Universe.resetPlayerTracker(player);
 
-            if(playerData.getPlayMode() == PlayMode.EDIT){
+            if (playerData.getPlayMode() == PlayMode.EDIT) {
                 System.out.println(player.getUniqueId() + "was in Edit mode change them to unknown");
                 Universe.getPlayerTracker(player).setPlayMode(PlayMode.UNKNOWN);
             }
-            if (playerData.getGameMode() == GameMode.CREATIVE || playerData.getGameMode() == GameMode.SPECTATOR){
+            if (playerData.getGameMode() == GameMode.CREATIVE || playerData.getGameMode() == GameMode.SPECTATOR) {
                 System.out.println(player.getUniqueId() + "was in Game mode " + playerData.getGameMode() + "changing them to ADVENTURE");
                 player.setGameMode(GameMode.ADVENTURE);
             }
         } else {
-            player.sendMessage("* " + ChatColor.YELLOW + "You are op-ed and have automatically been set into " +ChatColor.AQUA + "'EDIT'" + ChatColor.YELLOW + " mode.");
+            player.sendMessage("* " + ChatColor.YELLOW + "You are op-ed and have automatically been set into " + ChatColor.AQUA + "'EDIT'" + ChatColor.YELLOW + " mode.");
             Universe.getPlayerTracker(player).setPlayMode(playerData.getPlayMode());
             player.setGameMode(playerData.getGameMode());
         }
@@ -136,11 +143,8 @@ public class GameListener implements Listener {
         // Get the player's current location to save
         Location lastKnownLocation = player.getLocation();
 
-        // Assuming you have methods to get other data like hydration, temperature, and potion effects
-        // double currentHydration = getPlayerHydration(player);
-        // double currentTemperature = getPlayerTemperature(player);
-        // String currentPotionEffects = getPlayerPotionEffects(player);
-
+        // Save the player's inventory
+        inventoryDataAccessor.saveInventory(player.getUniqueId(), player.getWorld().getUID().toString(), player.getInventory().getContents());
         // Step 2: Create a PlayerData object with the current state, including the last known log-off location
         PlayerData currentPlayerData = PlayerData.builder()
                 .playerUUID(player.getUniqueId())
@@ -156,16 +160,14 @@ public class GameListener implements Listener {
                 .lastKnownLogoffZ(lastKnownLocation.getZ())
                 .lastKnownLogoffPitch(lastKnownLocation.getPitch())
                 .lastKnownLogoffYaw(lastKnownLocation.getYaw())
-                // Add other player data here (hydration, temperature, etc.)
                 .build();
 
         playerDataAccessor.savePlayerData(currentPlayerData);
-
     }
 
     @EventHandler
-    private void onLostHungerEvent(FoodLevelChangeEvent event){
-        if(event.getEntity() instanceof Player) {
+    private void onLostHungerEvent(FoodLevelChangeEvent event) {
+        if (event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
             if (player.getWorld().getUID().equals(Universe.getLobby().getUID())) {
                 player.setSaturation(20.0f);
@@ -176,10 +178,10 @@ public class GameListener implements Listener {
     }
 
     @EventHandler
-    private void onPlayerLoseHealthEvent(EntityDamageEvent event){
-        if(event.getEntity() instanceof Player){
+    private void onPlayerLoseHealthEvent(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
-            if(player.getWorld().getUID().equals(Universe.getLobby().getUID())) {
+            if (player.getWorld().getUID().equals(Universe.getLobby().getUID())) {
                 player.setHealth(20);
                 event.setCancelled(true);
             }
@@ -187,12 +189,28 @@ public class GameListener implements Listener {
     }
 
     @EventHandler
-    private void onPlayerDamageOtherEvent(EntityDamageByEntityEvent event){
-        if(event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
+    private void onPlayerDamageOtherEvent(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
             Player damager = (Player) event.getEntity();
-            if(damager.getWorld().getUID().equals(Universe.getLobby().getUID())) {
+            if (damager.getWorld().getUID().equals(Universe.getLobby().getUID())) {
                 event.setCancelled(true);
             }
         }
     }
-}
+
+    @EventHandler
+    private void onPlayerChangedWorldEvent(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        String fromWorldName = event.getFrom().getName();
+        String toWorldName = player.getWorld().getName();
+
+        // 1. Save the inventory from the old world
+        inventoryDataAccessor.saveInventory(player.getUniqueId(), fromWorldName, player.getInventory().getContents());
+
+        // 2. Load the inventory for the new world and set it directly
+        ItemStack[] newInventory = inventoryDataAccessor.loadInventory(player.getUniqueId(), toWorldName);
+        player.getInventory().clear();
+        player.getInventory().setContents(newInventory);
+        player.updateInventory(); // This ensures the client sees the change
+    }
+}g

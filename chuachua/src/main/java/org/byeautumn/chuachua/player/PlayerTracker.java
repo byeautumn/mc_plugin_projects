@@ -6,8 +6,12 @@ import org.byeautumn.chuachua.common.PlayMode;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class PlayerTracker {
+    private static final Logger LOGGER = Logger.getLogger(PlayerTracker.class.getName());
+
     private final Player player;
     private PlayerDataCommon playerDataCommon;
 
@@ -52,26 +56,9 @@ public class PlayerTracker {
         return playMode;
     }
 
-    // --- NEW: Convenience methods for per-world inventory access ---
     /**
-     * Gets the player's inventory for a specific world from their PlayerDataCommon.
-     * @param worldUUID The UUID of the world.
-     * @return The inventory for that world.
+     * Resets the player tracker to its initial state.
      */
-    public List<ItemStack> getInventoryForWorld(UUID worldUUID) {
-        return playerDataCommon.getInventoryForWorld(worldUUID);
-    }
-
-    /**
-     * Sets the player's inventory for a specific world in their PlayerDataCommon.
-     * @param worldUUID The UUID of the world.
-     * @param inventory The inventory to set.
-     */
-    public void setInventoryForWorld(UUID worldUUID, List<ItemStack> inventory) {
-        playerDataCommon.setInventoryForWorld(worldUUID, inventory);
-    }
-
-
     public void reset() {
         setChapterIndex(-1);
         setStatus(PlayerStatus.Unknown);
