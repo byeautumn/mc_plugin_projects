@@ -17,6 +17,8 @@ import org.byeautumn.chuachua.Universe;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.profile.PlayerProfile;
 import org.bukkit.profile.PlayerTextures;
+import org.byeautumn.chuachua.player.PlayerData;
+import org.byeautumn.chuachua.player.PlayerDataAccessor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +32,9 @@ import java.util.stream.IntStream;
 public class FirstLandViewMenu implements Listener {
     private final Inventory inventory;
     private final JavaPlugin plugin;
-    private final FirstLandWorldConfigAccessor configAccessor;
+    // The WorldDataAccessor is now the sole accessor
+    private final WorldDataAccessor worldDataAccessor;
+    private final PlayerDataAccessor playerDataAccessor;
     private final Player menuOpener;
     private final FirstLandJoinMenu parentJoinMenu;
 
@@ -43,9 +47,11 @@ public class FirstLandViewMenu implements Listener {
     private static ItemStack AVAILABLE_SLOT_ITEM;
     private static ItemStack SLOT_SUMMARY_HEAD;
 
-    public FirstLandViewMenu(JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, Player player, FirstLandJoinMenu parentJoinMenu) {
+    // Updated constructor to only accept WorldDataAccessor
+    public FirstLandViewMenu(JavaPlugin plugin, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor , Player player, FirstLandJoinMenu parentJoinMenu) {
         this.plugin = plugin;
-        this.configAccessor = configAccessor;
+        this.worldDataAccessor = worldDataAccessor;
+        this.playerDataAccessor = playerDataAccessor;
         this.menuOpener = player;
         this.parentJoinMenu = parentJoinMenu;
 
@@ -76,9 +82,12 @@ public class FirstLandViewMenu implements Listener {
         inventory.clear();
         setupVisualLayout();
 
-        List<UUID> ownedWorldUUIDs = configAccessor.getPlayerOwnedWorldUUIDs(menuOpener.getUniqueId());
+        // Updated to use the new accessor method
+        List<UUID> ownedWorldUUIDs = worldDataAccessor.getPlayerOwnedWorldUUIDs(menuOpener.getUniqueId());
+        System.out.println(menuOpener.getUniqueId() + " owned worlds: " + ownedWorldUUIDs);
         int ownedWorldsCount = ownedWorldUUIDs.size();
-        int maxWorlds = configAccessor.getMaxWorldsPerPlayer();
+        // Updated to use the accessor for MaxWorldsPerPlayer
+        int maxWorlds = worldDataAccessor.getMaxWorldsPerPlayer(plugin);
         int availableSlotsCount = maxWorlds - ownedWorldsCount;
 
         // Create a new, mutable copy of the SLOT_SUMMARY_HEAD item
@@ -105,20 +114,26 @@ public class FirstLandViewMenu implements Listener {
         for (UUID worldUUID : ownedWorldUUIDs) {
             if (currentContentSlot >= contentSlots.size()) break;
 
-            String friendlyName = configAccessor.getWorldFriendlyName(worldUUID);
-            String internalName = configAccessor.getWorldName(worldUUID);
-            long createdAt = configAccessor.getConfig().getLong("worlds." + worldUUID.toString() + ".created-at", 0);
-            String creationDate = (createdAt > 0) ? new Date(createdAt).toString() : "Unknown";
+            // Updated to use the new accessor methods
+            WorldData worldData = worldDataAccessor.getWorldData(worldUUID);
+            if (worldData != null) {
+                String friendlyName = worldData.getWorldFriendlyName();
+                String internalName = worldData.getWorldInternalName();
+                // The created-at timestamp will need to be part of WorldData
+                // For now, let's assume you've added it to the WorldData class.
+                // long createdAt = worldData.getCreatedAt();
+                // String creationDate = (createdAt > 0) ? new Date(createdAt).toString() : "Unknown";
 
-            ItemStack worldItem = createGuiItem(Material.GRASS_BLOCK,
-                    ChatColor.YELLOW + friendlyName,
-                    ChatColor.GRAY + "ID: " + worldUUID.toString(),
-                    ChatColor.GRAY + "Internal Name: " + internalName,
-                    ChatColor.GRAY + "Created: " + creationDate,
-                    "",
-                    ChatColor.GREEN + "Click to join!");
+                ItemStack worldItem = createGuiItem(Material.GRASS_BLOCK,
+                        ChatColor.YELLOW + friendlyName,
+                        ChatColor.GRAY + "ID: " + worldUUID.toString(),
+                        ChatColor.GRAY + "Internal Name: " + internalName,
+                        // ChatColor.GRAY + "Created: " + creationDate, // Commented out for now
+                        "",
+                        ChatColor.GREEN + "Click to join!");
 
-            inventory.setItem(contentSlots.get(currentContentSlot++), worldItem);
+                inventory.setItem(contentSlots.get(currentContentSlot++), worldItem);
+            }
         }
 
         // Place available slots
@@ -153,13 +168,9 @@ public class FirstLandViewMenu implements Listener {
         // Place the back item at the center of the bottom row (22)
         inventory.setItem(22, BACK_ITEM);
 
-        // Remove the call to set the summary head here, as it's handled in populateWorlds()
-        // inventory.setItem(4, SLOT_SUMMARY_HEAD);
-
         // Place a light blue inner frame
         inventory.setItem(10, LIGHT_BLUE_FILLER);
         inventory.setItem(16, LIGHT_BLUE_FILLER);
-        // Additional slots for light blue filler if needed for the new layout
     }
 
     @EventHandler
@@ -182,11 +193,10 @@ public class FirstLandViewMenu implements Listener {
         }
 
         // Handle clicks on filler items, summary head
-        // Note: Checking the display name is more robust than using .equals() on static items
         ItemMeta meta = clickedItem.getItemMeta();
         if (meta != null) {
             String displayName = meta.getDisplayName();
-            if (displayName.equals(" ") || displayName.equals(ChatColor.AQUA + "World Slots")) {
+            if (displayName != null && (displayName.equals(" ") || displayName.equals(ChatColor.AQUA + "World Slots"))) {
                 return;
             }
         }
@@ -195,7 +205,8 @@ public class FirstLandViewMenu implements Listener {
         if (clickedItem.equals(AVAILABLE_SLOT_ITEM)) {
             player.closeInventory();
             HandlerList.unregisterAll(this);
-            FirstLandWorldNameListener.startNamingProcess(player, configAccessor);
+            // Updated to use the new accessor
+            FirstLandWorldNameListener.startNamingProcess(player, worldDataAccessor, plugin);
             return;
         }
 
@@ -204,20 +215,48 @@ public class FirstLandViewMenu implements Listener {
             if (meta == null || !meta.hasLore()) return;
 
             UUID targetWorldUUID = null;
+            String targetWorldInternalName = null;
+
             for (String line : meta.getLore()) {
-                if (ChatColor.stripColor(line).startsWith("ID: ")) {
+                String strippedLine = ChatColor.stripColor(line);
+                if (strippedLine.startsWith("ID: ")) {
                     try {
-                        String uuidString = ChatColor.stripColor(line).substring(4);
+                        String uuidString = strippedLine.substring(4);
                         targetWorldUUID = UUID.fromString(uuidString);
-                        break;
                     } catch (IllegalArgumentException ignored) {}
+                }
+                if (strippedLine.startsWith("Internal Name: ")) {
+                    targetWorldInternalName = strippedLine.substring("Internal Name: ".length());
                 }
             }
 
             if (targetWorldUUID != null) {
+                // Step 1: Get the player's current state from the Bukkit API
+                double currentHealth = player.getHealth();
+                int currentHunger = player.getFoodLevel();
+
+                //Step 2: Create a PlayerData object with the current state, including gameMode and playMode
+                PlayerData currentPlayerData = PlayerData.builder()
+                        .playerUUID(player.getUniqueId())
+                        .worldUUID(player.getWorld().getUID())
+                        .worldInternalName(player.getWorld().getName())
+                        .playMode(Universe.getPlayerTracker(player).getPlayMode())
+                        .gameMode(player.getGameMode())
+                        .health(currentHealth)
+                        .hunger(currentHunger)
+                        .build();
+
+                // Step 3: Save the player's current data using the PlayerDataAccessor
+                playerDataAccessor.savePlayerData(currentPlayerData);
+
                 player.closeInventory();
                 HandlerList.unregisterAll(this);
-                Universe.connectPlayerToSpecificWorld(player, plugin, configAccessor, Objects.requireNonNull(Universe.getChuaWorldById(targetWorldUUID)).getWorld().getName(), targetWorldUUID);
+
+                // Pass the playerDataAccessor to the method
+                Universe.connectPlayerToSpecificWorld(player, plugin, worldDataAccessor, targetWorldUUID, playerDataAccessor);
+            } else {
+                // This is the new part: handle the case where the UUID is null
+                player.sendMessage(ChatColor.RED + ">> " + ChatColor.AQUA + "Sorry, this world's data is corrupted or missing. Please try again later.");
             }
         }
     }

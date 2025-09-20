@@ -7,10 +7,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.byeautumn.chuachua.common.LocationVector;
+import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
+import org.byeautumn.chuachua.game.firstland.WorldData;
+import org.byeautumn.chuachua.game.firstland.WorldDataAccessor;
+import org.byeautumn.chuachua.game.firstland.WorldGenerationTask;
 import org.byeautumn.chuachua.generate.world.WorldManager;
 import org.byeautumn.chuachua.generate.world.pipeline.*;
 import org.byeautumn.chuachua.generate.world.WorldGenerator;
+import org.byeautumn.chuachua.player.PlayerData;
+import org.byeautumn.chuachua.player.PlayerDataAccessor;
 import org.byeautumn.chuachua.player.PlayerTracker;
 import org.byeautumn.chuachua.undo.ActionRecorder;
 
@@ -18,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
@@ -162,80 +169,86 @@ public class Universe {
     public static ChuaWorld createWorld(long seed, String worldName, JavaPlugin plugin) {
         // 1. Check if the world is already loaded in Bukkit and managed by our plugin
         World existingBukkitWorld = Bukkit.getWorld(worldName);
+        plugin.getLogger().info("Attempting to create or load world: " + worldName);
+
         if (existingBukkitWorld != null) {
+            plugin.getLogger().info("A Bukkit world named '" + worldName + "' is already loaded. Checking if we manage it.");
             ChuaWorld existingChuaWorld = getChuaWorldById(existingBukkitWorld.getUID());
 
             if (existingChuaWorld != null) {
-                // World is loaded AND managed by us. Nothing to do, return it.
-                plugin.getLogger().info("World '" + worldName + "' (UUID: " + existingBukkitWorld.getUID() + ") is already loaded and managed. Reusing existing ChuaWorld.");
+                plugin.getLogger().info("World '" + worldName + "' is already managed by ChuaChua. Returning existing instance.");
                 return existingChuaWorld;
             } else {
-                // --- NEW FIX ---
-                // World is loaded, but not in our in-memory map. Let's check if it's a world we created.
                 if (worldName.startsWith("First_Land_World_")) {
-                    plugin.getLogger().info("Found a loaded First Land World '" + worldName + "' not in our map. Re-wrapping it as a ChuaWorld.");
-                    // Assume it's one of ours, load the needed data from the config
-                    // and add it to our internal map to fix the discrepancy.
-                    FirstLandWorldConfigAccessor configAccessor = new FirstLandWorldConfigAccessor(plugin);
-                    Long storedSeed = configAccessor.getWorldSeed(existingBukkitWorld.getUID());
+                    plugin.getLogger().info("Found a loaded First Land World '" + worldName + "' not in our map. Re-wrapping it.");
 
-                    if (storedSeed != null) {
+                    File baseDir = new File(plugin.getDataFolder(), "data");
+                    WorldDataAccessor configAccessor = new WorldDataAccessor(baseDir);
+
+                    // FIX: Use the actual Bukkit world's UUID to get the data
+                    UUID bukkitWorldUUID = existingBukkitWorld.getUID();
+                    plugin.getLogger().info("Attempting to get world data for Bukkit's UUID: " + bukkitWorldUUID);
+                    WorldData worldData = configAccessor.getWorldData(bukkitWorldUUID);
+
+                    if (worldData != null) {
+                        Long storedSeed = worldData.getSeed();
                         ChuaWorld rewrappedWorld = new ChuaWorld(storedSeed, existingBukkitWorld);
                         addChuaWorld(rewrappedWorld);
+                        plugin.getLogger().info("Successfully re-wrapped world '" + worldName + "' with stored data.");
                         return rewrappedWorld;
                     } else {
-                        plugin.getLogger().warning("Could not find config data for existing First Land World '" + worldName + "'. Aborting creation to prevent data loss.");
+                        plugin.getLogger().warning("Could not find config data for existing First Land World '" + worldName + "'. Aborting creation.");
                         return null;
                     }
                 } else {
-                    // World is loaded in Bukkit but NOT managed by us (e.g., vanilla world or other plugin's world).
-                    plugin.getLogger().warning("Attempted to create world '" + worldName + "' but a Bukkit world with that name already exists and is NOT managed by ChuaChua. Aborting creation.");
+                    plugin.getLogger().warning("Bukkit world '" + worldName + "' exists but is not a First Land World. Aborting creation.");
                     return null;
                 }
             }
         }
 
-        // 2. If not loaded, check if the world folder exists on disk (meaning it's unloaded but exists)
+        // 2. If not loaded, check if the world folder exists on disk.
         File worldFolder = new File(Bukkit.getWorldContainer(), worldName);
+        plugin.getLogger().info("Checking if world folder exists on disk: " + worldFolder.getAbsolutePath());
         if (worldFolder.exists()) {
-            plugin.getLogger().info("World folder '" + worldName + "' exists on disk, but world is not loaded. Attempting to load existing world with provided seed: " + seed);
-            // Use WorldCreator to load the existing world. If the world data on disk is valid,
-            // Bukkit will load it. The seed is passed for consistency but primarily applies to new generation.
+            plugin.getLogger().info("World folder '" + worldName + "' exists. Attempting to load existing world with provided seed: " + seed);
+
             World bukkitWorldToLoad = new WorldCreator(worldName).seed(seed).createWorld();
 
             if (bukkitWorldToLoad != null) {
-                // World is now loaded. Create ChuaWorld wrapper if not already in our map.
+                plugin.getLogger().info("Successfully loaded Bukkit world '" + worldName + "'. Wrapping as ChuaWorld.");
                 ChuaWorld chuaWorld = getChuaWorldById(bukkitWorldToLoad.getUID());
                 if (chuaWorld == null) {
                     chuaWorld = new ChuaWorld(seed, bukkitWorldToLoad);
                     addChuaWorld(chuaWorld);
-                    plugin.getLogger().info("Successfully loaded existing world '" + worldName + "' (UUID: " + bukkitWorldToLoad.getUID() + ") and wrapped into ChuaWorld.");
+                    plugin.getLogger().info("Successfully wrapped and added to map: " + worldName);
                 }
                 return chuaWorld;
             } else {
-                plugin.getLogger().severe("Failed to load existing world '" + worldName + "' from disk, even though its folder exists. Check server console for Bukkit errors related to world loading.");
-                return null; // Failed to load existing world
+                plugin.getLogger().severe("Failed to load existing world '" + worldName + "' from disk. Returning null.");
+                return null;
             }
         }
 
-        // 3. If neither loaded nor exists on disk, then it's truly a new world to be generated.
-        plugin.getLogger().info("World '" + worldName + "' does not exist on disk or loaded. Starting creation of a BRAND NEW world with seed: " + seed);
+        // 3. If neither loaded nor exists on disk, generate a new world.
+        plugin.getLogger().info("World '" + worldName + "' not found on disk. Starting generation of a new world.");
 
         Map<Integer, ChunkGenerationStage> stages = initializeGenerationPipeline(seed);
-        Logger pluginLogger = plugin.getLogger(); // Use the passed plugin's logger
+        Logger pluginLogger = plugin.getLogger();
 
         WorldGenerator worldGenerator = new WorldGenerator(stages, pluginLogger);
         World newBukkitWorld = WorldManager.createWorld(worldName, worldGenerator);
 
         if (newBukkitWorld != null) {
+            plugin.getLogger().info("Successfully created new Bukkit world '" + worldName + "'. Setting up properties.");
             newBukkitWorld.setGameRuleValue("doMobSpawning", "false");
             ChuaWorld chuaWorld = new ChuaWorld(seed, newBukkitWorld);
-            addChuaWorld(chuaWorld); // Adds to UUID_TO_CHUAWORLD
-            plugin.getLogger().info("Successfully created BRAND NEW ChuaWorld for: " + worldName + " (UUID: " + newBukkitWorld.getUID() + ").");
+            addChuaWorld(chuaWorld);
+            plugin.getLogger().info("Successfully created and added a BRAND NEW ChuaWorld.");
             return chuaWorld;
         }
 
-        plugin.getLogger().severe("Failed to create Bukkit world for '" + worldName + "'.");
+        plugin.getLogger().severe("Failed to create new Bukkit world for '" + worldName + "'. Returning null.");
         return null;
     }
 
@@ -469,75 +482,52 @@ public class Universe {
 
     /**
      * Deletes a First Land world from the server, including its files and config entry.
-     * Now operates using World UUID.
      * @param plugin The main plugin instance.
      * @param worldUUID The UUID of the world to delete.
-     * @param configAccessor The accessor to the world configuration.
+     * @param worldDataAccessor The accessor to the world data.
      * @return true if the world was successfully deleted, false otherwise.
      */
-    public static boolean deleteFirstLandWorld(JavaPlugin plugin, UUID worldUUID, FirstLandWorldConfigAccessor configAccessor) {
-        // Retrieve world data from the cache for speed and safety
-        String worldName = configAccessor.getWorldName(worldUUID);
-        if (worldName == null) {
-            plugin.getLogger().warning("Attempted to delete world with UUID " + worldUUID + " but its internal name was not found in config.");
+    public static boolean deleteFirstLandWorld(JavaPlugin plugin, UUID worldUUID, WorldDataAccessor worldDataAccessor) {
+        // Step 1: Retrieve world data using the new accessor ONCE
+        WorldData worldData = worldDataAccessor.getWorldData(worldUUID);
+        if (worldData == null) {
+            plugin.getLogger().warning("Attempted to delete world with UUID " + worldUUID + " but its data was not found.");
             return false;
         }
 
-        // Step 1: Unload world and handle players
+        String worldName = worldData.getWorldInternalName();
+        UUID ownerUUID = worldData.getOwnerUUID();
+
+        // Step 2: Unload world and handle players
         World world = Bukkit.getWorld(worldName);
         if (world != null) {
             world.setAutoSave(false);
             for (Player player : world.getPlayers()) {
-                player.teleport(Bukkit.getWorlds().get(0).getSpawnLocation());
+                player.teleport(Objects.requireNonNull(Bukkit.getWorlds().get(0)).getSpawnLocation());
                 player.sendMessage(ChatColor.RED + "The world you were in has been deleted.");
                 plugin.getLogger().info("Teleported " + player.getName() + " from world '" + worldName + "'.");
-
-                // The correct way to remove the in-memory connection is by using the specific world's UUID
-                removePlayerConnectedSpecificChuaWorld(player.getUniqueId(), worldUUID);
+                Universe.removePlayerConnectedSpecificChuaWorld(player.getUniqueId(), worldUUID);
             }
             Bukkit.unloadWorld(world, false);
             plugin.getLogger().info("Unloaded world '" + worldName + "'.");
         } else {
-            plugin.getLogger().info("World '" + worldName + "' (UUID: " + worldUUID + ") is not loaded. Proceeding with file and config deletion.");
+            plugin.getLogger().info("World '" + worldName + "' (UUID: " + worldUUID + ") is not loaded. Proceeding with file and data deletion.");
         }
 
-        // Step 2: Clear in-memory connections and update the config file
-        // First, remove the in-memory connection for any player associated with this world
-        UUID connectedPlayerUUID = configAccessor.getConnectedPlayerUUID(worldUUID);
-        if (connectedPlayerUUID != null) {
-            // Use the new, correct method to remove the specific world from the player's list
-            removePlayerConnectedSpecificChuaWorld(connectedPlayerUUID, worldUUID);
+        // Step 3: Remove in-memory connections and delete the world's files
+        if (ownerUUID != null) {
+            Universe.removePlayerConnectedSpecificChuaWorld(ownerUUID, worldUUID);
         }
 
-        // Now, delete the world from the config and its in-memory caches. This single call is efficient.
-        configAccessor.deleteWorldEntry(worldUUID);
-
-        // Step 3: Delete the world's folder from the disk
-        File worldFolder = new File(Bukkit.getWorldContainer(), worldName);
-        try {
-            if (worldFolder.exists()) {
-                Files.walk(worldFolder.toPath())
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(f -> {
-                            if (!f.delete()) {
-                                plugin.getLogger().warning("Failed to delete file/directory: " + f.getAbsolutePath());
-                            }
-                        });
-                plugin.getLogger().info("Successfully deleted world folder: " + worldFolder.getAbsolutePath());
-            } else {
-                plugin.getLogger().info("World folder for '" + worldName + "' not found. Skipping file deletion.");
-            }
-        } catch (IOException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to delete world folder for '" + worldName + "': " + e.getMessage(), e);
-            // Do not return false here; we want to continue to clean up the config and memory
+        // Now the new accessor method handles file deletion and data cleanup
+        boolean fileDeletionSuccess = worldDataAccessor.deleteWorld(worldUUID);
+        if (!fileDeletionSuccess) {
+            plugin.getLogger().severe("Failed to delete world files and data for world '" + worldName + "'.");
+            return false;
         }
 
         // Step 4: Remove the ChuaWorld from the main Universe map
-        removeChuaWorld(getChuaWorldById(worldUUID));
-
-        // Step 5: Recalculate the highest world number and save the config.
-        configAccessor.updateAmountToHighestWorldNumber();
+        Universe.removeChuaWorld(Universe.getChuaWorldById(worldUUID));
 
         plugin.getLogger().info("Successfully deleted world '" + worldName + "' (UUID: " + worldUUID + ").");
         return true;
@@ -624,85 +614,122 @@ public class Universe {
     }
 
     /**
-     * Overloaded method to create a new First Land world with a default friendly name
-     * and connect the player to it. The friendly name will be the internal world name.
-     *
-     * @param player The player initiating the world creation.
+     * Initiates the world creation process for a player-owned world.
+     * This now correctly accepts and passes the owner's UUID.
+     * @param player The player who is creating the world.
      * @param plugin The main plugin instance.
-     * @param configAccessor The configuration accessor for world data.
-     * @return true if the world was successfully created and the player connected, false otherwise.
+     * @param worldDataAccessor The accessor for world data.
+     * @param friendlyName The friendly name provided by the player.
+     * @param ownerUUID The UUID of the player who will own the world.
      */
-    public static boolean createAndConnectNewWorld(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor) {
-        // Determine the next internal world name, which will also serve as the default friendly name
-        int worldNumber = configAccessor.getWorldAmount();
-        String formattedNumber = String.format("%02d", worldNumber);
-        String newWorldName = "First_Land_World_" + formattedNumber;
-
-        // Call the primary overloaded method, passing the generated name as the friendly name
-        return createAndConnectNewWorld(player, plugin, configAccessor, newWorldName);
-    }
-
-    public static void createOrConnectExistingWorldWithPlayer(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, String friendlyName) {
+    public static void createOrConnectExistingWorldWithPlayer(Player player, JavaPlugin plugin, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor, String friendlyName, UUID ownerUUID) {
         new BukkitRunnable() {
             @Override
             public void run() {
-                Universe.findOrCreateAndConnectFirstLandWorld(player, plugin, configAccessor, friendlyName);
+                // First, try to find an unowned world to connect the player to
+                UUID unownedWorldUUID = worldDataAccessor.getFirstUnownedWorldUUID();
+                System.out.println("unownedWorldUUID: " + unownedWorldUUID);
+
+                if (unownedWorldUUID != null) {
+                    // If an unowned world exists, connect the player to it.
+                    // The connectUnownedWorldToPlayer method handles moving the file and updating data.
+                    worldDataAccessor.connectUnownedWorldToPlayer(
+                            unownedWorldUUID,
+                            ownerUUID,
+                            friendlyName,
+                            Collections.singletonList(ownerUUID),
+                            plugin
+                    );
+
+                    // Teleport the player and update their state after the world is connected
+                    Universe.connectPlayerToSpecificWorld(player, plugin, worldDataAccessor, unownedWorldUUID, playerDataAccessor);
+
+                    // The logic to create and save a new PlayerData file has been removed from here.
+                    // This is now handled by the connectPlayerToSpecificWorld method.
+
+                } else {
+                    // If no unowned world exists, send an error message and notify operators
+                    player.sendMessage(ChatColor.RED + ">> " + ChatColor.AQUA + "There are no available worlds to connect to. Please try again later.");
+                    Bukkit.broadcastMessage(ChatColor.RED + "[Universe] " + ChatColor.YELLOW + "Alert: Player " + player.getName() + " attempted to connect to an unowned world, but none are available. An admin needs to pre-generate more worlds.");
+                }
             }
         }.runTask(plugin);
     }
 
-    public static boolean connectPlayerToSpecificWorld(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, String worldIdentifier, UUID worldUuid) {
-        plugin.getLogger().info("Attempting to connect player " + player.getName() + " to specific world: " + worldIdentifier);
+    public static void createUnownedWorlds(JavaPlugin plugin, WorldDataAccessor worldDataAccessor, int numWorlds) {
+        // Pass null for the player and ownerUUID to signify an unowned world
+        WorldGenerationTask generationTask = new WorldGenerationTask(plugin, worldDataAccessor, null, numWorlds, null, null);
+        generationTask.runTaskTimer(plugin, 0L, 1L);
+    }
 
-        UUID targetWorldUUID = null;
-        String targetInternalWorldName = null;
-        Long targetSeed = null;
+    /**
+     * Connects a player to a specific First Land world. This function now uses the WorldDataAccessor
+     * to handle all data retrieval.
+     *
+     * @param player The player to connect.
+     * @param plugin The main plugin instance.
+     * @param worldDataAccessor The accessor for world data.
+     * @param worldUuid The UUID of the world to connect to.
+     * @return true if the world was successfully found and connected to, false otherwise.
+     */
+    public static boolean connectPlayerToSpecificWorld(Player player, JavaPlugin plugin, WorldDataAccessor worldDataAccessor, UUID worldUuid, PlayerDataAccessor playerDataAccessor) {
+        plugin.getLogger().info("Attempting to connect player " + player.getName() + " to specific world with UUID: " + worldUuid);
 
-        // Try to parse worldIdentifier as a UUID first
-        try {
-            targetWorldUUID = UUID.fromString(worldIdentifier);
-            // If it's a valid UUID, get details from config
-            if (configAccessor.worldExistsInConfig(targetWorldUUID)) {
-                targetInternalWorldName = configAccessor.getWorldName(targetWorldUUID);
-                targetSeed = configAccessor.getWorldSeed(targetWorldUUID);
-            } else {
-                targetWorldUUID = null; // Reset if UUID is valid but not found in config
-            }
-        } catch (IllegalArgumentException e) {
-            // Not a valid UUID, assume it's an internal world name
-            targetInternalWorldName = worldIdentifier;
-            targetWorldUUID = configAccessor.getChuaWorldUUIDByInternalName(targetInternalWorldName);
-            if (targetWorldUUID != null) {
-                targetSeed = configAccessor.getWorldSeed(targetWorldUUID);
-            }
-        }
+        // Load the WorldData object directly from the accessor ONCE
+        WorldData worldData = worldDataAccessor.getWorldData(worldUuid);
 
-        if (targetInternalWorldName == null || targetWorldUUID == null || targetSeed == null) {
-            player.sendMessage(ChatColor.RED + "World '" + worldIdentifier + "' not found or data is incomplete.");
-            plugin.getLogger().warning("Failed to find world data for identifier: " + worldIdentifier);
+        if (worldData == null) {
+            player.sendMessage(ChatColor.RED + "World not found or data is incomplete.");
+            plugin.getLogger().warning("Failed to find world data for UUID: " + worldUuid);
             return false;
         }
 
-        // Now that we have a valid UUID, internal name, and seed from config, try to load/create the Bukkit world
+        String targetInternalWorldName = worldData.getWorldInternalName();
+        long targetSeed = worldData.getSeed();
         ChuaWorld targetChuaWorld = Universe.createWorld(targetSeed, targetInternalWorldName, plugin);
 
         if (targetChuaWorld == null) {
-            player.sendMessage(ChatColor.RED + "Failed to prepare world '" + worldIdentifier + "' for connection. It might be corrupted.");
-            plugin.getLogger().severe("Failed to load/create world '" + worldIdentifier + "' for direct connection. ChuaWorld is null.");
+            player.sendMessage(ChatColor.RED + "Failed to prepare world for connection. It might be corrupted.");
+            plugin.getLogger().severe("Failed to load/create world '" + targetInternalWorldName + "' for direct connection. ChuaWorld is null.");
             return false;
         }
 
-        // Ensure the player is connected to this world in memory and config
         Universe.setPlayerConnectedChuaWorld(player.getUniqueId(), targetChuaWorld, plugin);
-        configAccessor.updateConnectedPlayer(targetChuaWorld.getID(), player.getUniqueId());
 
-        // Teleport the player
         new BukkitRunnable() {
             @Override
             public void run() {
-                player.teleport(targetChuaWorld.getWorld().getSpawnLocation());
-                player.sendMessage(ChatColor.GREEN + "Successfully connected to world: " + configAccessor.getWorldFriendlyName(targetChuaWorld.getID()) + ChatColor.GREEN + "!");
-                plugin.getLogger().info("Player " + player.getName() + " directly connected to world " + configAccessor.getWorldFriendlyName(targetChuaWorld.getID()) + " (UUID: " + targetChuaWorld.getID() + ").");
+                // Load the player's data for this world
+                PlayerData playerData = playerDataAccessor.getPlayerData(player.getUniqueId(), worldData.getWorldUUID(), worldData.getWorldInternalName());
+
+                Location teleportLocation;
+                if (playerData != null && playerData.getLastKnownLogoffWorldUUID() != null) {
+                    // If saved data exists, teleport the player to their last known log-off location
+                    teleportLocation = new Location(
+                            Bukkit.getWorld(playerData.getLastKnownLogoffWorldUUID()),
+                            playerData.getLastKnownLogoffX(),
+                            playerData.getLastKnownLogoffY(),
+                            playerData.getLastKnownLogoffZ(),
+                            playerData.getLastKnownLogoffYaw(),
+                            playerData.getLastKnownLogoffPitch()
+                    );
+
+                    // Apply loaded data
+                    player.setHealth(playerData.getHealth());
+                    player.setFoodLevel(playerData.getHunger());
+                    player.setGameMode(playerData.getGameMode());
+                    Universe.getPlayerTracker(player).setPlayMode(playerData.getPlayMode());
+                    player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "Your saved data has been loaded for this world.");
+                } else {
+                    // If no saved data, teleport to the world's spawn location
+                    teleportLocation = targetChuaWorld.getWorld().getSpawnLocation();
+                    player.sendMessage(ChatColor.RED + ">> " + ChatColor.AQUA + "Warning: No saved data was found for this world. Teleporting to world spawn.");
+                }
+
+                // Perform the teleport and final messages
+                player.teleport(teleportLocation);
+                player.sendMessage(ChatColor.GREEN + "Successfully connected to world: " + worldData.getWorldFriendlyName() + ChatColor.GREEN + "!");
+                plugin.getLogger().info("Player " + player.getName() + " directly connected to world " + worldData.getWorldFriendlyName() + " (UUID: " + targetChuaWorld.getID() + ").");
             }
         }.runTask(plugin);
 
@@ -712,74 +739,58 @@ public class Universe {
     /**
      * Finds the first available unconnected First Land world for a player,
      * or creates a new one if none are available, and then connects the player to it.
-     * This method encapsulates the logic previously found in 'connectPlayerToFirstLandWorld'.
+     * This method now uses the {@link WorldDataAccessor} for all data operations.
      *
      * @param player The player to connect.
      * @param plugin The main plugin instance.
-     * @param configAccessor The config accessor for First Land worlds.
+     * @param worldDataAccessor The accessor for world data.
+     * @param friendlyName The desired friendly name for a new world, if created.
      * @return true if the player was successfully connected to a world, false otherwise.
      */
-    /**
-     * Finds the first available unconnected First Land world for a player,
-     * or creates a new one if none are available, and then connects the player to it.
-     * This method encapsulates the logic previously found in 'connectPlayerToFirstLandWorld'.
-     *
-     * @param player The player to connect.
-     * @param plugin The main plugin instance.
-     * @param configAccessor The config accessor for First Land worlds.
-     * @return true if the player was successfully connected to a world, false otherwise.
-     */
-    public static boolean findOrCreateAndConnectFirstLandWorld(Player player, JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, String friendlyName) {
+    public static boolean findOrCreateAndConnectFirstLandWorld(Player player, JavaPlugin plugin, WorldDataAccessor worldDataAccessor, String friendlyName) {
         plugin.getLogger().info("Attempting to find or create a First Land world for player " + player.getName() + "...");
-
-        // Check if the player already has a connected world
-//        ChuaWorld existingPlayerWorld = getPlayerConnectedChuaWorld(player.getUniqueId());
-//        if (existingPlayerWorld != null) {
-//            player.sendMessage(ChatColor.YELLOW + "You are already connected to a First Land world (" +
-//                    configAccessor.getWorldFriendlyName(existingPlayerWorld.getID()) + ChatColor.YELLOW + "). Teleporting you there.");
-//            player.teleport(existingPlayerWorld.getWorld().getSpawnLocation());
-//            plugin.getLogger().info("Player " + player.getName() + " already connected to " + existingPlayerWorld.getWorld().getName() + ". Teleporting.");
-//            return true;
-//        }
 
         UUID worldUUIDToUse = null;
         String internalWorldNameToUse = null;
         Long seedToUse = null;
+        WorldData worldDataToUse = null;
         ChuaWorld createdOrLoadedChuaWorld = null;
 
         // 1. Prioritize reusing an existing, unconnected world
         plugin.getLogger().info("Searching for an unconnected First Land world...");
-        UUID unconnectedWorldUUID = configAccessor.findFirstUnconnectedWorldUUID();
+        UUID unconnectedWorldUUID = worldDataAccessor.findFirstUnconnectedWorldUUID();
 
         if (unconnectedWorldUUID != null) {
             // Reuse existing unconnected world
-            worldUUIDToUse = unconnectedWorldUUID;
-            internalWorldNameToUse = configAccessor.getWorldName(unconnectedWorldUUID);
-            seedToUse = configAccessor.getWorldSeed(unconnectedWorldUUID);
+            WorldData worldData = worldDataAccessor.getWorldData(unconnectedWorldUUID);
+            if (worldData != null) {
+                worldUUIDToUse = worldData.getWorldUUID();
+                internalWorldNameToUse = worldData.getWorldInternalName();
+                seedToUse = worldData.getSeed();
 
-            // Directly call Universe.createWorld which handles loading if world folder exists
-            createdOrLoadedChuaWorld = Universe.createWorld(seedToUse, internalWorldNameToUse, plugin);
+                // Correctly create an updated WorldData object using the builder pattern
+                worldDataToUse = WorldData.builder()
+                        .worldUUID(worldUUIDToUse)
+                        .worldFriendlyName(friendlyName)
+                        .ownerUUID(player.getUniqueId())
+                        .worldInternalName(internalWorldNameToUse)
+                        .seed(seedToUse)
+                        .build();
 
-            if (createdOrLoadedChuaWorld == null) {
-                player.sendMessage(ChatColor.RED + "Failed to prepare existing world for use. Please try again later.");
-                player.sendMessage(internalWorldNameToUse + " (UUID: " + unconnectedWorldUUID + ") for reuse. Check world files/server logs. Deleting config entry." + seedToUse);
-                plugin.getLogger().log(Level.SEVERE, "Failed to load existing Bukkit world: " + internalWorldNameToUse + " (UUID: " + unconnectedWorldUUID + ") for reuse. Check world files/server logs. Deleting config entry.");
-                configAccessor.deleteWorldEntry(unconnectedWorldUUID); // Clean up corrupted entry
-                // Fall through to new world creation attempt
+                // Directly call Universe.createWorld which handles loading if world folder exists
+                createdOrLoadedChuaWorld = Universe.createWorld(seedToUse, internalWorldNameToUse, plugin);
+
+                if (createdOrLoadedChuaWorld == null) {
+                    player.sendMessage(ChatColor.RED + "Failed to prepare existing world for use. Please try again later.");
+                    plugin.getLogger().log(Level.SEVERE, "Failed to load existing Bukkit world: " + internalWorldNameToUse + " (UUID: " + unconnectedWorldUUID + ") for reuse. Check world files/server logs. Deleting config entry.");
+                    worldDataAccessor.deleteWorld(unconnectedWorldUUID); // Clean up corrupted entry
+                } else {
+                    player.sendMessage(ChatColor.GREEN + "Connecting you to an existing unused world...");
+                    plugin.getLogger().info("Reusing existing unconnected world (UUID: " + unconnectedWorldUUID + ", Internal: " + internalWorldNameToUse + ") for player " + player.getName());
+                    worldDataAccessor.saveWorldData(worldDataToUse); // Save the updated WorldData object
+                }
             } else {
-                player.sendMessage(ChatColor.GREEN + "Connecting you to an existing unused world...");
-                plugin.getLogger().info("Reusing existing unconnected world (UUID: " + unconnectedWorldUUID + ", Internal: " + internalWorldNameToUse + ") for player " + player.getName());
-                // World is prepared, now update its connection in config
-//                String friendlyName = configAccessor.getWorldFriendlyName(unconnectedWorldUUID); // Keep existing friendly name
-                configAccessor.addNewWorld( // Re-use addNewWorld to update player connection
-                        worldUUIDToUse,
-                        internalWorldNameToUse,
-                        friendlyName, // Keep its existing friendly name
-                        player.getUniqueId(),
-                        seedToUse,
-                        createdOrLoadedChuaWorld.getWorld().getSpawnLocation()
-                );
-                configAccessor.saveConfig(); // Save changes to config file
+                plugin.getLogger().warning("Found unconnected UUID " + unconnectedWorldUUID + " but no corresponding data file. Skipping and creating new world.");
             }
         }
 
@@ -788,17 +799,16 @@ public class Universe {
             plugin.getLogger().info("No unconnected worlds found or reuse failed. Creating a brand new world for " + player.getName() + ".");
             Random random = new Random();
             seedToUse = random.nextLong();
-            worldUUIDToUse = UUID.randomUUID(); // Generate a new UUID for a new world
-
-            // Get the next sequential internal world name
-            String formattedNumber = String.format("%02d", configAccessor.getWorldAmount());
-            internalWorldNameToUse = "First_Land_World_" + formattedNumber;
+            // Use the UUID as the internal world name, removing the need for getHighestWorldNumber()
+            internalWorldNameToUse = "First_Land_World_" + sendFormattedTimeMessage();
 
             player.sendMessage(ChatColor.GREEN + "Creating a brand new world for you...");
             plugin.getLogger().info("Creating new world '" + internalWorldNameToUse + "' (UUID: " + worldUUIDToUse + ", Seed: " + seedToUse + ") for player " + player.getName());
 
             // Create the actual Bukkit world and its ChuaWorld wrapper.
-            createdOrLoadedChuaWorld = Universe.createWorld(seedToUse, internalWorldNameToUse, plugin); // Pass plugin
+            createdOrLoadedChuaWorld = Universe.createWorld(seedToUse, internalWorldNameToUse, plugin);
+
+            worldUUIDToUse = createdOrLoadedChuaWorld.getID(); // Generate a new UUID for a new world
 
             if (createdOrLoadedChuaWorld == null) {
                 player.sendMessage(ChatColor.RED + "Failed to create your new world. Please try again later.");
@@ -806,18 +816,15 @@ public class Universe {
                 return false; // Abort if world creation fails
             }
 
-            // Add the new world's details to the plugin's configuration file using UUID.
-//            String friendlyName = configAccessor.getWorldFriendlyName(unconnectedWorldUUID); // Keep existing friendly name
-            configAccessor.addNewWorld(
-                    worldUUIDToUse,
-                    internalWorldNameToUse,
-                    friendlyName, // Default friendly name to internal name for findOrCreate
-                    player.getUniqueId(), // Connect the player who created it
-                    seedToUse,
-                    createdOrLoadedChuaWorld.getWorld().getSpawnLocation()
-            );
-            configAccessor.saveConfig(); // Save after adding new world
-            configAccessor.updateAmountToHighestWorldNumber(); // Update amount counter and save
+            // Correctly create a new WorldData object using the builder pattern
+            worldDataToUse = WorldData.builder()
+                    .worldUUID(worldUUIDToUse)
+                    .worldInternalName(internalWorldNameToUse)
+                    .worldFriendlyName(friendlyName)
+                    .ownerUUID(player.getUniqueId())
+                    .seed(seedToUse)
+                    .build();
+            worldDataAccessor.saveWorldData(worldDataToUse);
         }
 
         // **COMMON LOGIC FOR BOTH REUSED AND NEWLY CREATED WORLDS**
@@ -835,6 +842,30 @@ public class Universe {
             plugin.getLogger().severe("Unexpected error: createdOrLoadedChuaWorld was null after creation/reuse attempt for player " + player.getName());
             return false;
         }
+    }
+
+    public static String getCurrentDateTimeString(String formatPattern) {
+        // Create a Date object representing the current date and time
+        Date now = new Date();
+
+        // Create a SimpleDateFormat object with the desired format pattern
+        // Example patterns:
+        // "dd/MM/yyyy HH:mm:ss" -> 23/09/2025 20:30:15
+        // "yyyy-MM-dd HH:mm:ss" -> 2025-09-23 20:30:15
+        // "MMMM dd, yyyy h:mm a" -> September 23, 2025 8:30 PM
+        SimpleDateFormat formatter = new SimpleDateFormat(formatPattern);
+
+        // Format the Date object into a String
+        String formattedDateTime = formatter.format(now);
+
+        return formattedDateTime;
+    }
+
+    // Example usage in a Bukkit plugin method
+    public static String sendFormattedTimeMessage() {
+        // Assuming 'player' is a Player object
+        // player.sendMessage("Current time: " + currentTime);
+        return getCurrentDateTimeString("dd/MM/yyyy HH:mm:ss");
     }
 
     /**

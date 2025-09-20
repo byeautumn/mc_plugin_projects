@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-
+@Deprecated
 public class FirstLandWorldConfigAccessor {
 
     private final JavaPlugin plugin;

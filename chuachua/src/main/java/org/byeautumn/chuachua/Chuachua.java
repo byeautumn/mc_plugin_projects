@@ -7,13 +7,12 @@ import org.byeautumn.chuachua.block.BlockListener;
 import org.byeautumn.chuachua.command.OperationCommand;
 import org.byeautumn.chuachua.custom.ResourcePackListener;
 import org.byeautumn.chuachua.game.GameListener;
-import org.byeautumn.chuachua.game.firstland.FirstLandJoinMenu;
-import org.byeautumn.chuachua.game.firstland.FirstLandViewMenu;
-import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
-import org.byeautumn.chuachua.game.firstland.FirstLandWorldNameListener;
+import org.byeautumn.chuachua.game.firstland.*;
 import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorldConfigAccessor;
+import org.byeautumn.chuachua.player.PlayerDataAccessor;
 import org.checkerframework.checker.guieffect.qual.UI;
 
+import java.io.File;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +25,9 @@ public final class Chuachua extends JavaPlugin {
     private OperationCommand operationCommand; // Declare a field for your command executor
     private FirstLandJoinMenu firstLandJoinMenu; // Declare an instance
     private FirstLandWorldConfigAccessor firstLandWorldConfigAccessor;
+    private WorldDataAccessor worldDataAccessor;
+    private PlayerDataAccessor playerDataAccessor;
+
 
     public static final int MAIN_CONFIG_DEFAULT_MAX_WORLDS = 3;
 
@@ -60,17 +62,22 @@ public final class Chuachua extends JavaPlugin {
         getLogger().info("Set ProtoBiomeGeneration logger level to FINE.");
         // --- End: Programmatic Logging Configuration ---
 
+        File pluginDataFolder = getDataFolder();
+
+        this.worldDataAccessor = new WorldDataAccessor(new File(pluginDataFolder, "data"));
+        this.playerDataAccessor = new PlayerDataAccessor(new File(pluginDataFolder, "data"));
+
         this.firstLandWorldConfigAccessor = new FirstLandWorldConfigAccessor(this);
 
-        this.firstLandJoinMenu = new FirstLandJoinMenu(this, firstLandWorldConfigAccessor);
+        this.firstLandJoinMenu = new FirstLandJoinMenu(this, worldDataAccessor, playerDataAccessor);
         // Initialize your OperationCommand ONCE
-        this.operationCommand = new OperationCommand(this, firstLandWorldConfigAccessor, firstLandJoinMenu);
+        this.operationCommand = new OperationCommand(this, firstLandWorldConfigAccessor, firstLandJoinMenu, worldDataAccessor, playerDataAccessor);
 
-        FirstLandWorldNameListener firstLandWorldNameListener = new FirstLandWorldNameListener(this);
+        FirstLandWorldNameListener firstLandWorldNameListener = new FirstLandWorldNameListener( playerDataAccessor,this);
 
         getServer().getPluginManager().registerEvents(firstLandWorldNameListener, this);
         getServer().getPluginManager().registerEvents(firstLandJoinMenu, this);
-        getServer().getPluginManager().registerEvents(new GameListener(this, firstLandWorldConfigAccessor),this);
+        getServer().getPluginManager().registerEvents(new GameListener(this, worldDataAccessor, playerDataAccessor),this);
         getServer().getPluginManager().registerEvents(new BlockListener(this),this);
 
         // Register the main /cc command using the single instance

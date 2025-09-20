@@ -7,6 +7,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent; // Import for PlayerQuitEvent
@@ -14,19 +17,26 @@ import org.byeautumn.chuachua.Chuachua;
 import org.byeautumn.chuachua.Universe;
 import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
+import org.byeautumn.chuachua.game.firstland.WorldDataAccessor;
+import org.byeautumn.chuachua.game.firstland.WorldGenerationTask;
 import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorld; // Import for ChuaWorld
+import org.byeautumn.chuachua.player.PlayerData;
+import org.byeautumn.chuachua.player.PlayerDataAccessor;
 
 import java.util.List;
+import java.util.UUID;
 
 public class GameListener implements Listener {
     private static final Block GAME_ENTRANCE_BLOCK = Universe.getLobby().getBlockAt(24, -59, 14);
 
-    private final FirstLandWorldConfigAccessor configAccessor;
+    private final WorldDataAccessor configAccessor;
+    private final PlayerDataAccessor playerDataAccessor;
     private final Chuachua plugin;
 
-    public GameListener(Chuachua plugin, FirstLandWorldConfigAccessor configAccessor){
+    public GameListener(Chuachua plugin, WorldDataAccessor configAccessor, PlayerDataAccessor playerDataAccessor){
         this.plugin = plugin;
         this.configAccessor = configAccessor;
+        this.playerDataAccessor = playerDataAccessor;
     }
 
     @EventHandler
@@ -53,22 +63,136 @@ public class GameListener implements Listener {
     }
 
     @EventHandler
-    private void onPlayerJoinEvent(PlayerJoinEvent event){
+    private void onPlayerJoinEvent(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+
         System.out.println("Player " + player.getDisplayName() + " is just going to lobby.");
+
+        // Always teleport the player to the lobby first
         Universe.teleportToLobby(player);
+
+        // Attempt to load the player's data for the lobby world.
+        PlayerData playerData = playerDataAccessor.getPlayerData(playerUUID, Universe.getLobby().getUID(), Universe.getLobby().getName());
+
+        if (playerData != null) {
+            // Data exists, so load the player's saved state
+            player.setHealth(playerData.getHealth());
+            player.setFoodLevel(playerData.getHunger());
+            Universe.getPlayerTracker(player).setPlayMode(playerData.getPlayMode());
+            player.setGameMode(playerData.getGameMode());
+            player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "Welcome back! Your data has been loaded.");
+            System.out.println("Loaded player data for " + player.getDisplayName() + ".");
+        } else {
+            // Player is joining for the first time or their data doesn't exist.
+            // Create new default data.
+            PlayerData newPlayerData = PlayerData.builder()
+                    .playerUUID(playerUUID)
+                    .worldUUID(Universe.getLobby().getUID())
+                    .worldInternalName(Universe.getLobby().getName())
+                    .playMode(PlayMode.UNKNOWN) // Default play mode
+                    .gameMode(GameMode.ADVENTURE) // Default game mode
+                    .health(player.getHealth())
+                    .hunger(player.getFoodLevel())
+                    // Assuming you have other methods to get default values for these stats
+                    .build();
+
+            // Save the new data. This will create the directory if it doesn't exist.
+            playerDataAccessor.savePlayerData(newPlayerData);
+            player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "Welcome! Your player data has been initialized.");
+            System.out.println("Game mode is set to ADVENTURE for new player " + player.getDisplayName() + ".");
+        }
+
+        // Always reset the player tracker if not an op
         if (!player.isOp()){
             Universe.resetPlayerTracker(player);
+
+            if(playerData.getPlayMode() == PlayMode.EDIT){
+                System.out.println(player.getUniqueId() + "was in Edit mode change them to unknown");
+                Universe.getPlayerTracker(player).setPlayMode(PlayMode.UNKNOWN);
+            }
+            if (playerData.getGameMode() == GameMode.CREATIVE || playerData.getGameMode() == GameMode.SPECTATOR){
+                System.out.println(player.getUniqueId() + "was in Game mode " + playerData.getGameMode() + "changing them to ADVENTURE");
+                player.setGameMode(GameMode.ADVENTURE);
+            }
         } else {
             player.sendMessage("* " + ChatColor.YELLOW + "You are op-ed and have automatically been set into " +ChatColor.AQUA + "'EDIT'" + ChatColor.YELLOW + " mode.");
-            Universe.getPlayerTracker(player).setPlayMode(PlayMode.EDIT);
+            Universe.getPlayerTracker(player).setPlayMode(playerData.getPlayMode());
+            player.setGameMode(playerData.getGameMode());
         }
-        player.setGameMode(GameMode.ADVENTURE);
-        System.out.println("Game mode is set to ADVENTURE for player " + player.getDisplayName() + ".");
+
+        System.out.println("Game mode is set to " + player.getGameMode() + " for player " + player.getDisplayName() + ".");
     }
 
     @EventHandler
     private void onPlayerQuitEvent(PlayerQuitEvent event) {
+        // Get the player instance from the event
+        Player player = event.getPlayer();
 
+        // Step 1: Get the player's current state from the Bukkit API
+        double currentHealth = player.getHealth();
+        int currentHunger = player.getFoodLevel();
+
+        // Get the player's current location to save
+        Location lastKnownLocation = player.getLocation();
+
+        // Assuming you have methods to get other data like hydration, temperature, and potion effects
+        // double currentHydration = getPlayerHydration(player);
+        // double currentTemperature = getPlayerTemperature(player);
+        // String currentPotionEffects = getPlayerPotionEffects(player);
+
+        // Step 2: Create a PlayerData object with the current state, including the last known log-off location
+        PlayerData currentPlayerData = PlayerData.builder()
+                .playerUUID(player.getUniqueId())
+                .worldUUID(lastKnownLocation.getWorld().getUID())
+                .worldInternalName(lastKnownLocation.getWorld().getName())
+                .playMode(Universe.getPlayerTracker(player).getPlayMode())
+                .gameMode(player.getGameMode())
+                .health(currentHealth)
+                .hunger(currentHunger)
+                .lastKnownLogoffWorldUUID(lastKnownLocation.getWorld().getUID())
+                .lastKnownLogoffX(lastKnownLocation.getX())
+                .lastKnownLogoffY(lastKnownLocation.getY())
+                .lastKnownLogoffZ(lastKnownLocation.getZ())
+                .lastKnownLogoffPitch(lastKnownLocation.getPitch())
+                .lastKnownLogoffYaw(lastKnownLocation.getYaw())
+                // Add other player data here (hydration, temperature, etc.)
+                .build();
+
+        playerDataAccessor.savePlayerData(currentPlayerData);
+
+    }
+
+    @EventHandler
+    private void onLostHungerEvent(FoodLevelChangeEvent event){
+        if(event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            if (player.getWorld().getUID().equals(Universe.getLobby().getUID())) {
+                player.setSaturation(20.0f);
+                player.setFoodLevel(20);
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
+    private void onPlayerLoseHealthEvent(EntityDamageEvent event){
+        if(event.getEntity() instanceof Player){
+            Player player = (Player) event.getEntity();
+            if(player.getWorld().getUID().equals(Universe.getLobby().getUID())) {
+                player.setHealth(20);
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
+    private void onPlayerDamageOtherEvent(EntityDamageByEntityEvent event){
+        if(event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
+            Player damager = (Player) event.getEntity();
+            if(damager.getWorld().getUID().equals(Universe.getLobby().getUID())) {
+                event.setCancelled(true);
+            }
+        }
     }
 }

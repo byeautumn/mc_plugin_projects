@@ -15,6 +15,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.byeautumn.chuachua.Universe;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,39 +28,37 @@ import java.util.logging.Level;
 public class FirstLandDeleteMenu implements Listener {
     private final Inventory inventory;
     private final JavaPlugin plugin;
-    private final FirstLandWorldConfigAccessor configAccessor;
+    // Updated to use the new accessor
+    private final WorldDataAccessor worldDataAccessor;
     private final Player menuOpener;
-    private final FirstLandJoinMenu parentJoinMenu; // Added to store the parent menu instance
+    private final FirstLandJoinMenu parentJoinMenu;
 
-    private static final java.util.Map<java.util.UUID, java.util.UUID> pendingDeletions = new java.util.HashMap<>(); // Changed value type to UUID
+    private static final java.util.Map<java.util.UUID, java.util.UUID> pendingDeletions = new java.util.HashMap<>();
 
     // New static items for the menu
-    private static ItemStack BLANK_ITEM_GRAY; // Renamed for clarity
-    private static ItemStack BLANK_ITEM_PINK; // New item for pink glass
+    private static ItemStack BLANK_ITEM_GRAY;
+    private static ItemStack BLANK_ITEM_PINK;
     private static ItemStack BACK_ITEM;
 
-
-    public FirstLandDeleteMenu(JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor, Player player, FirstLandJoinMenu parentJoinMenu) {
+    // Updated constructor to accept the new WorldDataAccessor
+    public FirstLandDeleteMenu(JavaPlugin plugin, WorldDataAccessor worldDataAccessor, Player player, FirstLandJoinMenu parentJoinMenu) {
         this.plugin = plugin;
-        this.configAccessor = configAccessor;
+        this.worldDataAccessor = worldDataAccessor;
         this.menuOpener = player;
-        this.parentJoinMenu = parentJoinMenu; // Initialize the parent menu instance
+        this.parentJoinMenu = parentJoinMenu;
 
-        // Create an inventory for displaying worlds to delete.
-        this.inventory = Bukkit.createInventory(null, 36, ChatColor.DARK_RED + "Delete Your Worlds"); // Changed size to 36
+        this.inventory = Bukkit.createInventory(null, 36, ChatColor.DARK_RED + "Delete Your Worlds");
 
-        // Initialize static items if they haven't been already
         if (BLANK_ITEM_GRAY == null) {
-            BLANK_ITEM_GRAY = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", ""); // Gray for general blanks
+            BLANK_ITEM_GRAY = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "");
         }
         if (BLANK_ITEM_PINK == null) {
-            BLANK_ITEM_PINK = createGuiItem(Material.PINK_STAINED_GLASS_PANE, " ", ""); // Pink for bottom row
+            BLANK_ITEM_PINK = createGuiItem(Material.PINK_STAINED_GLASS_PANE, " ", "");
         }
         if (BACK_ITEM == null) {
             BACK_ITEM = createGuiItem(Material.ARROW, ChatColor.YELLOW + "Back", ChatColor.GRAY + "Go back to main menu");
         }
 
-        // Populate the menu with the player's worlds
         populateWorlds();
     }
 
@@ -67,66 +66,58 @@ public class FirstLandDeleteMenu implements Listener {
         menuOpener.openInventory(inventory);
     }
 
-    /**
-     * Populates the inventory with items representing the player's owned worlds,
-     * using UUIDs for identification in the lore.
-     */
     private void populateWorlds() {
-        inventory.clear(); // Clear existing items
+        inventory.clear();
 
-        // Get the list of worlds owned by the player, now using UUIDs
-        List<UUID> ownedWorldUUIDs = configAccessor.getPlayerOwnedWorldUUIDs(menuOpener.getUniqueId());
+        // Updated to use the new accessor method
+        List<UUID> ownedWorldUUIDs = worldDataAccessor.getPlayerOwnedWorldUUIDs(menuOpener.getUniqueId());
 
         if (ownedWorldUUIDs.isEmpty()) {
             ItemStack noWorldsItem = createGuiItem(Material.PAPER, ChatColor.GRAY + "No worlds to delete.",
                     ChatColor.DARK_GRAY + "You don't own any First Land worlds.");
-            inventory.setItem(13, noWorldsItem); // Place in center
-            // Set filler and back items even if no worlds
+            inventory.setItem(13, noWorldsItem);
             fillEmptySlots();
             return;
         }
 
         int slot = 0;
-        for (UUID worldUUID : ownedWorldUUIDs) { // Iterate using UUID
-            String friendlyName = configAccessor.getWorldFriendlyName(worldUUID); // Get friendly name by UUID
-            String internalName = configAccessor.getWorldName(worldUUID); // Get internal name by UUID
+        for (UUID worldUUID : ownedWorldUUIDs) {
+            // Get WorldData object to retrieve friendly and internal names
+            WorldData worldData = worldDataAccessor.getWorldData(worldUUID);
 
-            // Use Material.RED_WOOL for deletable worlds to visually distinguish
-            ItemStack worldItem = createGuiItem(Material.RED_WOOL,
-                    ChatColor.RED + friendlyName,
-                    ChatColor.GRAY + "ID: " + worldUUID.toString(), // Store World UUID in lore
-                    ChatColor.GRAY + "Internal Name: " + internalName, // For debugging/information
-                    "",
-                    ChatColor.DARK_RED + "Click to select for deletion.");
+            if (worldData != null) {
+                String friendlyName = worldData.getWorldFriendlyName();
+                String internalName = worldData.getWorldInternalName();
 
-            if (slot < inventory.getSize()) {
-                inventory.setItem(slot++, worldItem);
-            } else {
-                plugin.getLogger().warning("Too many worlds for player " + menuOpener.getName() + " to display in FirstLandDeleteMenu!");
-                break;
+                ItemStack worldItem = createGuiItem(Material.RED_WOOL,
+                        ChatColor.RED + friendlyName,
+                        ChatColor.GRAY + "ID: " + worldUUID.toString(),
+                        ChatColor.GRAY + "Internal Name: " + internalName,
+                        "",
+                        ChatColor.DARK_RED + "Click to select for deletion.");
+
+                if (slot < inventory.getSize()) {
+                    inventory.setItem(slot++, worldItem);
+                } else {
+                    plugin.getLogger().warning("Too many worlds for player " + menuOpener.getName() + " to display in FirstLandDeleteMenu!");
+                    break;
+                }
             }
         }
-        fillEmptySlots(); // Fill remaining slots after adding worlds
+        fillEmptySlots();
     }
 
-    /**
-     * Fills the remaining inventory slots with BLANK_ITEMs and adds the BACK_ITEM.
-     * Bottom row (slots 27-35) uses pink glass, others use gray.
-     */
     private void fillEmptySlots() {
-        // Fill slots with GRAY_STAINED_GLASS_PANE first (slots 0-26)
-        for (int i = 0; i < 27; i++) { // Only iterate up to row before bottom
+        for (int i = 0; i < 27; i++) {
             if (inventory.getItem(i) == null || inventory.getItem(i).getType().isAir()) {
                 inventory.setItem(i, BLANK_ITEM_GRAY);
             }
         }
-        // Fill the bottom row (slots 27-35) with PINK_STAINED_GLASS_PANE
         for (int i = 27; i < inventory.getSize(); i++) {
             inventory.setItem(i, BLANK_ITEM_PINK);
         }
 
-        // Place BACK_ITEM at a specific slot in the bottom row
-        inventory.setItem(31, BACK_ITEM); // Slot 31 is the middle of the bottom row (for a 36-slot inv)
+        inventory.setItem(31, BACK_ITEM);
     }
 
     @EventHandler
@@ -141,26 +132,24 @@ public class FirstLandDeleteMenu implements Listener {
             return;
         }
 
-        // Handle BACK_ITEM click
         if (clickedItem.equals(BACK_ITEM)) {
             player.closeInventory();
-            HandlerList.unregisterAll(this); // Unregister this menu's listener
-            parentJoinMenu.openInventory(player); // Open the parent menu
+            HandlerList.unregisterAll(this);
+            parentJoinMenu.openInventory(player);
             return;
         }
 
-        // Handle BLANK_ITEM click (for both gray and pink)
         if (clickedItem.equals(BLANK_ITEM_GRAY) || clickedItem.equals(BLANK_ITEM_PINK)) {
-            return; // Do nothing for blank items
+            return;
         }
 
         ItemMeta meta = clickedItem.getItemMeta();
         List<String> lore = meta.getLore();
-        UUID targetWorldUUID = null; // Expect a UUID now
+        UUID targetWorldUUID = null;
 
         if (lore != null) {
             for (String line : lore) {
-                if (line.contains("ID: ")) { // Look for the UUID in the lore
+                if (line.contains("ID: ")) {
                     try {
                         targetWorldUUID = UUID.fromString(ChatColor.stripColor(line.replace("ID: ", "").trim()));
                         break;
@@ -172,30 +161,23 @@ public class FirstLandDeleteMenu implements Listener {
         }
 
         if (targetWorldUUID != null) {
-            // Store the world UUID for pending deletion
             pendingDeletions.put(player.getUniqueId(), targetWorldUUID);
             player.closeInventory();
-            // Get friendly name using UUID for display
-            openDeleteConfirmationMenu(player, targetWorldUUID, configAccessor.getWorldFriendlyName(targetWorldUUID));
+            WorldData worldData = worldDataAccessor.getWorldData(targetWorldUUID);
+            String friendlyName = (worldData != null) ? worldData.getWorldFriendlyName() : "Unknown";
+            openDeleteConfirmationMenu(player, targetWorldUUID, friendlyName);
         } else {
             player.sendMessage(ChatColor.RED + "Could not identify the world you clicked. Please try again.");
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    populateWorlds(); // Refresh worlds in case something changed
+                    populateWorlds();
                     openInventory();
                 }
             }.runTaskLater(plugin, 5L);
         }
     }
 
-    /**
-     * Opens a small confirmation menu for deleting a specific world.
-     * Accepts a world UUID for identification.
-     * @param player The player.
-     * @param worldUUID The UUID of the world to delete.
-     * @param worldFriendlyName The friendly name of the world to display.
-     */
     private void openDeleteConfirmationMenu(Player player, UUID worldUUID, String worldFriendlyName) {
         Inventory confirmInv = Bukkit.createInventory(null, 9, ChatColor.DARK_RED + "Confirm Delete: " + worldFriendlyName);
 
@@ -213,94 +195,105 @@ public class FirstLandDeleteMenu implements Listener {
 
     @EventHandler
     public void onConfirmMenuClick(InventoryClickEvent event) {
+        // Basic checks
         Player player = (Player) event.getWhoClicked();
+
+        // Log the inventory click event
+        plugin.getLogger().info("Player " + player.getName() + " clicked in a menu.");
+
         if (!event.getView().getTitle().startsWith(ChatColor.DARK_RED + "Confirm Delete:")) {
             return;
         }
-
         event.setCancelled(true);
+
+        // Log that a confirm menu was clicked and cancelled
+        plugin.getLogger().info("Player " + player.getName() + " clicked the Confirm Delete menu.");
 
         ItemStack clickedItem = event.getCurrentItem();
         if (clickedItem == null || clickedItem.getType().isAir()) {
+            plugin.getLogger().info("Player " + player.getName() + " clicked an empty slot.");
             return;
         }
 
         UUID worldUUIDToDelete = pendingDeletions.get(player.getUniqueId());
         if (worldUUIDToDelete == null) {
+            plugin.getLogger().warning("Player " + player.getName() + " attempted to click a confirm menu without a pending world deletion UUID.");
             player.sendMessage(ChatColor.RED + "No world selected for deletion. Please try again.");
-            player.closeInventory();
-            // Removed: HandlerList.unregisterAll(this);
-            // This is handled when returning to the parent menu.
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    FirstLandDeleteMenu.this.parentJoinMenu.openInventory(player);
-                }
-            }.runTaskLater(plugin, 5L);
+            closeAndReturnToParentMenu(player);
             return;
         }
 
+        // Log the world UUID that's about to be acted on
+        plugin.getLogger().info("Found pending deletion UUID for " + player.getName() + ": " + worldUUIDToDelete);
+
+        // Handle the confirm action
         if (clickedItem.getType() == Material.LIME_WOOL && Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName().equals(ChatColor.GREEN + "Confirm Delete")) {
+            plugin.getLogger().info("Player " + player.getName() + " confirmed world deletion for UUID: " + worldUUIDToDelete);
             player.closeInventory();
-            // Do NOT unregister here. We need this listener to be active for the re-opened menu.
-            // HandlerList.unregisterAll(this); // <-- REMOVE THIS LINE
 
-            String friendlyName = configAccessor.getWorldFriendlyName(worldUUIDToDelete);
-            if (friendlyName == null) {
-                friendlyName = worldUUIDToDelete.toString();
-            }
-
-            player.sendMessage(ChatColor.YELLOW + "Attempting to delete world: " + friendlyName + "...");
-
-            UUID finalWorldUUIDToDelete = worldUUIDToDelete;
-            String finalFriendlyName = friendlyName;
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    boolean deletionSuccess = Universe.deleteFirstLandWorld(
-                            plugin,
-                            finalWorldUUIDToDelete,
-                            configAccessor
-                    );
-
-                    if (deletionSuccess) {
-                        player.sendMessage(ChatColor.GREEN + "World '" + finalFriendlyName + "' has been successfully deleted!");
-                        plugin.getLogger().info("Successfully completed full deletion process for world (UUID: " + finalWorldUUIDToDelete + ")");
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Failed to delete world '" + finalFriendlyName + "'. Check console for details.");
-                        plugin.getLogger().log(Level.SEVERE, "Deletion failed for world (UUID: " + finalWorldUUIDToDelete + ")");
-                    }
-
-                    pendingDeletions.remove(player.getUniqueId());
-
-                    // Refresh the menu after the deletion attempt
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            FirstLandDeleteMenu.this.populateWorlds();
-                            FirstLandDeleteMenu.this.openInventory();
-                        }
-                    }.runTaskLater(plugin, 5L);
+                    handleDeletionConfirmation(player, worldUUIDToDelete);
                 }
             }.runTask(plugin);
 
+            // Handle the cancel action
         } else if (clickedItem.getType() == Material.RED_WOOL && Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName().equals(ChatColor.RED + "Cancel")) {
+            plugin.getLogger().info("Player " + player.getName() + " cancelled world deletion for UUID: " + worldUUIDToDelete);
             player.sendMessage(ChatColor.GRAY + "World deletion cancelled.");
             pendingDeletions.remove(player.getUniqueId());
-            player.closeInventory();
-            // Now you are returning to the main menu.
-            // Don't unregister here either, as the main menu listener is still needed.
-            // HandlerList.unregisterAll(this); // <-- REMOVE THIS LINE
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    // The main menu will be populated and reopened, and its listener is still active.
-                    FirstLandDeleteMenu.this.populateWorlds();
-                    FirstLandDeleteMenu.this.openInventory();
-                }
-            }.runTaskLater(plugin, 5L);
+            closeAndReturnToParentMenu(player);
         }
+    }
+
+    // Helper method to handle the confirmation logic
+    private void handleDeletionConfirmation(Player player, UUID worldUUIDToDelete) {
+        // Log the start of the deletion process
+        plugin.getLogger().info("Starting deletion process for world with UUID: " + worldUUIDToDelete);
+
+        WorldData worldData = worldDataAccessor.getWorldData(worldUUIDToDelete);
+        String friendlyName = (worldData != null) ? worldData.getWorldFriendlyName() : "Unknown";
+
+        player.sendMessage(ChatColor.YELLOW + "Attempting to delete world: " + friendlyName + "...");
+
+        boolean deletionSuccess = Universe.deleteFirstLandWorld(
+                plugin,
+                worldUUIDToDelete,
+                worldDataAccessor
+        );
+
+        // Log the outcome of the deletion attempt
+        if (deletionSuccess) {
+            plugin.getLogger().info("Deletion of world '" + friendlyName + "' (UUID: " + worldUUIDToDelete + ") succeeded.");
+            player.sendMessage(ChatColor.GREEN + "World '" + friendlyName + "' has been successfully deleted!");
+            plugin.getLogger().info("Successfully completed full deletion process for world (UUID: " + worldUUIDToDelete + ")");
+        } else {
+            plugin.getLogger().severe("Deletion of world '" + friendlyName + "' (UUID: " + worldUUIDToDelete + ") failed.");
+            player.sendMessage(ChatColor.RED + "Failed to delete world '" + friendlyName + "'. Check console for details.");
+            plugin.getLogger().log(Level.SEVERE, "Deletion failed for world (UUID: " + worldUUIDToDelete + ")");
+        }
+
+        pendingDeletions.remove(player.getUniqueId());
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                FirstLandDeleteMenu.this.populateWorlds();
+                FirstLandDeleteMenu.this.openInventory();
+            }
+        }.runTaskLater(plugin, 5L);
+    }
+
+    // Helper method to close the inventory and return to the parent menu
+    private void closeAndReturnToParentMenu(Player player) {
+        player.closeInventory();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                FirstLandDeleteMenu.this.parentJoinMenu.openInventory(player);
+            }
+        }.runTaskLater(plugin, 5L);
     }
 
     private ItemStack createGuiItem(final Material material, final String name, final String... lore) {
@@ -315,53 +308,6 @@ public class FirstLandDeleteMenu implements Listener {
         return item;
     }
 
-    /**
-     * Handles the actual deletion of the world.
-     * This method must be called on the main server thread.
-     * @param player The player initiating the deletion.
-     * @param worldUUIDToDelete The UUID of the world to delete.
-     * @param friendlyName The friendly name of the world (retrieved prior to deletion attempt).
-     */
-    private void performWorldDeletion(Player player, UUID worldUUIDToDelete, String friendlyName) {
-        // Call Universe.deleteFirstLandWorld which handles:
-        // - Getting the internal world name (if needed for Bukkit operations)
-        // - Unloading the world and teleporting players
-        // - Clearing connections from Universe's in-memory map
-        // - Deleting the config entry via configAccessor
-        // - Deleting the world folder
-        boolean deletionSuccess = Universe.deleteFirstLandWorld(plugin, worldUUIDToDelete, configAccessor);
-
-        if (deletionSuccess) {
-            player.sendMessage(ChatColor.GREEN + "World '" + friendlyName + "' has been successfully deleted!");
-            plugin.getLogger().info("Successfully completed full deletion process for world (UUID: " + worldUUIDToDelete + ")");
-        } else {
-            // This message will appear if Universe.deleteFirstLandWorld returned false,
-            // which could happen if the world wasn't found or an I/O error occurred during folder deletion.
-            player.sendMessage(ChatColor.RED + "Failed to delete world '" + friendlyName + "'. Check console for details.");
-            plugin.getLogger().log(Level.SEVERE, "Deletion failed for world (UUID: " + worldUUIDToDelete + ")");
-        }
-
-        // After deletion attempt, refresh the menu to reflect changes
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                new FirstLandDeleteMenu(plugin, configAccessor, player, parentJoinMenu);
-                FirstLandDeleteMenu.this.populateWorlds(); // Re-populate the menu with current worlds
-                FirstLandDeleteMenu.this.openInventory(); // Re-open the menu
-            }
-        }.runTaskLater(plugin, 5L);
-    }
-
-    /**
-     * Recursively deletes a directory and its contents.
-     * This is a critical operation and should be used with extreme caution.
-     * This method is kept for completeness but is now only potentially used if
-     * Universe.deleteFirstLandWorld does not handle the file deletion directly
-     * or if you have other scenarios needing direct folder deletion.
-     * @param path The file or directory to delete.
-     * @return true if successful, false otherwise.
-     * @throws IOException if an I/O error occurs.
-     */
     private boolean deleteWorldFolder(File path) throws IOException {
         if (!path.exists()) return true;
 

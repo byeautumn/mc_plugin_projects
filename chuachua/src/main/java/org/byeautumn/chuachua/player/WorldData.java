@@ -9,6 +9,7 @@ import java.util.Map;
 /**
  * Represents data specific to a player within a particular world.
  */
+@Deprecated
 public class WorldData {
     private final String worldName;
     private double temperature;

@@ -11,17 +11,17 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.byeautumn.chuachua.game.firstland.FirstLandDeleteMenu;
-import org.byeautumn.chuachua.game.firstland.FirstLandViewMenu;
-import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
-import org.byeautumn.chuachua.game.firstland.FirstLandWorldNameListener;
+import org.byeautumn.chuachua.player.PlayerDataAccessor;
 
 import java.util.*;
 
 public class FirstLandJoinMenu implements Listener {
     private final Inventory inventory;
     private final JavaPlugin plugin;
-    private final FirstLandWorldConfigAccessor configAccessor;
+    // Removed configAccessor as it is now redundant
+    private final WorldDataAccessor worldDataAccessor;
+    private final PlayerDataAccessor playerDataAccessor;
+
 
     private final ItemStack YOUR_WORLDS_ITEM;
     private final ItemStack CREATE_NAMED_WORLD_ITEM;
@@ -32,9 +32,11 @@ public class FirstLandJoinMenu implements Listener {
     private final Map<UUID, Long> cooldowns = new HashMap<>();
     private static final long COOLDOWN_MILLIS = 3000; // 3 seconds
 
-    public FirstLandJoinMenu(JavaPlugin plugin, FirstLandWorldConfigAccessor configAccessor) {
+    // Updated constructor to remove the now redundant FirstLandWorldConfigAccessor
+    public FirstLandJoinMenu(JavaPlugin plugin, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor) {
         this.plugin = plugin;
-        this.configAccessor = configAccessor;
+        this.worldDataAccessor = worldDataAccessor;
+        this.playerDataAccessor = playerDataAccessor;
         this.inventory = Bukkit.createInventory(null, 27, ChatColor.DARK_BLUE + "First Land Menu");
 
         YOUR_WORLDS_ITEM = createGuiItem(
@@ -88,6 +90,18 @@ public class FirstLandJoinMenu implements Listener {
         player.openInventory(inventory);
     }
 
+    /**
+     * Checks if a player has reached their maximum number of owned worlds.
+     *
+     * @param player The player to check.
+     * @param configAccessor The accessor for world configuration.
+     * @return true if the player has reached the world limit, false otherwise.
+     */
+    public static boolean checkIfPlayerReachedMaxWorlds(Player player, WorldDataAccessor configAccessor, JavaPlugin plugin) {
+        UUID id = player.getUniqueId();
+        return configAccessor.getPlayerOwnedWorldUUIDs(id).size() >= configAccessor.getMaxWorldsPerPlayer(plugin);
+    }
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!event.getInventory().equals(inventory)) {
@@ -119,30 +133,20 @@ public class FirstLandJoinMenu implements Listener {
         // We only care about clicks on the main menu items, not the glass panes
         if (clickedItem.equals(YOUR_WORLDS_ITEM)) {
             player.closeInventory();
-            FirstLandViewMenu firstLandViewMenu = new FirstLandViewMenu(plugin, configAccessor, player, this);
+            // Updated constructor call to remove configAccessor
+            FirstLandViewMenu firstLandViewMenu = new FirstLandViewMenu(plugin, worldDataAccessor, playerDataAccessor, player, this);
             plugin.getServer().getPluginManager().registerEvents(firstLandViewMenu, plugin);
             firstLandViewMenu.openInventory();
         } else if (clickedItem.equals(CREATE_NAMED_WORLD_ITEM)) {
             player.closeInventory();
-            FirstLandWorldNameListener.startNamingProcess(player, configAccessor);
+            FirstLandWorldNameListener.startNamingProcess(player, worldDataAccessor, plugin);
         } else if (clickedItem.equals(DELETE_WORLD_ITEM)) {
             player.closeInventory();
-            FirstLandDeleteMenu firstLandDeleteMenu = new FirstLandDeleteMenu(plugin, configAccessor, player, this);
+            // Updated constructor call to remove configAccessor
+            FirstLandDeleteMenu firstLandDeleteMenu = new FirstLandDeleteMenu(plugin, worldDataAccessor, player, this);
             plugin.getServer().getPluginManager().registerEvents(firstLandDeleteMenu, plugin);
             firstLandDeleteMenu.openInventory();
         }
-    }
-
-    /**
-     * Checks if a player has reached their maximum number of owned worlds.
-     *
-     * @param player The player to check.
-     * @param configAccessor The accessor for world configuration.
-     * @return true if the player has reached the world limit, false otherwise.
-     */
-    public static boolean checkIfPlayerReachedMaxWorlds(Player player, FirstLandWorldConfigAccessor configAccessor) {
-        UUID id = player.getUniqueId();
-        return configAccessor.getPlayerOwnedWorldUUIDs(id).size() >= configAccessor.getMaxWorldsPerPlayer();
     }
 
     /**

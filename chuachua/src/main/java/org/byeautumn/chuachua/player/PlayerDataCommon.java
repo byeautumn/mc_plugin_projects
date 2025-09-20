@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
  * Represents all the dynamic data associated with a player.
  * This class is designed to be easily serialized to and deserialized from a database or JSON file.
  */
+@Deprecated
 public class PlayerDataCommon {
     private final UUID playerUUID;
     private String playerName;

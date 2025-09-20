@@ -17,6 +17,7 @@ import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
 import org.byeautumn.chuachua.game.firstland.FirstLandJoinMenu;
 import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
+import org.byeautumn.chuachua.game.firstland.WorldDataAccessor;
 import org.byeautumn.chuachua.game.firstland.WorldGenerationTask;
 import org.byeautumn.chuachua.generate.PolyWall;
 import org.byeautumn.chuachua.generate.SimpleWall;
@@ -26,6 +27,8 @@ import org.byeautumn.chuachua.generate.world.pipeline.tree.SCATreeGenerator;
 import org.byeautumn.chuachua.generate.world.pipeline.tree.TreeGenerator;
 import org.byeautumn.chuachua.io.ChunkExporter;
 import org.byeautumn.chuachua.io.ChunkImporter;
+import org.byeautumn.chuachua.player.PlayerData;
+import org.byeautumn.chuachua.player.PlayerDataAccessor;
 import org.byeautumn.chuachua.player.PlayerTracker;
 import org.byeautumn.chuachua.player.PlayerUtil;
 import org.byeautumn.chuachua.undo.ActionRecord;
@@ -45,16 +48,20 @@ public class OperationCommand implements CommandExecutor {
 
     private static final List<String> BW_VALID_ARGS = Arrays.asList("exit", "tp", "listWorlds", "createWall", "undo", "undoGen"
             , "redo", "redoGen", "setPlayMode", "polySelect", "cancelSelect", "export", "diaSelect", "import", "createWorld"
-            , "getBiome", "chuaWorldInfo", "generateTree", "createFirstLandWorlds", "deleteWorld", "confirm", "cancel");
+            , "getBiome", "chuaWorldInfo", "generateTree", "createFirstLandWorlds", "deleteWorld", "confirm", "cancel", "genWorldData", "addPlayerToWorld");
     private final Chuachua plugin;
 
     private final FirstLandJoinMenu firstLandJoinMenu;
     private final FirstLandWorldConfigAccessor configAccessor; // Declared here
+    private final WorldDataAccessor worldDataAccessor;
+    private final PlayerDataAccessor playerDataAccessor;
 
-    public OperationCommand(Chuachua plugin, FirstLandWorldConfigAccessor configAccessor, FirstLandJoinMenu firstLandJoinMenu ) {
+    public OperationCommand(Chuachua plugin, FirstLandWorldConfigAccessor configAccessor, FirstLandJoinMenu firstLandJoinMenu, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor) {
         this.plugin = plugin;
         this.firstLandJoinMenu = firstLandJoinMenu;
         this.configAccessor = configAccessor;
+        this.worldDataAccessor = worldDataAccessor;
+        this.playerDataAccessor = playerDataAccessor;
     }
 
 
@@ -67,8 +74,36 @@ public class OperationCommand implements CommandExecutor {
                 return true;
             }
             String firstArg = args[0];
-            if (BW_VALID_ARGS.contains(firstArg)) {
                 if (firstArg.equalsIgnoreCase("exit")) {
+
+                    UUID currentWorldUUID = player.getWorld().getUID();
+
+                    Location currentLocation = player.getLocation();
+
+                    System.out.println("Player " + player.getName() + " is exiting world with UUID: " + currentWorldUUID.toString());
+
+                    double currentHealth = player.getHealth();
+                    int currentHunger = player.getFoodLevel();
+
+                    player.sendMessage("Exiting world: " + currentWorldUUID.toString());
+                    PlayerData currentPlayerData = PlayerData.builder()
+                            .playerUUID(player.getUniqueId())
+                            .worldUUID(currentWorldUUID)
+                            .worldInternalName(player.getWorld().getName())
+                            .playMode(Universe.getPlayerTracker(player).getPlayMode())
+                            .gameMode(player.getGameMode())
+                            .health(currentHealth)
+                            .hunger(currentHunger)
+                            .lastKnownLogoffWorldUUID(currentLocation.getWorld().getUID())
+                            .lastKnownLogoffX(currentLocation.getX())
+                            .lastKnownLogoffY(currentLocation.getY())
+                            .lastKnownLogoffZ(currentLocation.getZ())
+                            .lastKnownLogoffPitch(currentLocation.getPitch())
+                            .lastKnownLogoffYaw(currentLocation.getYaw())
+                            .build();
+
+                    playerDataAccessor.savePlayerData(currentPlayerData);
+
                     Universe.teleportToLobby(player);
                     player.setGameMode(GameMode.ADVENTURE);
                     player.setAllowFlight(false);
@@ -76,7 +111,7 @@ public class OperationCommand implements CommandExecutor {
                     player.getInventory().clear();
                     player.setHealth(20.0);
                     Universe.resetPlayerTracker(player);
-                    player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "Exited the world successfully!");
+                    player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "Exited the world and saved your progress!");
                 } else if (firstArg.equalsIgnoreCase("listWorlds")) {
                     player.sendMessage(ChatColor.BLUE + "=================[" + ChatColor.GOLD + " World List " + ChatColor.BLUE + "]================");
                     for (World world : Bukkit.getWorlds()) {
@@ -372,14 +407,14 @@ public class OperationCommand implements CommandExecutor {
 
                     String worldName = args[1];
                     long createSeed;
-                    if(Bukkit.getWorlds().contains(Bukkit.getWorld(worldName))){
-                        try{
+                    if (Bukkit.getWorlds().contains(Bukkit.getWorld(worldName))) {
+                        try {
                             player.sendMessage(ChatColor.AQUA + worldName + ChatColor.YELLOW + " has already ben created, so you were teleported there.");
                             Universe.teleport(player, Bukkit.getWorld(worldName).getSpawnLocation());
-                        } catch (NullPointerException exception){
-                            player.sendMessage( ChatColor.RED + ">> an error occurred!");
+                        } catch (NullPointerException exception) {
+                            player.sendMessage(ChatColor.RED + ">> an error occurred!");
                         }
-                    }else {
+                    } else {
                         if (args.length >= 3 && args[2] != null && !args[2].isEmpty()) {
                             try {
 
@@ -388,7 +423,7 @@ public class OperationCommand implements CommandExecutor {
                                 player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "Please enter a valid seed.");
                                 return true;
                             }
-                        }else {
+                        } else {
                             Random random = new Random();
                             createSeed = random.nextLong();
                         }
@@ -549,8 +584,8 @@ public class OperationCommand implements CommandExecutor {
                     if (target.contains("*")) {
                         String prefix = target.substring(0, target.indexOf('*'));
 
-                        this.configAccessor.getKnownWorldUUIDs().forEach(worldUUID -> {
-                            String worldInternalName = this.configAccessor.getWorldName(worldUUID);
+                        this.worldDataAccessor.getPlayerOwnedWorldUUIDs(player.getUniqueId()).forEach(worldUUID -> {
+                            String worldInternalName = this.worldDataAccessor.getWorldData(worldUUID).getWorldInternalName();
                             if (worldInternalName != null && worldInternalName.startsWith(prefix) && !Universe.isVanillaWorld(worldInternalName)) {
                                 worldsToDelete.add(worldUUID);
                             }
@@ -564,7 +599,7 @@ public class OperationCommand implements CommandExecutor {
                         UUID foundWorldUUID = null;
                         try {
                             UUID potentialUUID = UUID.fromString(target);
-                            if (this.configAccessor.worldExistsInConfig(potentialUUID)) {
+                            if (this.worldDataAccessor.worldExistsInConfig(potentialUUID)) {
                                 foundWorldUUID = potentialUUID;
                             }
                         } catch (IllegalArgumentException e) {
@@ -572,9 +607,9 @@ public class OperationCommand implements CommandExecutor {
                         }
 
                         if (foundWorldUUID == null) {
-                            for (UUID uuidInConfig : this.configAccessor.getKnownWorldUUIDs()) {
-                                String internalName = this.configAccessor.getWorldName(uuidInConfig);
-                                String friendlyName = this.configAccessor.getWorldFriendlyName(uuidInConfig);
+                            for (UUID uuidInConfig : this.worldDataAccessor.getKnownWorldUUIDs()) {
+                                String internalName = this.worldDataAccessor.getWorldData(uuidInConfig).getWorldInternalName();
+                                String friendlyName = this.worldDataAccessor.getWorldData(uuidInConfig).getWorldFriendlyName();
 
                                 if ((internalName != null && internalName.equalsIgnoreCase(target)) ||
                                         (friendlyName != null && friendlyName.equalsIgnoreCase(target))) {
@@ -610,12 +645,7 @@ public class OperationCommand implements CommandExecutor {
 
                 } else if (firstArg.equalsIgnoreCase("confirm")) {
                     String pendingAction = pendingConfirmations.remove(player.getUniqueId());
-                    if (pendingAction == null) {
-                        player.sendMessage(ChatColor.RED + "No pending action to confirm.");
-                        return true;
-                    }
-
-                    if (pendingAction.startsWith("create:")) {
+                    if (pendingAction != null && pendingAction.startsWith("create:")) {
                         int worldAmount = Integer.parseInt(pendingAction.substring("create:".length()));
 
                         if (worldAmount <= 0) {
@@ -624,19 +654,15 @@ public class OperationCommand implements CommandExecutor {
                         }
 
                         for (Player p : Bukkit.getOnlinePlayers()) {
-                            // Title: "Server World Generation" (in yellow and bold)
-                            // Subtitle: "This may cause temporary lag." (in aqua)
-                            // Fade-in time (in ticks), stay time, fade-out time
                             p.sendTitle(
                                     ChatColor.YELLOW + "" + ChatColor.BOLD + "Server World Generation",
                                     ChatColor.AQUA + "This may cause temporary lag.",
-                                    10,  // 0.5 seconds fade in
-                                    70,  // 3.5 seconds stay
-                                    20   // 1 second fade out
+                                    10,
+                                    70,
+                                    20
                             );
                         }
 
-                        // Notify all players about the upcoming lag
                         Bukkit.broadcastMessage(ChatColor.DARK_AQUA + "§l=======================================");
                         Bukkit.broadcastMessage(ChatColor.YELLOW + "" + ChatColor.BOLD + "       ⚠️  Server World Generation  ⚠️");
                         Bukkit.broadcastMessage(ChatColor.AQUA + "       A large number of worlds are being created.");
@@ -647,10 +673,10 @@ public class OperationCommand implements CommandExecutor {
                         player.sendMessage(ChatColor.GREEN + "Confirmation received. Starting world generation in the background...");
                         player.sendMessage(ChatColor.GRAY + "You will be notified as worlds are created. Please be patient.");
 
-                        new WorldGenerationTask(plugin, configAccessor, player, worldAmount).runTaskTimer(plugin, 0L, 1L);
+                        // CORRECTED: Pass null for the Player and OwnerUUID to create unowned worlds
+                        new WorldGenerationTask(plugin, worldDataAccessor, null, worldAmount, null, player).runTaskTimer(plugin, 0L, 1L);
 
                         return true;
-
                     } else if (pendingAction.startsWith("delete:")) {
                         String worldsToDeleteString = pendingAction.substring("delete:".length());
                         List<String> worldUUIDsToConfirm = Arrays.asList(worldsToDeleteString.split(","));
@@ -662,10 +688,10 @@ public class OperationCommand implements CommandExecutor {
                             try {
                                 UUID worldUUIDToDelete = UUID.fromString(worldUUIDString);
                                 // Corrected call: Use Universe.deleteFirstLandWorld with the found UUID
-                                boolean success = Universe.deleteFirstLandWorld(plugin, worldUUIDToDelete, this.configAccessor);
+                                boolean success = Universe.deleteFirstLandWorld(plugin, worldUUIDToDelete, worldDataAccessor);
                                 if (success) {
                                     worldsDeletedSuccessfully++;
-                                    String worldFriendlyName = this.configAccessor.getWorldFriendlyName(worldUUIDToDelete);
+                                    String worldFriendlyName = this.worldDataAccessor.getWorldData(worldUUIDToDelete).getWorldFriendlyName();
                                     player.sendMessage(ChatColor.GREEN + "Successfully deleted world '" + worldFriendlyName + "'.");
                                 } else {
                                     player.sendMessage(ChatColor.RED + "Failed to delete world with UUID '" + worldUUIDString + "'. Check console for details.");
@@ -691,13 +717,13 @@ public class OperationCommand implements CommandExecutor {
                         player.sendMessage(ChatColor.YELLOW + "Action cancelled.");
                     }
                     return true;
-                }
-
                 } else {
                     player.sendMessage(ChatColor.RED + ">> " + ChatColor.GOLD + "Could not find the argument you wrote " + ChatColor.YELLOW + firstArg);
                 }
 
+
+
             }
         return true;
+        }
     }
-}
