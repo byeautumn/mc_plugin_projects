@@ -6,7 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList; // Import for unregistering listener
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -35,7 +35,6 @@ public class FirstLandDeleteMenu implements Listener {
 
     private static final java.util.Map<java.util.UUID, java.util.UUID> pendingDeletions = new java.util.HashMap<>();
 
-    // New static items for the menu
     private static ItemStack BLANK_ITEM_GRAY;
     private static ItemStack BLANK_ITEM_PINK;
     private static ItemStack BACK_ITEM;
@@ -227,6 +226,7 @@ public class FirstLandDeleteMenu implements Listener {
         plugin.getLogger().info("Found pending deletion UUID for " + player.getName() + ": " + worldUUIDToDelete);
 
         // Handle the confirm action
+
         if (clickedItem.getType() == Material.LIME_WOOL && Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName().equals(ChatColor.GREEN + "Confirm Delete")) {
             plugin.getLogger().info("Player " + player.getName() + " confirmed world deletion for UUID: " + worldUUIDToDelete);
             player.closeInventory();
@@ -235,8 +235,9 @@ public class FirstLandDeleteMenu implements Listener {
                 @Override
                 public void run() {
                     handleDeletionConfirmation(player, worldUUIDToDelete);
+
                 }
-            }.runTask(plugin);
+            }.runTask(plugin); // Ensure deletion and post-deletion tasks run on main thread
 
             // Handle the cancel action
         } else if (clickedItem.getType() == Material.RED_WOOL && Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName().equals(ChatColor.RED + "Cancel")) {

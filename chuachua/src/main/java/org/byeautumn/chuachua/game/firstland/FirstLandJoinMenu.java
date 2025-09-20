@@ -13,6 +13,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.byeautumn.chuachua.player.PlayerDataAccessor;
 
+
 import java.util.*;
 
 public class FirstLandJoinMenu implements Listener {
@@ -28,9 +29,8 @@ public class FirstLandJoinMenu implements Listener {
     private final ItemStack DELETE_WORLD_ITEM;
     private final ItemStack FILLER_ITEM;
 
-    // Cooldown map to prevent spamming
     private final Map<UUID, Long> cooldowns = new HashMap<>();
-    private static final long COOLDOWN_MILLIS = 3000; // 3 seconds
+    private static final long COOLDOWN_MILLIS = 3000;
 
     // Updated constructor to remove the now redundant FirstLandWorldConfigAccessor
     public FirstLandJoinMenu(JavaPlugin plugin, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor) {
@@ -62,19 +62,17 @@ public class FirstLandJoinMenu implements Listener {
 
         FILLER_ITEM = createGuiItem(
                 Material.GRAY_STAINED_GLASS_PANE,
-                " " // Display name is just a space to make it invisible
+                " "
         );
 
         setupInventory();
     }
 
     private void setupInventory() {
-        // Place the main items
         inventory.setItem(11, YOUR_WORLDS_ITEM);
         inventory.setItem(13, CREATE_NAMED_WORLD_ITEM);
         inventory.setItem(15, DELETE_WORLD_ITEM);
 
-        // Fill the rest of the inventory with the filler item
         setupFillerItems();
     }
 
@@ -117,7 +115,6 @@ public class FirstLandJoinMenu implements Listener {
             return;
         }
 
-        // --- Anti-Spam Cooldown Check ---
         long now = System.currentTimeMillis();
         long lastClickTime = cooldowns.getOrDefault(playerId, 0L);
 
@@ -127,10 +124,8 @@ public class FirstLandJoinMenu implements Listener {
             return;
         }
 
-        // Update the cooldown for the player
         cooldowns.put(playerId, now);
 
-        // We only care about clicks on the main menu items, not the glass panes
         if (clickedItem.equals(YOUR_WORLDS_ITEM)) {
             player.closeInventory();
             // Updated constructor call to remove configAccessor

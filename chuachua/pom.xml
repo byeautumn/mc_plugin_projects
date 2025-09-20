@@ -14,6 +14,8 @@
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Define a property for the server plugins directory to make it easier to change -->
+        <server.plugins.dir>/Users/autumnshop/dev/minecraft/minecraft_spigot_server_1.21.4/plugins</server.plugins.dir>
     </properties>
 
     <build>
@@ -31,9 +33,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.4</version>
-                <configuration>
-                <outputDirectory>/Users/alexgao/dev/minecraft/minecraft_spigot_server_1.21.4/plugins</outputDirectory>
-                </configuration>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -42,6 +41,36 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.json</pattern>
+                                    <shadedPattern>org.byeautumn.chuachua.lib.org.json</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- This plugin automatically copies the shaded JAR to your server's plugins folder -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-plugin-jar</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- This task copies the final shaded JAR file -->
+                                <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                      todir="${server.plugins.dir}"
+                                      overwrite="true" />
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -77,11 +106,13 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.18.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20231013</version> <!-- Use a recent version -->
+            <version>20240303</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>
