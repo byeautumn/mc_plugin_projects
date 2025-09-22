@@ -1,5 +1,8 @@
 package org.byeautumn.chuachua.player;
 
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.byeautumn.chuachua.Universe;
 import org.byeautumn.chuachua.accessor.Accessor;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -14,15 +17,21 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerDataAccessor implements Accessor {
 
     private final File baseDir;
     private static final String HUB_FILE_NAME = "hub.json";
 
+    // In-memory cache using a nested map to handle player data for multiple worlds
+    private final Map<UUID, Map<UUID, PlayerData>> playerDataCache;
+
     public PlayerDataAccessor(File baseDir) {
         this.baseDir = new File(baseDir, "player-data");
         createDirectories(this.baseDir);
+        this.playerDataCache = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -39,6 +48,10 @@ public class PlayerDataAccessor implements Accessor {
     }
 
     public void savePlayerData(PlayerData playerData) {
+        // Update the cache first using the player UUID and world UUID as keys
+        playerDataCache.computeIfAbsent(playerData.getPlayerUUID(), k -> new ConcurrentHashMap<>())
+                .put(playerData.getWorldUUID(), playerData);
+
         File playerDir = new File(this.baseDir, playerData.getPlayerUUID().toString());
         String fileName = playerData.getWorldInternalName().equals("world") ? HUB_FILE_NAME : playerData.getWorldUUID().toString() + ".json";
         File playersDataFile = new File(playerDir, fileName);
@@ -55,7 +68,58 @@ public class PlayerDataAccessor implements Accessor {
         }
     }
 
+    public void updatePlayerData(Player player){
+        Location playerLocation = player.getLocation();
+        PlayerData currentPlayerData = getPlayerData(player.getUniqueId(), player.getWorld().getUID(), player.getWorld().getName());
+
+        // If data is not found, create a new PlayerData object
+        if (currentPlayerData == null) {
+            currentPlayerData = PlayerData.builder()
+                    .playerUUID(player.getUniqueId())
+                    .playMode(Universe.getPlayerTracker(player).getPlayMode())
+                    .gameMode(player.getGameMode())
+                    .worldUUID(playerLocation.getWorld().getUID())
+                    .worldInternalName(playerLocation.getWorld().getName())
+                    .lastKnownLogoffWorldUUID(playerLocation.getWorld().getUID())
+                    .lastKnownLogoffX(playerLocation.getX())
+                    .lastKnownLogoffY(playerLocation.getY())
+                    .lastKnownLogoffZ(playerLocation.getZ())
+                    .lastKnownLogoffPitch(playerLocation.getPitch())
+                    .lastKnownLogoffYaw(playerLocation.getYaw())
+                    .health(player.getHealth())
+                    .hunger(player.getFoodLevel())
+                    .build();
+        } else {
+            // Otherwise, update the existing object
+            currentPlayerData = currentPlayerData.toBuilder()
+                    .playMode(Universe.getPlayerTracker(player).getPlayMode())
+                    .gameMode(player.getGameMode())
+                    .worldUUID(playerLocation.getWorld().getUID())
+                    .worldInternalName(playerLocation.getWorld().getName())
+                    .health(player.getHealth())
+                    .hunger(player.getFoodLevel())
+                    .lastKnownLogoffWorldUUID(playerLocation.getWorld().getUID())
+                    .lastKnownLogoffX(playerLocation.getX())
+                    .lastKnownLogoffY(playerLocation.getY())
+                    .lastKnownLogoffZ(playerLocation.getZ())
+                    .lastKnownLogoffPitch(playerLocation.getPitch())
+                    .lastKnownLogoffYaw(playerLocation.getYaw())
+                    .build();
+        }
+
+        savePlayerData(currentPlayerData);
+    }
+
     public PlayerData getPlayerData(UUID playerUUID, UUID worldUUID, String worldInternalName) {
+        // First, check the cache for the player's data in the specific world
+        Map<UUID, PlayerData> playerWorlds = playerDataCache.get(playerUUID);
+        if (playerWorlds != null) {
+            PlayerData cachedData = playerWorlds.get(worldUUID);
+            if (cachedData != null) {
+                return cachedData;
+            }
+        }
+
         File playerDir = new File(this.baseDir, playerUUID.toString());
         String fileName = worldInternalName.equals("world") ? HUB_FILE_NAME : worldUUID.toString() + ".json";
         File playerDataFile = new File(playerDir, fileName);
@@ -71,7 +135,15 @@ public class PlayerDataAccessor implements Accessor {
                 sb.append((char) character);
             }
             JSONObject jsonObject = new JSONObject(sb.toString());
-            return PlayerData.fromJsonObject(jsonObject);
+            PlayerData loadedData = PlayerData.fromJsonObject(jsonObject);
+
+            // Add the newly loaded data to the cache
+            if (loadedData != null) {
+                playerDataCache.computeIfAbsent(playerUUID, k -> new ConcurrentHashMap<>())
+                        .put(worldUUID, loadedData);
+            }
+
+            return loadedData;
         } catch (IOException e) {
             System.err.println("Error reading player data: " + e.getMessage());
             e.printStackTrace();
@@ -84,6 +156,9 @@ public class PlayerDataAccessor implements Accessor {
 
         if (!playerDir.exists()) {
             System.out.println("Player data for UUID " + playerUUID + " does not exist. Skipping file deletion.");
+
+            // Remove from cache even if files don't exist
+            playerDataCache.remove(playerUUID);
             return true;
         }
 
@@ -96,6 +171,10 @@ public class PlayerDataAccessor implements Accessor {
                             System.err.println("Failed to delete file/directory: " + f.getAbsolutePath());
                         }
                     });
+
+            // Remove from cache after successful file deletion
+            playerDataCache.remove(playerUUID);
+
             System.out.println("Successfully deleted player data for UUID: " + playerUUID);
             return true;
         } catch (IOException e) {
@@ -103,6 +182,12 @@ public class PlayerDataAccessor implements Accessor {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // Method to manually clear the cache (useful for events like server shutdown)
+    public void clearCache() {
+        this.playerDataCache.clear();
+        System.out.println("Player data cache has been cleared.");
     }
 
     public List<UUID> getPlayerWorlds(UUID playerUUID) {

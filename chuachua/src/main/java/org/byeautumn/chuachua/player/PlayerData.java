@@ -2,7 +2,10 @@ package org.byeautumn.chuachua.player;
 
 import org.bukkit.GameMode;
 import org.byeautumn.chuachua.common.PlayMode;
+import org.byeautumn.chuachua.player.matrix.PlayerActivityMatrix;
+import org.byeautumn.chuachua.player.matrix.PlayerSurvivalMatrix;
 import org.json.JSONObject;
+import org.json.JSONException;
 
 import java.util.UUID;
 
@@ -24,6 +27,9 @@ public final class PlayerData {
     private final double hydration;
     private final double temperature;
     private final String potionEffects;
+    private final PlayerSurvivalMatrix playerSurvivalMatrix;
+    private final PlayerActivityMatrix playerActivityMatrix;
+    private final long lastMatrixUpdateTime;
 
     private PlayerData(Builder builder) {
         this.playerUUID = builder.playerUUID;
@@ -42,10 +48,17 @@ public final class PlayerData {
         this.hydration = builder.hydration;
         this.temperature = builder.temperature;
         this.potionEffects = builder.potionEffects;
+        this.playerSurvivalMatrix = builder.playerSurvivalMatrix;
+        this.playerActivityMatrix = builder.playerActivityMatrix;
+        this.lastMatrixUpdateTime = builder.lastMatrixUpdateTime;
     }
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public Builder toBuilder() {
+        return new Builder(this);
     }
 
     public UUID getPlayerUUID() {
@@ -112,30 +125,53 @@ public final class PlayerData {
         return potionEffects;
     }
 
+    public PlayerSurvivalMatrix getPlayerSurvivalMatrix() {
+        return playerSurvivalMatrix;
+    }
+
+    public PlayerActivityMatrix getPlayerActivityMatrix() {
+        return playerActivityMatrix;
+    }
+
+    public long getLastMatrixUpdateTime() {
+        return lastMatrixUpdateTime;
+    }
+
     public String toJson() {
         return toJsonObject().toString(4);
     }
 
     private JSONObject toJsonObject() {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("playerUUID", this.playerUUID.toString());
-        jsonObject.put("playMode", this.playMode.toString());
-        jsonObject.put("gameMode", this.gameMode.toString());
-        jsonObject.put("worldUUID", this.worldUUID.toString());
-        jsonObject.put("worldInternalName", this.worldInternalName);
-        if (this.lastKnownLogoffWorldUUID != null) {
-            jsonObject.put("lastKnownLogoffWorldUUID", this.lastKnownLogoffWorldUUID.toString());
-            jsonObject.put("lastKnownLogoffX", this.lastKnownLogoffX);
-            jsonObject.put("lastKnownLogoffY", this.lastKnownLogoffY);
-            jsonObject.put("lastKnownLogoffZ", this.lastKnownLogoffZ);
-            jsonObject.put("lastKnownLogoffPitch", this.lastKnownLogoffPitch);
-            jsonObject.put("lastKnownLogoffYaw", this.lastKnownLogoffYaw);
+        try {
+            jsonObject.put("playerUUID", this.playerUUID.toString());
+            jsonObject.put("playMode", this.playMode.toString());
+            jsonObject.put("gameMode", this.gameMode.toString());
+            jsonObject.put("worldUUID", this.worldUUID.toString());
+            jsonObject.put("worldInternalName", this.worldInternalName);
+            if (this.lastKnownLogoffWorldUUID != null) {
+                jsonObject.put("lastKnownLogoffWorldUUID", this.lastKnownLogoffWorldUUID.toString());
+                jsonObject.put("lastKnownLogoffX", this.lastKnownLogoffX);
+                jsonObject.put("lastKnownLogoffY", this.lastKnownLogoffY);
+                jsonObject.put("lastKnownLogoffZ", this.lastKnownLogoffZ);
+                jsonObject.put("lastKnownLogoffPitch", this.lastKnownLogoffPitch);
+                jsonObject.put("lastKnownLogoffYaw", this.lastKnownLogoffYaw);
+            }
+            jsonObject.put("health", this.health);
+            jsonObject.put("hunger", this.hunger);
+            jsonObject.put("hydration", this.hydration);
+            jsonObject.put("temperature", this.temperature);
+            jsonObject.put("potionEffects", this.potionEffects);
+
+            if (this.playerSurvivalMatrix != null) {
+                jsonObject.put("playerSurvivalMatrix", this.playerSurvivalMatrix.toJsonObject());
+            }
+            if (this.playerActivityMatrix != null) {
+                jsonObject.put("playerActivityMatrix", this.playerActivityMatrix.toJsonObject());
+            }
+        } catch (JSONException e) {
+            System.err.println("Error creating JSON object: " + e.getMessage());
         }
-        jsonObject.put("health", this.health);
-        jsonObject.put("hunger", this.hunger);
-        jsonObject.put("hydration", this.hydration);
-        jsonObject.put("temperature", this.temperature);
-        jsonObject.put("potionEffects", this.potionEffects);
         return jsonObject;
     }
 
@@ -147,6 +183,16 @@ public final class PlayerData {
             double lastKnownLogoffZ = jsonObject.optDouble("lastKnownLogoffZ", 0.0);
             float lastKnownLogoffPitch = (float) jsonObject.optDouble("lastKnownLogoffPitch", 0.0f);
             float lastKnownLogoffYaw = (float) jsonObject.optDouble("lastKnownLogoffYaw", 0.0f);
+
+            PlayerSurvivalMatrix survivalMatrix = null;
+            if (jsonObject.has("playerSurvivalMatrix") && !jsonObject.isNull("playerSurvivalMatrix")) {
+                survivalMatrix = PlayerSurvivalMatrix.fromJsonObject(jsonObject.getJSONObject("playerSurvivalMatrix"));
+            }
+
+            PlayerActivityMatrix activityMatrix = null;
+            if (jsonObject.has("playerActivityMatrix") && !jsonObject.isNull("playerActivityMatrix")) {
+                activityMatrix = PlayerActivityMatrix.fromJsonObject(jsonObject.getJSONObject("playerActivityMatrix"));
+            }
 
             return PlayerData.builder()
                     .playerUUID(UUID.fromString(jsonObject.getString("playerUUID")))
@@ -165,6 +211,8 @@ public final class PlayerData {
                     .hydration(jsonObject.optDouble("hydration", 100.0))
                     .temperature(jsonObject.optDouble("temperature", 20.0))
                     .potionEffects(jsonObject.optString("potionEffects", "[]"))
+                    .playerSurvivalMatrix(survivalMatrix)
+                    .playerActivityMatrix(activityMatrix)
                     .build();
         } catch (Exception e) {
             System.err.println("Error parsing JSON to PlayerData object: " + e.getMessage());
@@ -189,8 +237,36 @@ public final class PlayerData {
         private double hydration;
         private double temperature;
         private String potionEffects;
+        private PlayerSurvivalMatrix playerSurvivalMatrix;
+        private PlayerActivityMatrix playerActivityMatrix;
+        private long lastMatrixUpdateTime;
 
-        public Builder playerUUID(UUID playerUUID) {
+        public Builder() {
+
+        }
+        public Builder(PlayerData playerData) {
+            this.playerUUID = playerData.getPlayerUUID();
+            this.playMode = playerData.getPlayMode();
+            this.gameMode = playerData.getGameMode();
+            this.worldUUID = playerData.getWorldUUID();
+            this.worldInternalName = playerData.getWorldInternalName();
+            this.lastKnownLogoffWorldUUID = playerData.getLastKnownLogoffWorldUUID();
+            this.lastKnownLogoffX = playerData.getLastKnownLogoffX();
+            this.lastKnownLogoffY = playerData.getLastKnownLogoffY();
+            this.lastKnownLogoffZ = playerData.getLastKnownLogoffZ();
+            this.lastKnownLogoffPitch = playerData.getLastKnownLogoffPitch();
+            this.lastKnownLogoffYaw = playerData.getLastKnownLogoffYaw();
+            this.health = playerData.getHealth();
+            this.hunger = playerData.getHunger();
+            this.hydration = playerData.getHydration();
+            this.temperature = playerData.getTemperature();
+            this.potionEffects = playerData.getPotionEffects();
+            this.playerSurvivalMatrix = playerData.getPlayerSurvivalMatrix();
+            this.playerActivityMatrix = playerData.getPlayerActivityMatrix();
+            this.lastMatrixUpdateTime = playerData.lastMatrixUpdateTime;
+        }
+
+        public Builder playerUUID(UUID playerUUID){
             this.playerUUID = playerUUID;
             return this;
         }
@@ -267,6 +343,21 @@ public final class PlayerData {
 
         public Builder potionEffects(String potionEffects) {
             this.potionEffects = potionEffects;
+            return this;
+        }
+
+        public Builder playerSurvivalMatrix(PlayerSurvivalMatrix playerSurvivalMatrix) {
+            this.playerSurvivalMatrix = playerSurvivalMatrix;
+            return this;
+        }
+
+        public Builder playerActivityMatrix(PlayerActivityMatrix playerActivityMatrix) {
+            this.playerActivityMatrix = playerActivityMatrix;
+            return this;
+        }
+
+        public Builder lastMatrixUpdateTime(long lastMatrixUpdateTime){
+            this.lastMatrixUpdateTime = lastMatrixUpdateTime;
             return this;
         }
 

@@ -80,32 +80,13 @@ public class OperationCommand implements CommandExecutor {
 
                     System.out.println("Player " + player.getName() + " is exiting world with UUID: " + currentWorldUUID.toString());
 
-                    double currentHealth = player.getHealth();
-                    int currentHunger = player.getFoodLevel();
-
                     // Save inventory before leaving the world
                     inventoryDataAccessor.saveInventory(player.getUniqueId(), currentWorldUUID.toString(), player.getInventory().getContents());
 
                     player.sendMessage("Exiting world: " + currentWorldUUID.toString());
-                    PlayerData currentPlayerData = PlayerData.builder()
-                            .playerUUID(player.getUniqueId())
-                            .worldUUID(currentWorldUUID)
-                            .worldInternalName(player.getWorld().getName())
-                            .playMode(Universe.getPlayerTracker(player).getPlayMode())
-                            .gameMode(player.getGameMode())
-                            .health(currentHealth)
-                            .hunger(currentHunger)
-                            .lastKnownLogoffWorldUUID(currentLocation.getWorld().getUID())
-                            .lastKnownLogoffX(currentLocation.getX())
-                            .lastKnownLogoffY(currentLocation.getY())
-                            .lastKnownLogoffZ(currentLocation.getZ())
-                            .lastKnownLogoffPitch(currentLocation.getPitch())
-                            .lastKnownLogoffYaw(currentLocation.getYaw())
-                            .build();
+                    playerDataAccessor.updatePlayerData(player);
 
-                    playerDataAccessor.savePlayerData(currentPlayerData);
-
-                    Universe.teleportToLobby(player);
+                    Universe.teleportToLobby(player, playerDataAccessor, inventoryDataAccessor);
                     player.setGameMode(GameMode.ADVENTURE);
                     player.setAllowFlight(false);
                     player.setFlying(false);

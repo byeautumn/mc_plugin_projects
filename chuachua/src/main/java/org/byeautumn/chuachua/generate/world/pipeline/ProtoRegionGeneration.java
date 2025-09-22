@@ -37,7 +37,7 @@ public class ProtoRegionGeneration implements RegionGenerator {
         this.context = context;
         if (context != null) {
             this.stageLogger = context.getLogger();
-            stageLogger.info("ProtoRegionGeneration: Context set.");
+//            stageLogger.info("ProtoRegionGeneration: Context set.");
         } else {
             this.stageLogger = Logger.getLogger(ProtoRegionGeneration.class.getName());
             this.stageLogger.setLevel(Level.SEVERE);
@@ -51,7 +51,7 @@ public class ProtoRegionGeneration implements RegionGenerator {
             stageLogger.severe("ProtoRegionGeneration: GenerationContext or regionBlendMap not initialized! Context: " + (context == null ? "null" : "not null") + ", regionBlendMap: " + (context != null && context.regionBlendMap == null ? "null" : "not null"));
             throw new IllegalStateException("GenerationContext not set or regionBlendMap not initialized.");
         }
-        stageLogger.info("ProtoRegionGeneration: Starting generateRegionMap for chunk (" + chunkX + ", " + chunkZ + "). Map dimensions: " + mapWidth + "x" + mapHeight);
+//        stageLogger.info("ProtoRegionGeneration: Starting generateRegionMap for chunk (" + chunkX + ", " + chunkZ + "). Map dimensions: " + mapWidth + "x" + mapHeight);
 
         // Removed local definitions of CHUNK_SIZE and MAP_ARRAY_BORDER
         // They are now imported statically from ProtoTerrainGeneration.
@@ -73,11 +73,11 @@ public class ProtoRegionGeneration implements RegionGenerator {
 
                     context.regionBlendMap[localX][localZ] = normalizedRegionValue;
                     if (localX == 0 && localZ == 0) {
-                        stageLogger.fine("ProtoRegionGeneration: Sample regionBlendMap[0][0] = " + normalizedRegionValue);
+//                        stageLogger.fine("ProtoRegionGeneration: Sample regionBlendMap[0][0] = " + normalizedRegionValue);
                     }
                 }
             }
-            stageLogger.info("ProtoRegionGeneration: Region map populated for chunk (" + chunkX + ", " + chunkZ + ").");
+//            stageLogger.info("ProtoRegionGeneration: Region map populated for chunk (" + chunkX + ", " + chunkZ + ").");
         } catch (Exception e) {
             stageLogger.log(Level.SEVERE, "ProtoRegionGeneration: Exception during region map generation for chunk (" + chunkX + ", " + chunkZ + ")", e);
             throw e;
@@ -94,7 +94,7 @@ public class ProtoRegionGeneration implements RegionGenerator {
             this.stageLogger.severe("ProtoRegionGeneration: generate() called without context or logger initialized!");
         }
 
-        stageLogger.info("ProtoRegionGeneration: Generic generate method called for chunk (" + chunkX + ", " + chunkZ + "). Delegating to generateRegionMap.");
+//        stageLogger.info("ProtoRegionGeneration: Generic generate method called for chunk (" + chunkX + ", " + chunkZ + "). Delegating to generateRegionMap.");
 
         generateRegionMap(chunkX, chunkZ, MAP_ARRAY_DIM, MAP_ARRAY_DIM);
     }

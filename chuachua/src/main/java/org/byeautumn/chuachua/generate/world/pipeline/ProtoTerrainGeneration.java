@@ -68,7 +68,7 @@ public class ProtoTerrainGeneration implements TerrainGenerator { // Implements 
                 1.8,
                 baseWorldScale, this.seed, -1f, 1.0f, 1.0f, 1.0f
         );
-        stageLogger.info("ProtoTerrainGeneration: Initialized.");
+//        stageLogger.info("ProtoTerrainGeneration: Initialized.");
     }
 
     @Override
@@ -78,7 +78,7 @@ public class ProtoTerrainGeneration implements TerrainGenerator { // Implements 
             throw new IllegalStateException("GenerationContext must be set and heightmap/biomeMap initialized by prior stages.");
         }
 
-        stageLogger.info("ProtoTerrainGeneration: Starting heightmap calculation and block placement for chunk (" + chunkX + ", " + chunkZ + ").");
+//        stageLogger.info("ProtoTerrainGeneration: Starting heightmap calculation and block placement for chunk (" + chunkX + ", " + chunkZ + ").");
 
         // --- Heightmap Calculation based on assigned Biomes ---
         for (int localX = 0; localX < MAP_ARRAY_DIM; localX++) {
@@ -147,15 +147,15 @@ public class ProtoTerrainGeneration implements TerrainGenerator { // Implements 
                 context.heightmap[localX][localZ] = finalHeight;
 
                 if ((localX == 0 && localZ == 0) || (localX == MAP_ARRAY_DIM - 1 && localZ == MAP_ARRAY_DIM - 1)) {
-                    stageLogger.fine("ProtoTerrainGeneration: Sample heightmap[" + localX + "][" + localZ + "] = " + finalHeight + " (Normalized Noise: " + normalizedNoise + ")");
+//                    stageLogger.fine("ProtoTerrainGeneration: Sample heightmap[" + localX + "][" + localZ + "] = " + finalHeight + " (Normalized Noise: " + normalizedNoise + ")");
                 }
             }
         }
-        stageLogger.info("ProtoTerrainGeneration: Heightmap generated for chunk (" + chunkX + ", " + chunkZ + ").");
+//        stageLogger.info("ProtoTerrainGeneration: Heightmap generated for chunk (" + chunkX + ", " + chunkZ + ").");
 
 
         // --- Block Placement ---
-        stageLogger.info("ProtoTerrainGeneration: Starting block placement for chunk (" + chunkX + ", " + chunkZ + ").");
+//        stageLogger.info("ProtoTerrainGeneration: Starting block placement for chunk (" + chunkX + ", " + chunkZ + ").");
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int z = 0; z < CHUNK_SIZE; z++) {
                 int surfaceHeight = (int) Math.round(context.heightmap[x + MAP_ARRAY_BORDER][z + MAP_ARRAY_BORDER]);
@@ -214,13 +214,13 @@ public class ProtoTerrainGeneration implements TerrainGenerator { // Implements 
                 }
             }
         }
-        stageLogger.info("ProtoTerrainGeneration: Finished block placement for chunk (" + chunkX + ", " + chunkZ + ").");
+//        stageLogger.info("ProtoTerrainGeneration: Finished block placement for chunk (" + chunkX + ", " + chunkZ + ").");
     }
 
     @Override
     public void setContext(GenerationContext context) {
         this.context = context;
-        stageLogger.info("ProtoTerrainGeneration: Context set.");
+//        stageLogger.info("ProtoTerrainGeneration: Context set.");
     }
 
     private double lerp(double a, double b, double t) {

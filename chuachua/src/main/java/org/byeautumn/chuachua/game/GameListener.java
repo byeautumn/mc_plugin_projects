@@ -25,6 +25,7 @@ import org.byeautumn.chuachua.generate.world.pipeline.ChuaWorld; // Import for C
 import org.byeautumn.chuachua.player.InventoryDataAccessor;
 import org.byeautumn.chuachua.player.PlayerData;
 import org.byeautumn.chuachua.player.PlayerDataAccessor;
+import org.byeautumn.chuachua.player.matrix.PlayerActivityMatrix;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,7 +78,7 @@ public class GameListener implements Listener {
         System.out.println("Player " + player.getDisplayName() + " is just going to lobby.");
 
         // Always teleport the player to the lobby first
-        Universe.teleportToLobby(player);
+        Universe.teleportToLobby(player, playerDataAccessor, inventoryDataAccessor);
 
         // Attempt to load the player's data for the lobby world.
         PlayerData playerData = playerDataAccessor.getPlayerData(playerUUID, Universe.getLobby().getUID(), Universe.getLobby().getName());
@@ -146,23 +147,8 @@ public class GameListener implements Listener {
         // Save the player's inventory
         inventoryDataAccessor.saveInventory(player.getUniqueId(), player.getWorld().getUID().toString(), player.getInventory().getContents());
         // Step 2: Create a PlayerData object with the current state, including the last known log-off location
-        PlayerData currentPlayerData = PlayerData.builder()
-                .playerUUID(player.getUniqueId())
-                .worldUUID(lastKnownLocation.getWorld().getUID())
-                .worldInternalName(lastKnownLocation.getWorld().getName())
-                .playMode(Universe.getPlayerTracker(player).getPlayMode())
-                .gameMode(player.getGameMode())
-                .health(currentHealth)
-                .hunger(currentHunger)
-                .lastKnownLogoffWorldUUID(lastKnownLocation.getWorld().getUID())
-                .lastKnownLogoffX(lastKnownLocation.getX())
-                .lastKnownLogoffY(lastKnownLocation.getY())
-                .lastKnownLogoffZ(lastKnownLocation.getZ())
-                .lastKnownLogoffPitch(lastKnownLocation.getPitch())
-                .lastKnownLogoffYaw(lastKnownLocation.getYaw())
-                .build();
 
-        playerDataAccessor.savePlayerData(currentPlayerData);
+        playerDataAccessor.updatePlayerData(player);
     }
 
     @EventHandler
@@ -213,4 +199,4 @@ public class GameListener implements Listener {
         player.getInventory().setContents(newInventory);
         player.updateInventory(); // This ensures the client sees the change
     }
-}g
+}

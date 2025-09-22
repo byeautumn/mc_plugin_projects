@@ -31,7 +31,7 @@ public class GenerationContext {
         // Logger for this context instance
         this.logger = Logger.getLogger(GenerationContext.class.getName());
         this.logger.setLevel(Level.INFO);
-        this.logger.info("GenerationContext: Initializing for chunk (" + chunkX + ", " + chunkZ + "). Map dimensions: " + MAP_ARRAY_DIM + "x" + MAP_ARRAY_DIM);
+//        this.logger.info("GenerationContext: Initializing for chunk (" + chunkX + ", " + chunkZ + "). Map dimensions: " + MAP_ARRAY_DIM + "x" + MAP_ARRAY_DIM);
 
         // Initialize all maps using the shared MAP_ARRAY_DIM constant
         this.regionBlendMap = new double[MAP_ARRAY_DIM][MAP_ARRAY_DIM];
@@ -39,7 +39,7 @@ public class GenerationContext {
         this.biomeMap = new Biome[MAP_ARRAY_DIM][MAP_ARRAY_DIM];
         this.continentalnessMap = new double[MAP_ARRAY_DIM][MAP_ARRAY_DIM];
 
-        this.logger.info("GenerationContext: regionBlendMap, heightmap, biomeMap, and continentalnessMap arrays initialized.");
+//        this.logger.info("GenerationContext: regionBlendMap, heightmap, biomeMap, and continentalnessMap arrays initialized.");
 
         // Default map values (these will be overwritten by pipeline stages)
         for (int x = 0; x < MAP_ARRAY_DIM; x++) {

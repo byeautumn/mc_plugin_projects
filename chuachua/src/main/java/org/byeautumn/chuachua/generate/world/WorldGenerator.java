@@ -31,7 +31,7 @@ public class WorldGenerator extends ChunkGenerator {
 
     @Override
     public ChunkData generateChunkData(World world, Random random, int chunkX, int chunkZ, BiomeGrid biomeGrid) {
-        logger.info(String.format("WorldGenerator: Generating chunk data for chunk (%d, %d).", chunkX, chunkZ));
+//        logger.info(String.format("WorldGenerator: Generating chunk data for chunk (%d, %d).", chunkX, chunkZ));
 
         // 1. Create a fresh context for this chunk
         //    FIX: Updated constructor call to match the new GenerationContext constructor
@@ -43,8 +43,8 @@ public class WorldGenerator extends ChunkGenerator {
         // 3. Iterate through the pipeline stages in order
         for (Map.Entry<Integer, ChunkGenerationStage> entry : chunkGenerationStages.entrySet()) {
             ChunkGenerationStage stage = entry.getValue();
-            logger.fine(String.format("WorldGenerator: Executing stage %d: %s for chunk (%d, %d).",
-                    entry.getKey(), stage.getClass().getSimpleName(), chunkX, chunkZ));
+//            logger.fine(String.format("WorldGenerator: Executing stage %d: %s for chunk (%d, %d).",
+//                    entry.getKey(), stage.getClass().getSimpleName(), chunkX, chunkZ));
 
             // Set the context for the current stage
             stage.setContext(currentGenerationContext);
@@ -53,7 +53,7 @@ public class WorldGenerator extends ChunkGenerator {
             stage.generate(world, random, chunkX, chunkZ, chunkData, biomeGrid);
         }
 
-        logger.info(String.format("WorldGenerator: Finished generating chunk data for chunk (%d, %d).", chunkX, chunkZ));
+//        logger.info(String.format("WorldGenerator: Finished generating chunk data for chunk (%d, %d).", chunkX, chunkZ));
         return chunkData;
     }
 

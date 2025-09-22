@@ -54,7 +54,7 @@ public class ProtoBiomeAssignment implements BiomeGenerator { // <-- Now correct
 
     // Constructor for the pipeline stage (no longer private)
     public ProtoBiomeAssignment() {
-        LOGGER.info("ProtoBiomeAssignment: Initialized as a pipeline stage.");
+//        LOGGER.info("ProtoBiomeAssignment: Initialized as a pipeline stage.");
     }
 
     /**
@@ -125,7 +125,7 @@ public class ProtoBiomeAssignment implements BiomeGenerator { // <-- Now correct
     @Override
     public void setContext(GenerationContext context) {
         this.context = context;
-        LOGGER.fine("ProtoBiomeAssignment: Context set for chunk (" + context.getChunkX() + ", " + context.getChunkZ() + ").");
+//        LOGGER.fine("ProtoBiomeAssignment: Context set for chunk (" + context.getChunkX() + ", " + context.getChunkZ() + ").");
     }
 
     @Override
@@ -135,7 +135,7 @@ public class ProtoBiomeAssignment implements BiomeGenerator { // <-- Now correct
             throw new IllegalStateException("GenerationContext must be set and maps populated by prior stages before generate is called.");
         }
 
-        LOGGER.info("ProtoBiomeAssignment: Assigning biomes for chunk (" + chunkX + ", " + chunkZ + ").");
+//        LOGGER.info("ProtoBiomeAssignment: Assigning biomes for chunk (" + chunkX + ", " + chunkZ + ").");
 
         for (int localX = 0; localX < MAP_ARRAY_DIM; localX++) {
             for (int localZ = 0; localZ < MAP_ARRAY_DIM; localZ++) {
@@ -155,7 +155,7 @@ public class ProtoBiomeAssignment implements BiomeGenerator { // <-- Now correct
                         biomeGrid.setBiome(localX - MAP_ARRAY_BORDER, y, localZ - MAP_ARRAY_BORDER, assignedBiome);
                     }
                 } else {
-                    LOGGER.fine("ProtoBiomeAssignment: biomeGrid is null. Skipping Bukkit BiomeGrid update for chunk (" + chunkX + ", " + chunkZ + ").");
+//                    LOGGER.fine("ProtoBiomeAssignment: biomeGrid is null. Skipping Bukkit BiomeGrid update for chunk (" + chunkX + ", " + chunkZ + ").");
                 }
 
                 // Store the assigned biome in the GenerationContext for subsequent stages (e.g., terrain generation)
@@ -164,13 +164,13 @@ public class ProtoBiomeAssignment implements BiomeGenerator { // <-- Now correct
                 // Optional: Log a sample point for debugging
                 if (LOGGER.isLoggable(Level.FINE)) {
                     if ((localX == 0 && localZ == 0) || (localX == MAP_ARRAY_DIM - 1 && localZ == MAP_ARRAY_DIM - 1)) {
-                        LOGGER.fine(String.format("ProtoBiomeAssignment: Sample at (%d, %d) world (%d, %d): Biome=%s, Cont=%.4f, Climate=%.4f",
-                                localX, localZ, worldX, worldZ, assignedBiome.name(), continentalnessValue, climateValue));
+//                        LOGGER.fine(String.format("ProtoBiomeAssignment: Sample at (%d, %d) world (%d, %d): Biome=%s, Cont=%.4f, Climate=%.4f",
+//                                localX, localZ, worldX, worldZ, assignedBiome.name(), continentalnessValue, climateValue));
                     }
                 }
             }
         }
-        LOGGER.info("ProtoBiomeAssignment: Biomes assigned for chunk (" + chunkX + ", " + chunkZ + ").");
+//        LOGGER.info("ProtoBiomeAssignment: Biomes assigned for chunk (" + chunkX + ", " + chunkZ + ").");
     }
 
     // --- Noise Logging Integration (Static methods for command usage) ---
@@ -203,7 +203,7 @@ public class ProtoBiomeAssignment implements BiomeGenerator { // <-- Now correct
             currentLogger = new NoiseLogger(seed, centerX, centerZ, logPath);
             currentLogger.startLogging(); // Starts the logging in a new thread
             loggingActive = true;
-            LOGGER.info("Started noise logging to: " + currentLogger.getLogFilePath());
+//            LOGGER.info("Started noise logging to: " + currentLogger.getLogFilePath());
             return currentLogger.getLogFilePath();
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to start noise logging due to file error.", e);

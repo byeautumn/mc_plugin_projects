@@ -4,6 +4,9 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.byeautumn.chuachua.common.LocationVector;
@@ -15,9 +18,13 @@ import org.byeautumn.chuachua.game.firstland.WorldGenerationTask;
 import org.byeautumn.chuachua.generate.world.WorldManager;
 import org.byeautumn.chuachua.generate.world.pipeline.*;
 import org.byeautumn.chuachua.generate.world.WorldGenerator;
+import org.byeautumn.chuachua.player.InventoryDataAccessor;
 import org.byeautumn.chuachua.player.PlayerData;
 import org.byeautumn.chuachua.player.PlayerDataAccessor;
 import org.byeautumn.chuachua.player.PlayerTracker;
+import org.byeautumn.chuachua.player.matrix.PlayerActivityMatrix;
+import org.byeautumn.chuachua.player.matrix.PlayerNutritionMatrix;
+import org.byeautumn.chuachua.player.matrix.PlayerSurvivalMatrix;
 import org.byeautumn.chuachua.undo.ActionRecorder;
 
 import java.io.File;
@@ -56,10 +63,20 @@ public class Universe {
         return new Location(Bukkit.getWorld(worldName), vector.getX(), vector.getY(), vector.getZ());
     }
 
-    public static void teleportToLobby(Player player) {
+    public static void teleportToLobby(Player player, PlayerDataAccessor playerDataAccessor, InventoryDataAccessor inventoryDataAccessor ) {
         Location toLocation = getLocation(LOBBY_WORLD_NAME, LOBBY_SPAWN_LOCATION_VECTOR);
         player.teleport(toLocation);
         player.sendMessage(ChatColor.GREEN + "You were teleported to lobby successfully");
+        ItemStack[] inventory = inventoryDataAccessor.loadInventory(player.getUniqueId(), getLobby().getUID().toString());
+        PlayerData playerData = playerDataAccessor.getPlayerData(player.getUniqueId(), getLobby().getUID(), getLobby().getName());
+        player.setGameMode(playerData.getGameMode());
+        Universe.getPlayerTracker(player).setPlayMode(playerData.getPlayMode());
+        Inventory inventoryPlayer = player.getInventory();
+        if(inventory != null){
+            inventoryPlayer.setContents(inventory);
+        }else {
+            inventoryPlayer.clear();
+        }
     }
 
     public static void resetPlayerTracker(Player player) {
@@ -724,6 +741,34 @@ public class Universe {
                     // If no saved data, teleport to the world's spawn location
                     teleportLocation = targetChuaWorld.getWorld().getSpawnLocation();
                     player.sendMessage(ChatColor.RED + ">> " + ChatColor.AQUA + "Warning: No saved data was found for this world. Teleporting to world spawn.");
+                    playerData = PlayerData.builder()
+                            .playerUUID(player.getUniqueId())
+                            .worldUUID(worldUuid)
+                            .worldInternalName(targetInternalWorldName)
+                            .playMode(PlayMode.UNKNOWN) // Default play mode
+                            .gameMode(GameMode.SURVIVAL) // Default game mode
+                            .health(20.0)
+                            .hunger(20)
+                            .playerSurvivalMatrix(PlayerSurvivalMatrix.builder()
+                                    .bodyTemp(50.0)
+                                    .hydration(100.0)
+                                    .playerNutrition(PlayerNutritionMatrix.builder()
+                                            .fat(50.0)
+                                            .carbohydrates(100.0)
+                                            .protein(100.0)
+                                            .build())
+                                    .build())
+                            .playerActivityMatrix(PlayerActivityMatrix.builder()
+                                    .fightingAbility(100.0)
+                                    .jumpingAbility(100.0)
+                                    .miningAbility(100.0)
+                                    .swimmingAbility(100.0)
+                                    .walkingAbility(100.0)
+                                    .build())
+                            .lastMatrixUpdateTime(targetChuaWorld.getWorld().getGameTime())
+                            .build();
+                    playerDataAccessor.savePlayerData(playerData);
+                    plugin.getLogger().info("Saving player Data on first connect ");
                 }
 
                 // Perform the teleport and final messages
