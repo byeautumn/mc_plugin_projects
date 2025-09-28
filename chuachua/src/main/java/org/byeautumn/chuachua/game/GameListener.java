@@ -35,16 +35,10 @@ import java.util.UUID;
 public class GameListener implements Listener {
     private static final Block GAME_ENTRANCE_BLOCK = Universe.getLobby().getBlockAt(24, -59, 14);
 
-    private final WorldDataAccessor configAccessor;
-    private final PlayerDataAccessor playerDataAccessor;
     private final Chuachua plugin;
-    private final InventoryDataAccessor inventoryDataAccessor;
 
-    public GameListener(Chuachua plugin, WorldDataAccessor configAccessor, PlayerDataAccessor playerDataAccessor, InventoryDataAccessor inventoryDataAccessor) {
+    public GameListener(Chuachua plugin) {
         this.plugin = plugin;
-        this.configAccessor = configAccessor;
-        this.playerDataAccessor = playerDataAccessor;
-        this.inventoryDataAccessor = inventoryDataAccessor;
     }
 
     @EventHandler
@@ -78,10 +72,10 @@ public class GameListener implements Listener {
         System.out.println("Player " + player.getDisplayName() + " is just going to lobby.");
 
         // Always teleport the player to the lobby first
-        Universe.teleportToLobby(player, playerDataAccessor, inventoryDataAccessor);
+        Universe.teleportToLobby(player);
 
         // Attempt to load the player's data for the lobby world.
-        PlayerData playerData = playerDataAccessor.getPlayerData(playerUUID, Universe.getLobby().getUID(), Universe.getLobby().getName());
+        PlayerData playerData = PlayerDataAccessor.getInstance().getPlayerData(playerUUID, Universe.getLobby().getUID(), Universe.getLobby().getName());
 
         if (playerData != null) {
             // Data exists, so load the player's saved state
@@ -106,7 +100,7 @@ public class GameListener implements Listener {
                     .build();
 
             // Save the new data. This will create the directory if it doesn't exist.
-            playerDataAccessor.savePlayerData(newPlayerData);
+            PlayerDataAccessor.getInstance().savePlayerData(newPlayerData);
             player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "Welcome! Your player data has been initialized.");
             System.out.println("Game mode is set to ADVENTURE for new player " + player.getDisplayName() + ".");
         }
@@ -138,10 +132,10 @@ public class GameListener implements Listener {
         Player player = event.getPlayer();
 
         // Save the player's inventory
-//        inventoryDataAccessor.saveInventory(player.getUniqueId(), player.getWorld().getUID().toString(), player.getInventory().getContents());
+        InventoryDataAccessor.getInstance().saveInventory(player.getUniqueId(), player.getWorld().getUID().toString(), player.getInventory().getContents());
         // Step 2: Create a PlayerData object with the current state, including the last known log-off location
 
-        playerDataAccessor.updatePlayerData(player);
+        PlayerDataAccessor.getInstance().updatePlayerData(player);
     }
 
     @EventHandler
@@ -190,10 +184,10 @@ public class GameListener implements Listener {
         String toWorldName = player.getWorld().getName();
 
         // 1. Save the inventory from the old world
-//        inventoryDataAccessor.saveInventory(player.getUniqueId(), fromWorldName, player.getInventory().getContents());
+        InventoryDataAccessor.getInstance().saveInventory(player.getUniqueId(), fromWorldName, player.getInventory().getContents());
 
         // 2. Load the inventory for the new world and set it directly
-        ItemStack[] newInventory = inventoryDataAccessor.loadInventory(player.getUniqueId(), toWorldName);
+        ItemStack[] newInventory = InventoryDataAccessor.getInstance().loadInventory(player.getUniqueId(), toWorldName);
         player.getInventory().clear();
         player.getInventory().setContents(newInventory);
         player.updateInventory(); // This ensures the client sees the change

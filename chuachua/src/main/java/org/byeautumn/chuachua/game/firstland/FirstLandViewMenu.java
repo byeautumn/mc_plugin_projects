@@ -33,8 +33,6 @@ public class FirstLandViewMenu implements Listener {
     private final Inventory inventory;
     private final JavaPlugin plugin;
     // The WorldDataAccessor is now the sole accessor
-    private final WorldDataAccessor worldDataAccessor;
-    private final PlayerDataAccessor playerDataAccessor;
     private final Player menuOpener;
     private final FirstLandJoinMenu parentJoinMenu;
 
@@ -47,10 +45,8 @@ public class FirstLandViewMenu implements Listener {
     private static ItemStack SLOT_SUMMARY_HEAD;
 
     // Updated constructor to only accept WorldDataAccessor
-    public FirstLandViewMenu(JavaPlugin plugin, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor , Player player, FirstLandJoinMenu parentJoinMenu) {
+    public FirstLandViewMenu(JavaPlugin plugin, Player player, FirstLandJoinMenu parentJoinMenu) {
         this.plugin = plugin;
-        this.worldDataAccessor = worldDataAccessor;
-        this.playerDataAccessor = playerDataAccessor;
         this.menuOpener = player;
         this.parentJoinMenu = parentJoinMenu;
 
@@ -81,11 +77,11 @@ public class FirstLandViewMenu implements Listener {
         setupVisualLayout();
 
         // Updated to use the new accessor method
-        List<UUID> ownedWorldUUIDs = worldDataAccessor.getPlayerOwnedWorldUUIDs(menuOpener.getUniqueId());
+        List<UUID> ownedWorldUUIDs = WorldDataAccessor.getInstance().getPlayerOwnedWorldUUIDs(menuOpener.getUniqueId());
         System.out.println(menuOpener.getUniqueId() + " owned worlds: " + ownedWorldUUIDs);
         int ownedWorldsCount = ownedWorldUUIDs.size();
         // Updated to use the accessor for MaxWorldsPerPlayer
-        int maxWorlds = worldDataAccessor.getMaxWorldsPerPlayer(plugin);
+        int maxWorlds = WorldDataAccessor.getInstance().getMaxWorldsPerPlayer(plugin);
         int availableSlotsCount = maxWorlds - ownedWorldsCount;
 
         ItemStack mutableSummaryHead = SLOT_SUMMARY_HEAD.clone();
@@ -109,7 +105,7 @@ public class FirstLandViewMenu implements Listener {
             if (currentContentSlot >= contentSlots.size()) break;
 
             // Updated to use the new accessor methods
-            WorldData worldData = worldDataAccessor.getWorldData(worldUUID);
+            WorldData worldData = WorldDataAccessor.getInstance().getWorldData(worldUUID);
             if (worldData != null) {
                 String friendlyName = worldData.getWorldFriendlyName();
                 String internalName = worldData.getWorldInternalName();
@@ -191,7 +187,7 @@ public class FirstLandViewMenu implements Listener {
             player.closeInventory();
             HandlerList.unregisterAll(this);
             // Updated to use the new accessor
-            FirstLandWorldNameListener.startNamingProcess(player, worldDataAccessor, plugin);
+            FirstLandWorldNameListener.startNamingProcess(player, plugin);
             return;
         }
 
@@ -231,14 +227,14 @@ public class FirstLandViewMenu implements Listener {
                         .build();
 
                 // Step 3: Save the player's current data using the PlayerDataAccessor
-                playerDataAccessor.savePlayerData(currentPlayerData);
+                PlayerDataAccessor.getInstance().savePlayerData(currentPlayerData);
 
                 player.closeInventory();
                 HandlerList.unregisterAll(this);
 
 
                 // Pass the playerDataAccessor to the method
-                Universe.connectPlayerToSpecificWorld(player, plugin, worldDataAccessor, targetWorldUUID, playerDataAccessor);
+                Universe.connectPlayerToSpecificWorld(player, plugin, targetWorldUUID);
             } else {
                 // This is the new part: handle the case where the UUID is null
                 player.sendMessage(ChatColor.RED + ">> " + ChatColor.AQUA + "Sorry, this world's data is corrupted or missing. Please try again later.");

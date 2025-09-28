@@ -26,9 +26,6 @@ public final class Chuachua extends JavaPlugin {
     private OperationCommand operationCommand; // Declare a field for your command executor
     private FirstLandJoinMenu firstLandJoinMenu; // Declare an instance
     private FirstLandWorldConfigAccessor firstLandWorldConfigAccessor;
-    private WorldDataAccessor worldDataAccessor;
-    private PlayerDataAccessor playerDataAccessor;
-    private InventoryDataAccessor inventoryDataAccessor;
 
 
     public static final int MAIN_CONFIG_DEFAULT_MAX_WORLDS = 3;
@@ -66,21 +63,17 @@ public final class Chuachua extends JavaPlugin {
 
         File pluginDataFolder = getDataFolder();
 
-        this.worldDataAccessor = WorldDataAccessor.getInstance();
-        this.playerDataAccessor = new PlayerDataAccessor(new File(pluginDataFolder, "data"));
-        this.inventoryDataAccessor = new InventoryDataAccessor(new File(getDataFolder(), "data"));
-
         this.firstLandWorldConfigAccessor = new FirstLandWorldConfigAccessor(this);
 
-        this.firstLandJoinMenu = new FirstLandJoinMenu(this, worldDataAccessor, playerDataAccessor);
+        this.firstLandJoinMenu = new FirstLandJoinMenu(this);
         // Initialize your OperationCommand ONCE
-        this.operationCommand = new OperationCommand(this, firstLandWorldConfigAccessor, firstLandJoinMenu, worldDataAccessor, playerDataAccessor, inventoryDataAccessor);
+        this.operationCommand = new OperationCommand(this, firstLandWorldConfigAccessor, firstLandJoinMenu);
 
-        FirstLandWorldNameListener firstLandWorldNameListener = new FirstLandWorldNameListener( playerDataAccessor,this);
+        FirstLandWorldNameListener firstLandWorldNameListener = new FirstLandWorldNameListener(this);
 
         getServer().getPluginManager().registerEvents(firstLandWorldNameListener, this);
         getServer().getPluginManager().registerEvents(firstLandJoinMenu, this);
-        getServer().getPluginManager().registerEvents(new GameListener(this, worldDataAccessor, playerDataAccessor, inventoryDataAccessor),this);
+        getServer().getPluginManager().registerEvents(new GameListener(this),this);
         getServer().getPluginManager().registerEvents(new BlockListener(this),this);
 
         // Register the main /cc command using the single instance

@@ -19,7 +19,6 @@ import java.util.logging.Level;
 public class WorldGenerationTask extends BukkitRunnable {
 
     private final JavaPlugin plugin;
-    private final WorldDataAccessor configAccessor;
     private final Player player;
     private final Player ownerPlayer;
     private final int totalWorldsToCreate;
@@ -32,13 +31,11 @@ public class WorldGenerationTask extends BukkitRunnable {
      * Constructor for the task.
      *
      * @param plugin The main plugin instance.
-     * @param configAccessor The world data accessor.
      * @param ownerPlayer The ownerPlayer who initiated the task.
      * @param totalWorldsToCreate The number of worlds to create.
      */
-    public WorldGenerationTask(JavaPlugin plugin, WorldDataAccessor configAccessor, Player ownerPlayer, int totalWorldsToCreate, UUID ownerUUID, Player player) {
+    public WorldGenerationTask(JavaPlugin plugin, Player ownerPlayer, int totalWorldsToCreate, UUID ownerUUID, Player player) {
         this.plugin = plugin;
-        this.configAccessor = configAccessor;
         this.player = player;
         this.ownerPlayer = ownerPlayer;
         this.totalWorldsToCreate = totalWorldsToCreate;
@@ -88,7 +85,7 @@ public class WorldGenerationTask extends BukkitRunnable {
                 UUID actualWorldUUID = createdChuaWorld.getID();
 
                 if (request.ownerUUID != null) {
-                    configAccessor.createWorldData(
+                    WorldDataAccessor.getInstance().createWorldData(
                             actualWorldUUID,
                             request.ownerUUID,
                             request.worldFriendlyName,
@@ -97,7 +94,7 @@ public class WorldGenerationTask extends BukkitRunnable {
                             Collections.singletonList(request.ownerUUID)
                     );
                 } else {
-                    configAccessor.createWorldData(
+                    WorldDataAccessor.getInstance().createWorldData(
                             actualWorldUUID,
                             null,
                             "Unowned World",

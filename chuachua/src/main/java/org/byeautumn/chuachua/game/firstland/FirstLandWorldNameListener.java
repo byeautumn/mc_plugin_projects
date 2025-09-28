@@ -19,12 +19,10 @@ public class FirstLandWorldNameListener implements Listener {
     private static Map<UUID, WorldDataAccessor> waitingForName = new HashMap<>();
 
     private final Chuachua plugin;
-    private final PlayerDataAccessor playerDataAccessor;
 
 
-    public FirstLandWorldNameListener( PlayerDataAccessor playerDataAccessor ,Chuachua plugin){
+    public FirstLandWorldNameListener(Chuachua plugin){
         this.plugin = plugin;
-        this.playerDataAccessor = playerDataAccessor;
     }
 
     /**
@@ -32,15 +30,14 @@ public class FirstLandWorldNameListener implements Listener {
      * This method ensures the player has not reached their world creation limit.
      *
      * @param player The player initiating the process.
-     * @param worldDataAccessor The accessor for world data.
      */
-    public static void startNamingProcess(Player player, WorldDataAccessor worldDataAccessor, JavaPlugin plugin) {
+    public static void startNamingProcess(Player player, JavaPlugin plugin) {
         // 2. The check now uses only the WorldDataAccessor
-        if(FirstLandJoinMenu.checkIfPlayerReachedMaxWorlds(player, worldDataAccessor, plugin)){
+        if(FirstLandJoinMenu.checkIfPlayerReachedMaxWorlds(player, plugin)){
             player.sendMessage(ChatColor.RED + "You have reached the max amount of worlds created");
             return;
         }
-        waitingForName.put(player.getUniqueId(), worldDataAccessor);
+        waitingForName.put(player.getUniqueId(), WorldDataAccessor.getInstance());
         player.sendMessage(ChatColor.AQUA + "Please type the name for your new world in chat.");
         player.sendMessage(ChatColor.GRAY + "Type 'cancel' to stop.");
     }
@@ -62,7 +59,7 @@ public class FirstLandWorldNameListener implements Listener {
             if (!message.matches("[a-zA-Z0-9_]{3,16}")) {
                 player.sendMessage(ChatColor.RED + "Invalid world name. Must be 3-16 alphanumeric characters.");
                 // Recursively call the corrected method with the new accessor
-                startNamingProcess(player, worldDataAccessor, plugin);
+                startNamingProcess(player, plugin);
                 return;
             }
 
@@ -71,7 +68,7 @@ public class FirstLandWorldNameListener implements Listener {
             // We'll use the same name for both internal and friendly name for simplicity
             String friendlyName = message;
 
-            Universe.createOrConnectExistingWorldWithPlayer(player, plugin, worldDataAccessor, playerDataAccessor ,friendlyName, ownerUUID);
+            Universe.createOrConnectExistingWorldWithPlayer(player, plugin, friendlyName, ownerUUID);
         }
     }
 }

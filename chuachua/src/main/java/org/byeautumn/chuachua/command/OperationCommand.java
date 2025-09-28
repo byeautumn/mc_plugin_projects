@@ -50,17 +50,11 @@ public class OperationCommand implements CommandExecutor {
 
     private final FirstLandJoinMenu firstLandJoinMenu;
     private final FirstLandWorldConfigAccessor configAccessor; // Declared here
-    private final WorldDataAccessor worldDataAccessor;
-    private final PlayerDataAccessor playerDataAccessor;
-    private final InventoryDataAccessor inventoryDataAccessor;
 
-    public OperationCommand(Chuachua plugin, FirstLandWorldConfigAccessor configAccessor, FirstLandJoinMenu firstLandJoinMenu, WorldDataAccessor worldDataAccessor, PlayerDataAccessor playerDataAccessor, InventoryDataAccessor inventoryDataAccessor) {
+    public OperationCommand(Chuachua plugin, FirstLandWorldConfigAccessor configAccessor, FirstLandJoinMenu firstLandJoinMenu) {
         this.plugin = plugin;
         this.firstLandJoinMenu = firstLandJoinMenu;
         this.configAccessor = configAccessor;
-        this.worldDataAccessor = worldDataAccessor;
-        this.playerDataAccessor = playerDataAccessor;
-        this.inventoryDataAccessor = inventoryDataAccessor;
     }
 
 
@@ -74,18 +68,17 @@ public class OperationCommand implements CommandExecutor {
             }
             String firstArg = args[0];
                 if (firstArg.equalsIgnoreCase("exit")) {
-
                     UUID currentWorldUUID = player.getWorld().getUID();
 
                     System.out.println("Player " + player.getName() + " is exiting world with UUID: " + currentWorldUUID.toString());
 
                     // Save inventory before leaving the world
-//                    inventoryDataAccessor.saveInventory(player.getUniqueId(), currentWorldUUID.toString(), player.getInventory().getContents());
+                    InventoryDataAccessor.getInstance().saveInventory(player.getUniqueId(), currentWorldUUID.toString(), player.getInventory().getContents());
 
                     player.sendMessage("Exiting world: " + player.getWorld().getName() + " with UUID: " + currentWorldUUID.toString());
-                    playerDataAccessor.updatePlayerData(player);
+                    PlayerDataAccessor.getInstance().updatePlayerData(player);
 
-                    Universe.teleportToLobby(player, playerDataAccessor, inventoryDataAccessor);
+                    Universe.teleportToLobby(player);
                     player.setGameMode(GameMode.ADVENTURE);
                     player.setAllowFlight(false);
                     player.setFlying(false);
@@ -566,8 +559,8 @@ public class OperationCommand implements CommandExecutor {
                     if (target.contains("*")) {
                         String prefix = target.substring(0, target.indexOf('*'));
 
-                        this.worldDataAccessor.getPlayerOwnedWorldUUIDs(player.getUniqueId()).forEach(worldUUID -> {
-                            String worldInternalName = this.worldDataAccessor.getWorldData(worldUUID).getWorldInternalName();
+                        WorldDataAccessor.getInstance().getPlayerOwnedWorldUUIDs(player.getUniqueId()).forEach(worldUUID -> {
+                            String worldInternalName = WorldDataAccessor.getInstance().getWorldData(worldUUID).getWorldInternalName();
                             if (worldInternalName != null && worldInternalName.startsWith(prefix) && !Universe.isVanillaWorld(worldInternalName)) {
                                 worldsToDelete.add(worldUUID);
                             }
@@ -581,7 +574,7 @@ public class OperationCommand implements CommandExecutor {
                         UUID foundWorldUUID = null;
                         try {
                             UUID potentialUUID = UUID.fromString(target);
-                            if (this.worldDataAccessor.worldExistsInConfig(potentialUUID)) {
+                            if (WorldDataAccessor.getInstance().worldExistsInConfig(potentialUUID)) {
                                 foundWorldUUID = potentialUUID;
                             }
                         } catch (IllegalArgumentException e) {
@@ -589,9 +582,9 @@ public class OperationCommand implements CommandExecutor {
                         }
 
                         if (foundWorldUUID == null) {
-                            for (UUID uuidInConfig : this.worldDataAccessor.getKnownWorldUUIDs()) {
-                                String internalName = this.worldDataAccessor.getWorldData(uuidInConfig).getWorldInternalName();
-                                String friendlyName = this.worldDataAccessor.getWorldData(uuidInConfig).getWorldFriendlyName();
+                            for (UUID uuidInConfig : WorldDataAccessor.getInstance().getKnownWorldUUIDs()) {
+                                String internalName = WorldDataAccessor.getInstance().getWorldData(uuidInConfig).getWorldInternalName();
+                                String friendlyName = WorldDataAccessor.getInstance().getWorldData(uuidInConfig).getWorldFriendlyName();
 
                                 if ((internalName != null && internalName.equalsIgnoreCase(target)) ||
                                         (friendlyName != null && friendlyName.equalsIgnoreCase(target))) {
@@ -633,7 +626,7 @@ public class OperationCommand implements CommandExecutor {
                     String playerUUIDString = args[1];
                     try {
                         UUID playerUUID = UUID.fromString(playerUUIDString);
-                        List<UUID> playerWorlds = playerDataAccessor.getPlayerWorlds(playerUUID);
+                        List<UUID> playerWorlds = PlayerDataAccessor.getInstance().getPlayerWorlds(playerUUID);
 
                         if (playerWorlds.isEmpty()) {
                             player.sendMessage(ChatColor.YELLOW + "No worlds found for player with UUID: " + playerUUID);
@@ -682,7 +675,7 @@ public class OperationCommand implements CommandExecutor {
                         player.sendMessage(ChatColor.GRAY + "You will be notified as worlds are created. Please be patient.");
 
                         // CORRECTED: Pass null for the Player and OwnerUUID to create unowned worlds
-                        new WorldGenerationTask(plugin, worldDataAccessor, null, worldAmount, null, player).runTaskTimer(plugin, 0L, 1L);
+                        new WorldGenerationTask(plugin, null, worldAmount, null, player).runTaskTimer(plugin, 0L, 1L);
 
                         return true;
                     } else if (pendingAction.startsWith("delete:")) {
@@ -696,10 +689,10 @@ public class OperationCommand implements CommandExecutor {
                             try {
                                 UUID worldUUIDToDelete = UUID.fromString(worldUUIDString);
                                 // Corrected call: Use Universe.deleteFirstLandWorld with the found UUID
-                                boolean success = Universe.deleteFirstLandWorld(plugin, worldUUIDToDelete, worldDataAccessor);
+                                boolean success = Universe.deleteFirstLandWorld(plugin, worldUUIDToDelete);
                                 if (success) {
                                     worldsDeletedSuccessfully++;
-                                    String worldFriendlyName = this.worldDataAccessor.getWorldData(worldUUIDToDelete).getWorldFriendlyName();
+                                    String worldFriendlyName = WorldDataAccessor.getInstance().getWorldData(worldUUIDToDelete).getWorldFriendlyName();
                                     player.sendMessage(ChatColor.GREEN + "Successfully deleted world '" + worldFriendlyName + "'.");
                                 } else {
                                     player.sendMessage(ChatColor.RED + "Failed to delete world with UUID '" + worldUUIDString + "'. Check console for details.");

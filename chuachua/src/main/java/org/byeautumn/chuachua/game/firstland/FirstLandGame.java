@@ -35,10 +35,6 @@ public class FirstLandGame {
 
     private GameStatus gameStatus = GameStatus.UNKNOWN;
 
-    private PlayerDataAccessor playerDataAccessor;
-
-    private InventoryDataAccessor inventoryDataAccessor;
-
 
     public FirstLandGame(WorldData worldData) {
         this.worldData = worldData;
@@ -47,8 +43,6 @@ public class FirstLandGame {
         WorldDataAccessor worldDataAccessor = WorldDataAccessor.getInstance();
         System.out.println("WorldDataAccessor!!!!!!!!!!!!!!!!!!!!!!!!!!!!" + worldDataAccessor);
         this.players = worldDataAccessor.getWorldDataPlayers(chuaWorld.getWorld().getUID()).getPlayers();
-        this.playerDataAccessor = PlayerDataAccessor.getInstance();
-        this.inventoryDataAccessor = InventoryDataAccessor.getInstance();
     }
 
 
@@ -74,7 +68,7 @@ public class FirstLandGame {
                     if (worldPlayers.contains(player)){
                         System.out.println("Started Player Matrix Checking!!!!");;
                         player.sendMessage("[LOG] Started Player Matrix Checking!!!!");
-                        PlayerData playerData = playerDataAccessor.getPlayerData(playerUUID, world.getUID(), world.getName());
+                        PlayerData playerData = PlayerDataAccessor.getInstance().getPlayerData(playerUUID, world.getUID(), world.getName());
                         if (playerData != null){
                             if (playerData.getLastMatrixUpdateTime() < 0) {
                                 playerData.toBuilder()
@@ -102,16 +96,9 @@ public class FirstLandGame {
                                         .build();
                                 System.out.println("After - Last Update Time Reading: " + world.getGameTime() + " :::: " + playerData.getLastMatrixUpdateTime());
                             }
-                            System.out.println("PlayerData with Hydration: " + playerData.getPlayerSurvivalMatrix().getHydration());
-                            System.out.println(playerData.toJson());
-                            playerDataAccessor.savePlayerDataToCache(playerData);
+                            PlayerDataAccessor.getInstance().savePlayerDataToCache(playerData);
                         }
                     }
-//                    else {
-//                        System.out.println(player + " is not in the world config.");
-//                        player.sendMessage(ChatColor.RED + "You are not allowed in this world or have been removed from this world");
-//                        Universe.teleportToLobby(player, playerDataAccessor, inventoryDataAccessor);
-//                    }
                 }
             }
         }, 0, 20);

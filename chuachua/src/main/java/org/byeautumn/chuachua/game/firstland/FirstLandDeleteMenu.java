@@ -29,7 +29,6 @@ public class FirstLandDeleteMenu implements Listener {
     private final Inventory inventory;
     private final JavaPlugin plugin;
     // Updated to use the new accessor
-    private final WorldDataAccessor worldDataAccessor;
     private final Player menuOpener;
     private final FirstLandJoinMenu parentJoinMenu;
 
@@ -39,10 +38,9 @@ public class FirstLandDeleteMenu implements Listener {
     private static ItemStack BLANK_ITEM_PINK;
     private static ItemStack BACK_ITEM;
 
-    // Updated constructor to accept the new WorldDataAccessor
-    public FirstLandDeleteMenu(JavaPlugin plugin, WorldDataAccessor worldDataAccessor, Player player, FirstLandJoinMenu parentJoinMenu) {
+    // Updated constructor to accept the new WorldDataAccessor.getInstance()
+    public FirstLandDeleteMenu(JavaPlugin plugin, Player player, FirstLandJoinMenu parentJoinMenu) {
         this.plugin = plugin;
-        this.worldDataAccessor = worldDataAccessor;
         this.menuOpener = player;
         this.parentJoinMenu = parentJoinMenu;
 
@@ -69,7 +67,7 @@ public class FirstLandDeleteMenu implements Listener {
         inventory.clear();
 
         // Updated to use the new accessor method
-        List<UUID> ownedWorldUUIDs = worldDataAccessor.getPlayerOwnedWorldUUIDs(menuOpener.getUniqueId());
+        List<UUID> ownedWorldUUIDs = WorldDataAccessor.getInstance().getPlayerOwnedWorldUUIDs(menuOpener.getUniqueId());
 
         if (ownedWorldUUIDs.isEmpty()) {
             ItemStack noWorldsItem = createGuiItem(Material.PAPER, ChatColor.GRAY + "No worlds to delete.",
@@ -82,7 +80,7 @@ public class FirstLandDeleteMenu implements Listener {
         int slot = 0;
         for (UUID worldUUID : ownedWorldUUIDs) {
             // Get WorldData object to retrieve friendly and internal names
-            WorldData worldData = worldDataAccessor.getWorldData(worldUUID);
+            WorldData worldData = WorldDataAccessor.getInstance().getWorldData(worldUUID);
 
             if (worldData != null) {
                 String friendlyName = worldData.getWorldFriendlyName();
@@ -162,7 +160,7 @@ public class FirstLandDeleteMenu implements Listener {
         if (targetWorldUUID != null) {
             pendingDeletions.put(player.getUniqueId(), targetWorldUUID);
             player.closeInventory();
-            WorldData worldData = worldDataAccessor.getWorldData(targetWorldUUID);
+            WorldData worldData = WorldDataAccessor.getInstance().getWorldData(targetWorldUUID);
             String friendlyName = (worldData != null) ? worldData.getWorldFriendlyName() : "Unknown";
             openDeleteConfirmationMenu(player, targetWorldUUID, friendlyName);
         } else {
@@ -253,15 +251,14 @@ public class FirstLandDeleteMenu implements Listener {
         // Log the start of the deletion process
         plugin.getLogger().info("Starting deletion process for world with UUID: " + worldUUIDToDelete);
 
-        WorldData worldData = worldDataAccessor.getWorldData(worldUUIDToDelete);
+        WorldData worldData = WorldDataAccessor.getInstance().getWorldData(worldUUIDToDelete);
         String friendlyName = (worldData != null) ? worldData.getWorldFriendlyName() : "Unknown";
 
         player.sendMessage(ChatColor.YELLOW + "Attempting to delete world: " + friendlyName + "...");
 
         boolean deletionSuccess = Universe.deleteFirstLandWorld(
                 plugin,
-                worldUUIDToDelete,
-                worldDataAccessor
+                worldUUIDToDelete
         );
 
         // Log the outcome of the deletion attempt

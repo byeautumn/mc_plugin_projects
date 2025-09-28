@@ -34,7 +34,7 @@ public class PlayerDataAccessor implements Accessor {
     // In-memory cache using a nested map to handle player data for multiple worlds
     private final Map<UUID, Map<UUID, PlayerData>> playerDataCache;
 
-    public PlayerDataAccessor(File baseDir) {
+    private PlayerDataAccessor(File baseDir) {
         this.baseDir = new File(baseDir, "player-data");
         createDirectories(this.baseDir);
         this.playerDataCache = new ConcurrentHashMap<>();
