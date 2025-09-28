@@ -79,8 +79,8 @@ public class PlayerDataAccessor implements Accessor {
     }
 
     private void savePlayerDataToFile(PlayerData playerData) {
-        System.out.println("Saving player data for player " + playerData.getPlayerUUID() + " in world " + playerData.getWorldUUID());
-        System.out.println("Hydration - " + playerData.getPlayerSurvivalMatrix().getHydration());
+//        System.out.println("Saving player data for player " + playerData.getPlayerUUID() + " in world " + playerData.getWorldUUID());
+//        System.out.println("Hydration - " + playerData.getPlayerSurvivalMatrix().getHydration());
         File playerDir = new File(this.baseDir, playerData.getPlayerUUID().toString());
         String fileName = playerData.getWorldInternalName().equals("world") ? HUB_FILE_NAME : playerData.getWorldUUID().toString() + ".json";
         File playersDataFile = new File(playerDir, fileName);
@@ -89,8 +89,8 @@ public class PlayerDataAccessor implements Accessor {
             Files.createDirectories(playerDir.toPath());
             try (FileWriter writer = new FileWriter(playersDataFile)) {
                 writer.write(playerData.toJson());
-                System.out.println("Saved player data for player " + playerData.getPlayerUUID() + " in world "
-                        + playerData.getWorldUUID() + " with Hydration: " + playerData.getPlayerSurvivalMatrix().getHydration());
+//                System.out.println("Saved player data for player " + playerData.getPlayerUUID() + " in world "
+//                        + playerData.getWorldUUID() + " with Hydration: " + playerData.getPlayerSurvivalMatrix().getHydration());
             }
         } catch (IOException e) {
             System.err.println("Error saving player data: " + e.getMessage());
@@ -106,11 +106,11 @@ public class PlayerDataAccessor implements Accessor {
         if (playerWorlds != null) {
             PlayerData directCacheRead = playerWorlds.get(player.getWorld().getUID());
             if (directCacheRead != null) {
-                System.out.println("🔴 DIRECT CACHE CHECK: " + directCacheRead.getPlayerSurvivalMatrix().getHydration());
+//                System.out.println("🔴 DIRECT CACHE CHECK: " + directCacheRead.getPlayerSurvivalMatrix().getHydration());
             }
         }
         PlayerData currentPlayerData = getPlayerData(player.getUniqueId(), player.getWorld().getUID(), player.getWorld().getName());
-        System.out.println("currentPlayerData: " + currentPlayerData + " with Hydration: " + currentPlayerData.getPlayerSurvivalMatrix().getHydration());
+//        System.out.println("currentPlayerData: " + currentPlayerData + " with Hydration: " + currentPlayerData.getPlayerSurvivalMatrix().getHydration());
 //        System.out.println(currentPlayerData.toJson());
         // If data is not found, create a new PlayerData object
         if (currentPlayerData == null) {
@@ -143,7 +143,7 @@ public class PlayerDataAccessor implements Accessor {
             PlayerData cachedData = playerWorlds.get(worldUUID);
             if (cachedData != null) {
                 System.out.println("======= Found PlayerData from cache for player " + playerUUID + " in world " + worldUUID + ". =============");
-                System.out.println(cachedData.toJson());
+//                System.out.println(cachedData.toJson());
                 return cachedData;
             }
         }

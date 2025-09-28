@@ -57,17 +57,11 @@ public class FirstLandGame {
             public void run() {
                 World world = chuaWorld.getWorld();
                 List<Player> worldPlayers = world.getPlayers();
-//                System.out.println("The Plugin has run here! 'startPlayerMatrixCheck'");
-//                if (worldPlayers.isEmpty()){
-//                    System.out.println("world is empty stopping player matrix checking. ");
-//                    pauseMatrixChecking();
-//                    return;
-//                }
                 for (UUID playerUUID : players){
                     Player player = Bukkit.getPlayer(playerUUID);
                     if (worldPlayers.contains(player)){
-                        System.out.println("Started Player Matrix Checking!!!!");;
-                        player.sendMessage("[LOG] Started Player Matrix Checking!!!!");
+//                        System.out.println("Started Player Matrix Checking!!!!");;
+//                        player.sendMessage("[LOG] Started Player Matrix Checking!!!!");
                         PlayerData playerData = PlayerDataAccessor.getInstance().getPlayerData(playerUUID, world.getUID(), world.getName());
                         if (playerData != null){
                             if (playerData.getLastMatrixUpdateTime() < 0) {
@@ -77,9 +71,9 @@ public class FirstLandGame {
                             }
                             else {
                                 long lastUpdateTime = playerData.getLastMatrixUpdateTime();
-                                System.out.println("Before - Last Update Time Reading: " + world.getGameTime() + " :::: " + lastUpdateTime);
+//                                System.out.println("Before - Last Update Time Reading: " + world.getGameTime() + " :::: " + lastUpdateTime);
                                 long diff = world.getGameTime() - lastUpdateTime;
-                                System.out.println("Time difference: " + diff);
+//                                System.out.println("Time difference: " + diff);
                                 PlayerSurvivalMatrix survivalMatrix = playerData.getPlayerSurvivalMatrix();
                                 survivalMatrix = survivalMatrix.toBuilder()
                                         .hydration(survivalMatrix.getHydration() - HYDRATION_DECAY_DELTA * diff)
@@ -89,12 +83,12 @@ public class FirstLandGame {
                                                 .carbohydrates(survivalMatrix.getPlayerNutrition().getCarbohydrates() - CARBS_DECAY_DELTA * diff)
                                                 .build())
                                         .build();
-                                System.out.println("survivalMatrix with Hydration: " + survivalMatrix.getHydration());
+//                                System.out.println("survivalMatrix with Hydration: " + survivalMatrix.getHydration());
                                 playerData = playerData.toBuilder()
                                         .lastMatrixUpdateTime(world.getGameTime())
                                         .playerSurvivalMatrix(survivalMatrix)
                                         .build();
-                                System.out.println("After - Last Update Time Reading: " + world.getGameTime() + " :::: " + playerData.getLastMatrixUpdateTime());
+//                                System.out.println("After - Last Update Time Reading: " + world.getGameTime() + " :::: " + playerData.getLastMatrixUpdateTime());
                             }
                             PlayerDataAccessor.getInstance().savePlayerDataToCache(playerData);
                         }

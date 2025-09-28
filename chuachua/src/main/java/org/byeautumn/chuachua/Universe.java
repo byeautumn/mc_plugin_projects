@@ -60,7 +60,7 @@ public class Universe {
     public static void teleportToLobby(Player player) {
         Location toLocation = getLocation(LOBBY_WORLD_NAME, LOBBY_SPAWN_LOCATION_VECTOR);
         player.teleport(toLocation);
-        player.sendMessage(ChatColor.GREEN + "You were teleported to lobby successfully");
+//        player.sendMessage(ChatColor.GREEN + "You were teleported to lobby successfully");
         ItemStack[] inventory = InventoryDataAccessor.getInstance().loadInventory(player.getUniqueId(), getLobby().getName());
         PlayerData playerData = PlayerDataAccessor.getInstance().getPlayerData(player.getUniqueId(), getLobby().getUID(), getLobby().getName());
         player.setGameMode(playerData.getGameMode());

@@ -260,7 +260,6 @@ public final class PlayerData {
             this.lastKnownLogoffYaw = playerData.getLastKnownLogoffYaw();
             this.health = playerData.getHealth();
             this.hunger = playerData.getHunger();
-//            this.hydration = playerData.getHydration();
             this.temperature = playerData.getTemperature();
             this.potionEffects = playerData.getPotionEffects();
             this.playerSurvivalMatrix = playerData.getPlayerSurvivalMatrix();
