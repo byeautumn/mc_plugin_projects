@@ -1,6 +1,8 @@
 package org.byeautumn.chuachua.player;
 
 import org.bukkit.inventory.ItemStack;
+import org.byeautumn.chuachua.Chuachua;
+import org.byeautumn.chuachua.game.firstland.WorldDataAccessor;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.byeautumn.chuachua.accessor.Accessor;
@@ -20,6 +22,8 @@ import java.util.logging.Logger;
 
 public class InventoryDataAccessor implements Accessor {
 
+    private static InventoryDataAccessor instance;
+
     private final File baseDir;
     private static final Logger LOGGER = Logger.getLogger(InventoryDataAccessor.class.getName());
     private static final String HUB_FILE_NAME = "hub.json";
@@ -27,6 +31,14 @@ public class InventoryDataAccessor implements Accessor {
     public InventoryDataAccessor(File baseDir) {
         this.baseDir = new File(baseDir, "inventory-data");
         createDirectories(this.baseDir);
+    }
+
+    public static InventoryDataAccessor getInstance() {
+        if (instance == null) {
+            // Create the instance only if it doesn't exist yet
+            instance = new InventoryDataAccessor(new File(Chuachua.getInstance.getDataFolder(), "data"));
+        }
+        return instance;
     }
 
     @Override

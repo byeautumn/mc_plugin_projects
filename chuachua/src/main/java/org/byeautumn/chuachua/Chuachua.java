@@ -66,7 +66,7 @@ public final class Chuachua extends JavaPlugin {
 
         File pluginDataFolder = getDataFolder();
 
-        this.worldDataAccessor = new WorldDataAccessor(new File(pluginDataFolder, "data"));
+        this.worldDataAccessor = WorldDataAccessor.getInstance();
         this.playerDataAccessor = new PlayerDataAccessor(new File(pluginDataFolder, "data"));
         this.inventoryDataAccessor = new InventoryDataAccessor(new File(getDataFolder(), "data"));
 

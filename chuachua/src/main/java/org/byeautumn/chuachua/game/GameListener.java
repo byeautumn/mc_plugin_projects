@@ -86,7 +86,7 @@ public class GameListener implements Listener {
         if (playerData != null) {
             // Data exists, so load the player's saved state
             player.setHealth(playerData.getHealth());
-            player.setFoodLevel(playerData.getHunger());
+            player.setFoodLevel(20);
             Universe.getPlayerTracker(player).setPlayMode(playerData.getPlayMode());
             player.setGameMode(playerData.getGameMode());
             player.sendMessage(ChatColor.GREEN + ">> " + ChatColor.AQUA + "Welcome back! Your data has been loaded.");
@@ -137,15 +137,8 @@ public class GameListener implements Listener {
         // Get the player instance from the event
         Player player = event.getPlayer();
 
-        // Step 1: Get the player's current state from the Bukkit API
-        double currentHealth = player.getHealth();
-        int currentHunger = player.getFoodLevel();
-
-        // Get the player's current location to save
-        Location lastKnownLocation = player.getLocation();
-
         // Save the player's inventory
-        inventoryDataAccessor.saveInventory(player.getUniqueId(), player.getWorld().getUID().toString(), player.getInventory().getContents());
+//        inventoryDataAccessor.saveInventory(player.getUniqueId(), player.getWorld().getUID().toString(), player.getInventory().getContents());
         // Step 2: Create a PlayerData object with the current state, including the last known log-off location
 
         playerDataAccessor.updatePlayerData(player);
@@ -156,6 +149,9 @@ public class GameListener implements Listener {
         if (event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
             if (player.getWorld().getUID().equals(Universe.getLobby().getUID())) {
+                if(player.getFoodLevel() < 20){
+                    player.setFoodLevel(20);
+                }
                 player.setSaturation(20.0f);
                 player.setFoodLevel(20);
                 event.setCancelled(true);
@@ -168,6 +164,9 @@ public class GameListener implements Listener {
         if (event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
             if (player.getWorld().getUID().equals(Universe.getLobby().getUID())) {
+                if(player.getFoodLevel() < 20){
+                    player.setFoodLevel(20);
+                }
                 player.setHealth(20);
                 event.setCancelled(true);
             }
@@ -191,7 +190,7 @@ public class GameListener implements Listener {
         String toWorldName = player.getWorld().getName();
 
         // 1. Save the inventory from the old world
-        inventoryDataAccessor.saveInventory(player.getUniqueId(), fromWorldName, player.getInventory().getContents());
+//        inventoryDataAccessor.saveInventory(player.getUniqueId(), fromWorldName, player.getInventory().getContents());
 
         // 2. Load the inventory for the new world and set it directly
         ItemStack[] newInventory = inventoryDataAccessor.loadInventory(player.getUniqueId(), toWorldName);

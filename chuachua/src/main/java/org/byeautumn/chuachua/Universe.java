@@ -11,10 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.byeautumn.chuachua.common.LocationVector;
 import org.byeautumn.chuachua.common.PlayMode;
-import org.byeautumn.chuachua.game.firstland.FirstLandWorldConfigAccessor;
-import org.byeautumn.chuachua.game.firstland.WorldData;
-import org.byeautumn.chuachua.game.firstland.WorldDataAccessor;
-import org.byeautumn.chuachua.game.firstland.WorldGenerationTask;
+import org.byeautumn.chuachua.game.firstland.*;
 import org.byeautumn.chuachua.generate.world.WorldManager;
 import org.byeautumn.chuachua.generate.world.pipeline.*;
 import org.byeautumn.chuachua.generate.world.WorldGenerator;
@@ -67,7 +64,7 @@ public class Universe {
         Location toLocation = getLocation(LOBBY_WORLD_NAME, LOBBY_SPAWN_LOCATION_VECTOR);
         player.teleport(toLocation);
         player.sendMessage(ChatColor.GREEN + "You were teleported to lobby successfully");
-        ItemStack[] inventory = inventoryDataAccessor.loadInventory(player.getUniqueId(), getLobby().getUID().toString());
+        ItemStack[] inventory = inventoryDataAccessor.loadInventory(player.getUniqueId(), getLobby().getName());
         PlayerData playerData = playerDataAccessor.getPlayerData(player.getUniqueId(), getLobby().getUID(), getLobby().getName());
         player.setGameMode(playerData.getGameMode());
         Universe.getPlayerTracker(player).setPlayMode(playerData.getPlayMode());
@@ -200,7 +197,7 @@ public class Universe {
                     plugin.getLogger().info("Found a loaded First Land World '" + worldName + "' not in our map. Re-wrapping it.");
 
                     File baseDir = new File(plugin.getDataFolder(), "data");
-                    WorldDataAccessor configAccessor = new WorldDataAccessor(baseDir);
+                    WorldDataAccessor configAccessor = WorldDataAccessor.getInstance();
 
                     // FIX: Use the actual Bukkit world's UUID to get the data
                     UUID bukkitWorldUUID = existingBukkitWorld.getUID();
@@ -661,9 +658,6 @@ public class Universe {
                     // Teleport the player and update their state after the world is connected
                     Universe.connectPlayerToSpecificWorld(player, plugin, worldDataAccessor, unownedWorldUUID, playerDataAccessor);
 
-                    // The logic to create and save a new PlayerData file has been removed from here.
-                    // This is now handled by the connectPlayerToSpecificWorld method.
-
                 } else {
                     // If no unowned world exists, send an error message and notify operators
                     player.sendMessage(ChatColor.RED + ">> " + ChatColor.AQUA + "There are no available worlds to connect to. Please try again later.");
@@ -685,19 +679,18 @@ public class Universe {
      *
      * @param player The player to connect.
      * @param plugin The main plugin instance.
-     * @param worldDataAccessor The accessor for world data.
-     * @param worldUuid The UUID of the world to connect to.
+     * @param worldUUID The UUID of the world to connect to.
      * @return true if the world was successfully found and connected to, false otherwise.
      */
-    public static boolean connectPlayerToSpecificWorld(Player player, JavaPlugin plugin, WorldDataAccessor worldDataAccessor, UUID worldUuid, PlayerDataAccessor playerDataAccessor) {
-        plugin.getLogger().info("Attempting to connect player " + player.getName() + " to specific world with UUID: " + worldUuid);
+    public static boolean connectPlayerToSpecificWorld(Player player, JavaPlugin plugin, WorldDataAccessor worldDataAccessor, UUID worldUUID, PlayerDataAccessor playerDataAccessor) {
+        plugin.getLogger().info("Attempting to connect player " + player.getName() + " to specific world with UUID: " + worldUUID);
 
-        // Load the WorldData object directly from the accessor ONCE
-        WorldData worldData = worldDataAccessor.getWorldData(worldUuid);
+        WorldData worldData = worldDataAccessor.getWorldData(worldUUID);
+
 
         if (worldData == null) {
             player.sendMessage(ChatColor.RED + "World not found or data is incomplete.");
-            plugin.getLogger().warning("Failed to find world data for UUID: " + worldUuid);
+            plugin.getLogger().warning("Failed to find world data for UUID: " + worldUUID);
             return false;
         }
 
@@ -710,6 +703,10 @@ public class Universe {
             plugin.getLogger().severe("Failed to load/create world '" + targetInternalWorldName + "' for direct connection. ChuaWorld is null.");
             return false;
         }
+
+        FirstLandGameManager manager = FirstLandGameManager.getInstance();
+
+        FirstLandGame firstLandGame = manager.getOrCreateGame(worldData);
 
         Universe.setPlayerConnectedChuaWorld(player.getUniqueId(), targetChuaWorld, plugin);
 
@@ -743,7 +740,7 @@ public class Universe {
                     player.sendMessage(ChatColor.RED + ">> " + ChatColor.AQUA + "Warning: No saved data was found for this world. Teleporting to world spawn.");
                     playerData = PlayerData.builder()
                             .playerUUID(player.getUniqueId())
-                            .worldUUID(worldUuid)
+                            .worldUUID(worldUUID)
                             .worldInternalName(targetInternalWorldName)
                             .playMode(PlayMode.UNKNOWN) // Default play mode
                             .gameMode(GameMode.SURVIVAL) // Default game mode

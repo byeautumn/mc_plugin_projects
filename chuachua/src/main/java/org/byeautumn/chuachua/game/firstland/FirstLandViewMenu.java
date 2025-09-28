@@ -236,6 +236,7 @@ public class FirstLandViewMenu implements Listener {
                 player.closeInventory();
                 HandlerList.unregisterAll(this);
 
+
                 // Pass the playerDataAccessor to the method
                 Universe.connectPlayerToSpecificWorld(player, plugin, worldDataAccessor, targetWorldUUID, playerDataAccessor);
             } else {

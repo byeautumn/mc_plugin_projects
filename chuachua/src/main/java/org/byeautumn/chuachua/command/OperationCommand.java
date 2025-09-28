@@ -76,14 +76,13 @@ public class OperationCommand implements CommandExecutor {
                 if (firstArg.equalsIgnoreCase("exit")) {
 
                     UUID currentWorldUUID = player.getWorld().getUID();
-                    Location currentLocation = player.getLocation();
 
                     System.out.println("Player " + player.getName() + " is exiting world with UUID: " + currentWorldUUID.toString());
 
                     // Save inventory before leaving the world
-                    inventoryDataAccessor.saveInventory(player.getUniqueId(), currentWorldUUID.toString(), player.getInventory().getContents());
+//                    inventoryDataAccessor.saveInventory(player.getUniqueId(), currentWorldUUID.toString(), player.getInventory().getContents());
 
-                    player.sendMessage("Exiting world: " + currentWorldUUID.toString());
+                    player.sendMessage("Exiting world: " + player.getWorld().getName() + " with UUID: " + currentWorldUUID.toString());
                     playerDataAccessor.updatePlayerData(player);
 
                     Universe.teleportToLobby(player, playerDataAccessor, inventoryDataAccessor);

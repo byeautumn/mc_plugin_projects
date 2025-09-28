@@ -1,10 +1,14 @@
 package org.byeautumn.chuachua.player;
 
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.byeautumn.chuachua.Chuachua;
 import org.byeautumn.chuachua.Universe;
 import org.byeautumn.chuachua.accessor.Accessor;
-import org.json.JSONArray;
+import org.byeautumn.chuachua.common.PlayMode;
+import org.byeautumn.chuachua.player.matrix.PlayerSurvivalMatrix;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -22,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerDataAccessor implements Accessor {
 
+    private static PlayerDataAccessor instance;
+
     private final File baseDir;
     private static final String HUB_FILE_NAME = "hub.json";
 
@@ -32,6 +38,14 @@ public class PlayerDataAccessor implements Accessor {
         this.baseDir = new File(baseDir, "player-data");
         createDirectories(this.baseDir);
         this.playerDataCache = new ConcurrentHashMap<>();
+    }
+
+    public static PlayerDataAccessor getInstance() {
+        if (instance == null) {
+            // Create the instance only if it doesn't exist yet
+            instance = new PlayerDataAccessor(new File(Chuachua.getInstance.getDataFolder(), "data"));
+        }
+        return instance;
     }
 
     @Override
@@ -47,11 +61,26 @@ public class PlayerDataAccessor implements Accessor {
         }
     }
 
+    public void savePlayerDataToCache(PlayerData playerData){
+        Map<UUID, PlayerData> worldPlayerdataMap = playerDataCache.computeIfAbsent(playerData.getPlayerUUID(), k -> new ConcurrentHashMap<>());
+        worldPlayerdataMap.put(playerData.getWorldUUID(), playerData);
+        playerDataCache.put(playerData.getPlayerUUID(), worldPlayerdataMap);
+
+        // Validate the data in cache
+        PlayerData fromCache = getPlayerData(playerData.getPlayerUUID(), playerData.getWorldUUID(), playerData.getWorldInternalName());
+        System.out.println(" ++++++++ The Hydration read from cache is: " + fromCache.getPlayerSurvivalMatrix().getHydration()
+                + "for world: " + playerData.getWorldUUID() + " ++++++++ ");
+    }
+
     public void savePlayerData(PlayerData playerData) {
         // Update the cache first using the player UUID and world UUID as keys
-        playerDataCache.computeIfAbsent(playerData.getPlayerUUID(), k -> new ConcurrentHashMap<>())
-                .put(playerData.getWorldUUID(), playerData);
+        savePlayerDataToCache(playerData);
+        savePlayerDataToFile(playerData);
+    }
 
+    private void savePlayerDataToFile(PlayerData playerData) {
+        System.out.println("Saving player data for player " + playerData.getPlayerUUID() + " in world " + playerData.getWorldUUID());
+        System.out.println("Hydration - " + playerData.getPlayerSurvivalMatrix().getHydration());
         File playerDir = new File(this.baseDir, playerData.getPlayerUUID().toString());
         String fileName = playerData.getWorldInternalName().equals("world") ? HUB_FILE_NAME : playerData.getWorldUUID().toString() + ".json";
         File playersDataFile = new File(playerDir, fileName);
@@ -60,53 +89,50 @@ public class PlayerDataAccessor implements Accessor {
             Files.createDirectories(playerDir.toPath());
             try (FileWriter writer = new FileWriter(playersDataFile)) {
                 writer.write(playerData.toJson());
-                System.out.println("Saved player data for player " + playerData.getPlayerUUID() + " in world " + playerData.getWorldUUID());
+                System.out.println("Saved player data for player " + playerData.getPlayerUUID() + " in world "
+                        + playerData.getWorldUUID() + " with Hydration: " + playerData.getPlayerSurvivalMatrix().getHydration());
             }
         } catch (IOException e) {
             System.err.println("Error saving player data: " + e.getMessage());
             e.printStackTrace();
         }
+
     }
 
     public void updatePlayerData(Player player){
         Location playerLocation = player.getLocation();
-        PlayerData currentPlayerData = getPlayerData(player.getUniqueId(), player.getWorld().getUID(), player.getWorld().getName());
 
+        Map<UUID, PlayerData> playerWorlds = this.playerDataCache.get(player.getUniqueId());
+        if (playerWorlds != null) {
+            PlayerData directCacheRead = playerWorlds.get(player.getWorld().getUID());
+            if (directCacheRead != null) {
+                System.out.println("🔴 DIRECT CACHE CHECK: " + directCacheRead.getPlayerSurvivalMatrix().getHydration());
+            }
+        }
+        PlayerData currentPlayerData = getPlayerData(player.getUniqueId(), player.getWorld().getUID(), player.getWorld().getName());
+        System.out.println("currentPlayerData: " + currentPlayerData + " with Hydration: " + currentPlayerData.getPlayerSurvivalMatrix().getHydration());
+//        System.out.println(currentPlayerData.toJson());
         // If data is not found, create a new PlayerData object
         if (currentPlayerData == null) {
             currentPlayerData = PlayerData.builder()
                     .playerUUID(player.getUniqueId())
-                    .playMode(Universe.getPlayerTracker(player).getPlayMode())
-                    .gameMode(player.getGameMode())
                     .worldUUID(playerLocation.getWorld().getUID())
                     .worldInternalName(playerLocation.getWorld().getName())
-                    .lastKnownLogoffWorldUUID(playerLocation.getWorld().getUID())
-                    .lastKnownLogoffX(playerLocation.getX())
-                    .lastKnownLogoffY(playerLocation.getY())
-                    .lastKnownLogoffZ(playerLocation.getZ())
-                    .lastKnownLogoffPitch(playerLocation.getPitch())
-                    .lastKnownLogoffYaw(playerLocation.getYaw())
-                    .health(player.getHealth())
-                    .hunger(player.getFoodLevel())
-                    .build();
-        } else {
-            // Otherwise, update the existing object
-            currentPlayerData = currentPlayerData.toBuilder()
                     .playMode(Universe.getPlayerTracker(player).getPlayMode())
                     .gameMode(player.getGameMode())
-                    .worldUUID(playerLocation.getWorld().getUID())
-                    .worldInternalName(playerLocation.getWorld().getName())
-                    .health(player.getHealth())
-                    .hunger(player.getFoodLevel())
-                    .lastKnownLogoffWorldUUID(playerLocation.getWorld().getUID())
-                    .lastKnownLogoffX(playerLocation.getX())
-                    .lastKnownLogoffY(playerLocation.getY())
-                    .lastKnownLogoffZ(playerLocation.getZ())
-                    .lastKnownLogoffPitch(playerLocation.getPitch())
-                    .lastKnownLogoffYaw(playerLocation.getYaw())
                     .build();
         }
-
+        currentPlayerData = currentPlayerData.toBuilder()
+                .lastMatrixUpdateTime(-1L)
+                .health(player.getHealth())
+                .hunger(player.getFoodLevel())
+                .lastKnownLogoffWorldUUID(playerLocation.getWorld().getUID())
+                .lastKnownLogoffX(playerLocation.getX())
+                .lastKnownLogoffY(playerLocation.getY())
+                .lastKnownLogoffZ(playerLocation.getZ())
+                .lastKnownLogoffPitch(playerLocation.getPitch())
+                .lastKnownLogoffYaw(playerLocation.getYaw())
+                .build();
         savePlayerData(currentPlayerData);
     }
 
@@ -116,16 +142,30 @@ public class PlayerDataAccessor implements Accessor {
         if (playerWorlds != null) {
             PlayerData cachedData = playerWorlds.get(worldUUID);
             if (cachedData != null) {
+                System.out.println("======= Found PlayerData from cache for player " + playerUUID + " in world " + worldUUID + ". =============");
+                System.out.println(cachedData.toJson());
                 return cachedData;
             }
         }
+
+        System.out.println("======= Cannot find PlayerData from cache for player " + playerUUID + " in world " + worldUUID + ". =============");
 
         File playerDir = new File(this.baseDir, playerUUID.toString());
         String fileName = worldInternalName.equals("world") ? HUB_FILE_NAME : worldUUID.toString() + ".json";
         File playerDataFile = new File(playerDir, fileName);
 
         if (!playerDataFile.exists()) {
-            return null;
+            Player player = Bukkit.getPlayer(playerUUID);
+            return PlayerData.builder()
+                    .playerUUID(playerUUID)
+                    .worldUUID(Universe.getLobby().getUID())
+                    .worldInternalName(Universe.getLobby().getName())
+                    .playMode(PlayMode.UNKNOWN) // Default play mode
+                    .gameMode(GameMode.ADVENTURE) // Default game mode
+                    .health(player.getHealth())
+                    .hunger(player.getFoodLevel())
+                    // Assuming you have other methods to get default values for these stats
+                    .build();
         }
 
         try (FileReader reader = new FileReader(playerDataFile)) {

@@ -22,6 +22,10 @@ public final class PlayerNutritionMatrix {
         return new Builder();
     }
 
+    public Builder toBuilder(){
+        return new Builder(this);
+    }
+
     public double getFat() {
         return fat;
     }
@@ -72,6 +76,12 @@ public final class PlayerNutritionMatrix {
             this.fat = 0.0;
             this.protein = 0.0;
             this.carbohydrates = 0.0;
+        }
+
+        public Builder(PlayerNutritionMatrix matrix) {
+            this.fat = matrix.getFat();
+            this.protein = matrix.getProtein();
+            this.carbohydrates = matrix.getCarbohydrates();
         }
 
         public Builder fat(double fat) {

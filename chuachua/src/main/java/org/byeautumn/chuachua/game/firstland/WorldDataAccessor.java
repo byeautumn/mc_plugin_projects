@@ -22,16 +22,27 @@ import java.util.stream.Collectors;
 
 public class WorldDataAccessor implements Accessor {
 
+    private static WorldDataAccessor instance;
+
     private final File baseDir;
     // This is the correct placement for the constant
     private static final String UNCONNECTED_DIR_NAME = "unconnected";
     private static final String CONNECTED_DIR_NAME = "connected";
     private static final String WORLD_DATA_FILE_NAME = "world-data.json";
 
-    public WorldDataAccessor(File baseDir) {
+    private WorldDataAccessor(File baseDir) {
         this.baseDir = new File(baseDir, "world-data"); // No more appending "world-data" here
         createDirectories(this.baseDir);
     }
+
+    public static WorldDataAccessor getInstance() {
+        if (instance == null) {
+            // Create the instance only if it doesn't exist yet
+            instance = new WorldDataAccessor(new File(Chuachua.getInstance.getDataFolder(), "data"));
+        }
+        return instance;
+    }
+
 
     @Override
     public void createDirectories(File baseDir) {
@@ -227,8 +238,15 @@ public class WorldDataAccessor implements Accessor {
      * @return A JSONObject representing the world's players data, or null if the file does not exist.
      */
     public WorldDataPlayers getWorldDataPlayers(UUID worldUUID) {
-        File worldDir = new File(baseDir, worldUUID.toString());
+        System.out.println(worldUUID + "WORLDUUID!!!!!!!!!!!!!!!!");
+        if (baseDir == null){
+            throw new NullPointerException("baseDir is null");
+        }
+        System.out.println(baseDir + "!!!!!!!!!!!!!!!!");
+        File connectedDir = new File(baseDir, "connected");
+        File worldDir = new File(connectedDir, worldUUID.toString());
         File playersJsonFile = new File(worldDir, "players.json");
+        System.out.println(playersJsonFile.getAbsolutePath() + "!!!!!!!!!!!!!!!!");
         if (playersJsonFile.exists()) {
             try (FileReader reader = new FileReader(playersJsonFile)) {
                 StringBuilder sb = new StringBuilder();

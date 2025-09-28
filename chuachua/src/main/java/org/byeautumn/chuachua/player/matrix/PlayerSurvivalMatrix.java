@@ -34,6 +34,10 @@ public final class PlayerSurvivalMatrix {
         return new Builder();
     }
 
+    public Builder toBuilder(){
+        return new Builder(this);
+    }
+
     public double getHydration() {
         return hydration;
     }
@@ -72,8 +76,8 @@ public final class PlayerSurvivalMatrix {
             }
 
             return PlayerSurvivalMatrix.builder()
-                    .hydration(jsonObject.optDouble("hydration", 0.0))
-                    .bodyTemp(jsonObject.optDouble("bodyTemp", 0.0))
+                    .hydration(jsonObject.optDouble("hydration", 100.0))
+                    .bodyTemp(jsonObject.optDouble("bodyTemp", 50.0))
                     .playerNutrition(nutritionMatrix)
                     .build();
         } catch (Exception e) {
@@ -88,9 +92,15 @@ public final class PlayerSurvivalMatrix {
         private PlayerNutritionMatrix playerNutrition;
 
         public Builder() {
-            this.hydration = 0.0;
-            this.bodyTemp = 0.0;
+            this.hydration = 100.0;
+            this.bodyTemp = 50.0;
             this.playerNutrition = null;
+        }
+
+        public Builder(PlayerSurvivalMatrix matrix) {
+            this.hydration = matrix.hydration;
+            this.bodyTemp = matrix.bodyTemp;
+            this.playerNutrition = matrix.playerNutrition;
         }
 
         public Builder hydration(double hydration) {

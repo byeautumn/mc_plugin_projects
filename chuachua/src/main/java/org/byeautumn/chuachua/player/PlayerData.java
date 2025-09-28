@@ -24,7 +24,7 @@ public final class PlayerData {
     private final float lastKnownLogoffYaw;
     private final double health;
     private final int hunger;
-    private final double hydration;
+//    private final double hydration;
     private final double temperature;
     private final String potionEffects;
     private final PlayerSurvivalMatrix playerSurvivalMatrix;
@@ -45,7 +45,7 @@ public final class PlayerData {
         this.lastKnownLogoffYaw = builder.lastKnownLogoffYaw;
         this.health = builder.health;
         this.hunger = builder.hunger;
-        this.hydration = builder.hydration;
+//        this.hydration = builder.hydration;
         this.temperature = builder.temperature;
         this.potionEffects = builder.potionEffects;
         this.playerSurvivalMatrix = builder.playerSurvivalMatrix;
@@ -113,9 +113,9 @@ public final class PlayerData {
         return hunger;
     }
 
-    public double getHydration() {
-        return hydration;
-    }
+//    public double getHydration() {
+//        return hydration;
+//    }
 
     public double getTemperature() {
         return temperature;
@@ -145,6 +145,7 @@ public final class PlayerData {
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put("playerUUID", this.playerUUID.toString());
+            jsonObject.put("lastMatrixUpdateTime", this.lastMatrixUpdateTime);
             jsonObject.put("playMode", this.playMode.toString());
             jsonObject.put("gameMode", this.gameMode.toString());
             jsonObject.put("worldUUID", this.worldUUID.toString());
@@ -159,7 +160,7 @@ public final class PlayerData {
             }
             jsonObject.put("health", this.health);
             jsonObject.put("hunger", this.hunger);
-            jsonObject.put("hydration", this.hydration);
+//            jsonObject.put("hydration", this.hydration);
             jsonObject.put("temperature", this.temperature);
             jsonObject.put("potionEffects", this.potionEffects);
 
@@ -196,6 +197,7 @@ public final class PlayerData {
 
             return PlayerData.builder()
                     .playerUUID(UUID.fromString(jsonObject.getString("playerUUID")))
+                    .lastMatrixUpdateTime(jsonObject.getLong("lastMatrixUpdateTime"))
                     .playMode(PlayMode.valueOf(jsonObject.optString("playMode", PlayMode.UNKNOWN.toString())))
                     .gameMode(GameMode.valueOf(jsonObject.optString("gameMode", GameMode.ADVENTURE.toString())))
                     .worldUUID(UUID.fromString(jsonObject.getString("worldUUID")))
@@ -208,7 +210,7 @@ public final class PlayerData {
                     .lastKnownLogoffYaw(lastKnownLogoffYaw)
                     .health(jsonObject.optDouble("health", 20.0))
                     .hunger(jsonObject.optInt("hunger", 20))
-                    .hydration(jsonObject.optDouble("hydration", 100.0))
+//                    .hydration(jsonObject.optDouble("hydration", 100.0))
                     .temperature(jsonObject.optDouble("temperature", 20.0))
                     .potionEffects(jsonObject.optString("potionEffects", "[]"))
                     .playerSurvivalMatrix(survivalMatrix)
@@ -234,12 +236,12 @@ public final class PlayerData {
         private float lastKnownLogoffYaw;
         private double health;
         private int hunger;
-        private double hydration;
+//        private double hydration;
         private double temperature;
         private String potionEffects;
         private PlayerSurvivalMatrix playerSurvivalMatrix;
         private PlayerActivityMatrix playerActivityMatrix;
-        private long lastMatrixUpdateTime;
+        private long lastMatrixUpdateTime = -1L;
 
         public Builder() {
 
@@ -258,12 +260,12 @@ public final class PlayerData {
             this.lastKnownLogoffYaw = playerData.getLastKnownLogoffYaw();
             this.health = playerData.getHealth();
             this.hunger = playerData.getHunger();
-            this.hydration = playerData.getHydration();
+//            this.hydration = playerData.getHydration();
             this.temperature = playerData.getTemperature();
             this.potionEffects = playerData.getPotionEffects();
             this.playerSurvivalMatrix = playerData.getPlayerSurvivalMatrix();
             this.playerActivityMatrix = playerData.getPlayerActivityMatrix();
-            this.lastMatrixUpdateTime = playerData.lastMatrixUpdateTime;
+            this.lastMatrixUpdateTime = playerData.getLastMatrixUpdateTime();
         }
 
         public Builder playerUUID(UUID playerUUID){
@@ -331,10 +333,10 @@ public final class PlayerData {
             return this;
         }
 
-        public Builder hydration(double hydration) {
-            this.hydration = hydration;
-            return this;
-        }
+//        public Builder hydration(double hydration) {
+//            this.hydration = hydration;
+//            return this;
+//        }
 
         public Builder temperature(double temperature) {
             this.temperature = temperature;
